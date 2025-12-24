@@ -5,7 +5,7 @@ import type { InternalAxiosRequestConfig } from 'axios';
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const api = axios.create({
-  baseURL: `${baseURL}/api`,
+  baseURL: `${baseURL}`,
 });
 
 // Request interceptor
