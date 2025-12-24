@@ -29,41 +29,46 @@ export const LoginForm = () => {
   const navigate = useNavigate();
 
   // ✅ FIXED FULL LOGIN LOGIC
+
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      const response = await axios.post(`${baseURL}/api/auth/login`, {
-        email: data.email,
-        password: data.password,
-      });
+  try {
+    const apiUrl = `${baseURL}/api/auth/login`;  // The full URL to the login endpoint
+    console.log('Making request to:', apiUrl);  // Log the final URL to ensure it's correct
 
-      console.log("Login response full:", response.data);
+    const response = await axios.post(apiUrl, {
+      email: data.email,
+      password: data.password,
+    });
 
-      // Save the access token
-      const token = response.data.accessToken;
-      if (!token) throw new Error("No accessToken returned from backend");
-      localStorage.setItem("token", token);
+    console.log("Login response full:", response.data);
 
-      // Save the user object
-      const user = response.data.user;
-      if (!user) throw new Error("No user object returned from backend");
-      localStorage.setItem("user", JSON.stringify(user));
+    // Save the access token
+    const token = response.data.accessToken;
+    if (!token) throw new Error("No accessToken returned from backend");
+    localStorage.setItem("token", token);
 
-      console.log("Saved user:", user);
+    // Save the user object
+    const user = response.data.user;
+    if (!user) throw new Error("No user object returned from backend");
+    localStorage.setItem("user", JSON.stringify(user));
 
-      setError('');
-      setShowSuccessCard(true);
+    console.log("Saved user:", user);
 
-      setTimeout(() => {
-        setShowSuccessCard(false);
-        navigate('/dashboard');
-      }, 2000);
+    setError('');
+    setShowSuccessCard(true);
 
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Invalid email or password');
+    setTimeout(() => {
       setShowSuccessCard(false);
-    }
-  };
+      navigate('/dashboard');
+    }, 2000);
+
+  } catch (err: any) {
+    console.error('Login error:', err);
+    setError(err.response?.data?.message || 'Invalid email or password');
+    setShowSuccessCard(false);
+  }
+};
+
 
   const handleOrgLogin = () => {
     navigate('/org-login');
