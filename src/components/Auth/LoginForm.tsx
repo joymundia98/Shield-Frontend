@@ -32,6 +32,9 @@ export const LoginForm = () => {
   const onSubmit = async (data: LoginFormData) => {
     try {
       const response = await axios.post(`${baseURL}/api/auth/login`, {
+        const apiUrl = `${baseURL}/api/auth/login`;
+        console.log('Making request to:', apiUrl);  // Log the final URL to ensure it's correct
+    
         email: data.email,
         password: data.password,
       });
