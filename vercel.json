@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "client/package.json",  
-      "use": "@vercel/static-build",
+      "src": "package.json",  // points to the package.json inside the client folder
+      "use": "@vercel/static-build",  // Use Vercel’s static build tool for React
       "config": {
-        "distDir": "client/dist"  
+        "distDir": "dist"  // output directory after build (for Vite) or build (for CRA)
       }
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }  
+    { "source": "/(.*)", "destination": "/index.html" }  // This handles client-side routing
   ]
 }
