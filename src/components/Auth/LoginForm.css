@@ -1,0 +1,542 @@
+:root {
+  --first-clr: #5C4736;
+}
+
+.login-parent-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; /* vertically center */
+  width: 100vw;        /* full viewport width */
+  min-height: 100vh;       /* full viewport height */
+  background: linear-gradient(
+    109.6deg,
+    rgba(129, 126, 122, 0.447) 11.2%,
+    rgba(129, 126, 122, 0.735) 51.2%,
+    rgb(129, 126, 122) 100%
+  );
+  padding: 1rem;
+}
+
+.loginContainer {
+  width: 380px;
+  background-color: #fff;
+  box-shadow: 0 15px 20px rgba(0,0,0,0.2);
+  border-radius: 15px;
+}
+
+.loginContainer .header {
+  text-align: center;
+  background: linear-gradient(90deg, #AF907A 0%, #5C4736 50%, #1D1411 100%);
+  border-radius: 12px 12px 0 0;
+  padding: 20px 0;
+}
+
+.loginContainer .header img {
+  max-width: 120px;
+  height: auto;
+}
+
+.loginContainer form {
+  padding: 25px 30px;
+}
+
+.loginContainer form .field {
+  position: relative;
+  height: 50px;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.loginContainer form .field input,
+.loginContainer form .field button {
+  width: 100%;
+  height: 100%;
+  border-radius: 25px;
+  outline: none;
+}
+
+.loginContainer form .field input {
+  border: 1px solid lightgrey;
+  padding-left: 15px;
+  border-bottom-width: 2px;
+  transition: all 0.3s ease;
+  font-size: 17px;
+}
+
+.loginContainer form .field input:focus,
+.loginContainer form .field input:valid {
+  border-color: var(--first-clr);
+}
+
+.loginContainer form .field input:focus ~ label,
+.loginContainer form .field input:valid ~ label {
+  top: 0%;
+  font-size: 16px;
+  color: var(--first-clr);
+  background-color: #fff;
+  padding: 0 5px;
+}
+
+.loginContainer form .field label {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  transform: translateY(-50%);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  font-size: 17px;
+  color: #999;
+}
+
+/* Show Password */
+.showPassword {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--first-clr);
+}
+
+/* Form Links */
+.loginContainer form .form-link {
+  color: #4158d0;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.loginContainer form .form-link span {
+  color: #888;
+}
+
+.loginContainer form .form-link .forgot-pass:hover,
+.loginContainer form .sign-up a:hover {
+  text-decoration: underline;
+}
+
+/* Buttons */
+.loginContainer form .field button {
+  color: #fff;
+  background-color: var(--first-clr);
+  font-size: 18px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.loginContainer form .field button:hover,
+.loginContainer form .field button:active {
+  border-color: var(--first-clr);
+  background-color: transparent;
+  color: var(--first-clr);
+  transform: scale(1.02);
+}
+
+/* =================== SIDEBAR =================== */
+.sidebar {
+    width: 250px;
+    transform: translateX(-250px);  /* hide initially */
+    background: linear-gradient(180deg, #20262C 0%, #1D1411 100%);
+    color: #f2f2f2;
+    padding-top: 2rem;
+    flex-shrink: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease;
+    box-shadow: 3px 0 12px rgba(0,0,0,0.2);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    height: 100vh;
+    overflow-y: auto;
+    overflow: visible !important;
+    z-index: 1500;
+}
+
+.sidebar.sidebar-open {
+    transform: translateX(0);
+    z-index: 1500;
+}
+
+sidebar.sidebar-open nav {
+    display: none;
+}
+
+.sidebar h2 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 2rem;
+    color: #AF907A;
+    letter-spacing: 1px;
+}
+
+.sidebar a {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    color: #d9d9d9;
+    text-decoration: none;
+    font-size: 16px;
+    border-left: 4px solid transparent;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.sidebar a:hover {
+    background: #1A3D7C;
+    color: #f2f2f2;
+    border-left: 4px solid #AF907A;
+}
+
+.sidebar a.active {
+    background: #5C4736;
+    color: #f2f2f2;
+    border-left: 4px solid #AF907A;
+}
+
+.sidebar a::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #AF907A;
+    margin-right: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.sidebar a:hover::before,
+.sidebar a.active::before {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #20262C;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #5C4736;
+    border-radius: 3px;
+}
+
+/* =================== HAMBURGER BUTTON =================== */
+.hamburger {
+    /*display: none; /* hidden by default, only on small screens */
+    font-size: 28px;
+    background: #20262C;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+    border-radius: 4px;
+}
+
+/* =================== CLAYMORPHIC CLOSE BUTTON =================== */
+/* ---- Close Button Wrapper ---- */
+.close-wrapper {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 60px;
+  height: 60px;
+  z-index: 2000;
+}
+
+/* Hide unless sidebar is open */
+body:not(.sidebar-open) .close-wrapper {
+  display: none;
+}
+
+/* ---- Uiverse Toggle (Resized & Cleaned) ---- */
+.toggle.close-btn {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  display: inline-block;
+}
+
+/* Glow halo */
+.toggle.close-btn:before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  margin-top: -23px;
+  background: #ffffff;
+  opacity: 0.2;
+  border-radius: 50%;
+}
+
+/* Main round button */
+.toggle.close-btn .button {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin-left: -23px;
+  margin-top: -23px;
+  border-radius: 50%;
+  background: #eaeaea;
+  transition: all 300ms cubic-bezier(0.23, 1, 0.32, 1);
+
+  box-shadow:
+      0 10px 22px -4px rgba(0, 0, 0, 0.5),
+      inset 0 -3px 4px -1px rgba(0, 0, 0, 0.2),
+      inset 0 3px 4px -1px rgba(255, 255, 255, 0.3);
+}
+
+/* X label */
+.toggle.close-btn .label {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  color: rgba(30,30,30,0.9);
+  font-weight: 700;
+  font-size: 26px;
+  text-align: center;
+  line-height: 60px;
+  transition: 200ms ease-out;
+}
+
+/* Checkbox input */
+.toggle.close-btn input {
+  opacity: 0;
+  position: absolute;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  cursor: pointer;
+}
+
+/* Press animation */
+.toggle.close-btn input:active ~ .button {
+  filter: blur(0.4px);
+}
+
+.toggle.close-btn input:active ~ .label {
+  color: rgba(0,0,0,0.5);
+  font-size: 24px;
+}
+
+/* Hide hamburger when sidebar is open */
+.sidebar.sidebar-open ~ .hamburger {
+  display: none;
+}
+
+/*Successful Login*/
+.success-card {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4BB543; /* Green */
+  color: white;
+  padding: 20px 30px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 15px rgba(0,0,0,0.2);
+  z-index: 9999;
+  text-align: center;
+  animation: fadeInOut 3s ease forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
+
+/* Organization Login */
+.switchLogin{
+    padding-top: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.orgLogin {
+  all: unset;
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  position: relative;
+  border-radius: 100em;
+  background-color: rgba(0, 0, 0, 0.75);
+  box-shadow:
+    -0.15em -0.15em 0.15em -0.075em rgba(5, 5, 5, 0.25),
+    0.0375em 0.0375em 0.0675em 0 rgba(5, 5, 5, 0.1);
+}
+
+.orgLogin::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: calc(100% + 0.3em);
+  height: calc(100% + 0.3em);
+  top: -0.15em;
+  left: -0.15em;
+  border-radius: inherit;
+  background: linear-gradient(
+    -135deg,
+    rgba(5, 5, 5, 0.5),
+    transparent 20%,
+    transparent 100%
+  );
+  filter: blur(0.0125em);
+  opacity: 0.25;
+  mix-blend-mode: multiply;
+}
+
+.orgLogin .orgLogin-outer {
+  position: relative;
+  z-index: 1;
+  border-radius: inherit;
+  transition: box-shadow 300ms ease;
+  will-change: box-shadow;
+  box-shadow:
+    0 0.05em 0.05em -0.01em rgba(5, 5, 5, 1),
+    0 0.01em 0.01em -0.01em rgba(5, 5, 5, 0.5),
+    0.15em 0.3em 0.1em -0.01em rgba(5, 5, 5, 0.25);
+}
+
+.orgLogin:hover .orgLogin-outer {
+  box-shadow:
+    0 0 0 0 rgba(5, 5, 5, 1),
+    0 0 0 0 rgba(5, 5, 5, 0.5),
+    0 0 0 0 rgba(5, 5, 5, 0.25);
+}
+
+.orgLogin-inner {
+  --inset: 0.035em;
+  position: relative;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1em 1.5em;
+  background-image: linear-gradient(
+    135deg,
+    rgba(230, 230, 230, 1),
+    rgba(180, 180, 180, 1)
+  );
+  transition:
+    box-shadow 300ms ease,
+    clip-path 250ms ease,
+    background-image 250ms ease,
+    transform 250ms ease;
+  will-change: box-shadow, clip-path, background-image, transform;
+  overflow: clip;
+  clip-path: inset(0 0 0 0 round 100em);
+  box-shadow:
+        /* 1 */
+    0 0 0 0 inset rgba(5, 5, 5, 0.1),
+    /* 2 */ -0.05em -0.05em 0.05em 0 inset rgba(5, 5, 5, 0.25),
+    /* 3 */ 0 0 0 0 inset rgba(5, 5, 5, 0.1),
+    /* 4 */ 0 0 0.05em 0.2em inset rgba(255, 255, 255, 0.25),
+    /* 5 */ 0.025em 0.05em 0.1em 0 inset rgba(255, 255, 255, 1),
+    /* 6 */ 0.12em 0.12em 0.12em inset rgba(255, 255, 255, 0.25),
+    /* 7 */ -0.075em -0.25em 0.25em 0.1em inset rgba(5, 5, 5, 0.25);
+}
+
+.orgLogin:hover .orgLogin-inner {
+  clip-path: inset(
+    clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px)
+      clamp(1px, 0.0625em, 2px) clamp(1px, 0.0625em, 2px) round 100em
+  );
+  box-shadow:
+        /* 1 */
+    0.1em 0.15em 0.05em 0 inset rgba(5, 5, 5, 0.75),
+    /* 2 */ -0.025em -0.03em 0.05em 0.025em inset rgba(5, 5, 5, 0.5),
+    /* 3 */ 0.25em 0.25em 0.2em 0 inset rgba(5, 5, 5, 0.5),
+    /* 4 */ 0 0 0.05em 0.5em inset rgba(255, 255, 255, 0.15),
+    /* 5 */ 0 0 0 0 inset rgba(255, 255, 255, 1),
+    /* 6 */ 0.12em 0.12em 0.12em inset rgba(255, 255, 255, 0.25),
+    /* 7 */ -0.075em -0.12em 0.2em 0.1em inset rgba(5, 5, 5, 0.25);
+}
+
+.orgLogin .orgLogin-inner span {
+  position: relative;
+  z-index: 4;
+  font-family: "Inter", sans-serif;
+  letter-spacing: -0.05em;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0);
+  background-image: linear-gradient(
+    135deg,
+    rgba(25, 25, 25, 1),
+    rgba(75, 75, 75, 1)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  transition: transform 250ms ease;
+  display: block;
+  will-change: transform;
+  text-shadow: rgba(0, 0, 0, 0.1) 0 0 0.1em;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.orgLogin:hover .orgLogin-inner span {
+  transform: scale(0.975);
+}
+
+.orgLogin:active .orgLogin-inner {
+  transform: scale(0.975);
+}
+
+/* Select Dropdown Styling */
+.select-field select {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #ccc;
+  font-size: 16px;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.select-field select:focus {
+  border-bottom-color: #4c82fb;
+}
+
+/* Custom arrow */
+.select-field {
+  position: relative;
+}
+
+.select-field::after {
+  content: "▼";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 12px;
+  color: #777;
+}
+
+/* Dropdown list */
+.select-field select option {
+  background: #fff;
+  color: #333;
+  padding: 8px;
+}
+

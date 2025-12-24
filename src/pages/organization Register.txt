@@ -1,0 +1,12 @@
+{
+  "name": "Shield Ministries",
+  "denomination": "Pentecostal",
+  "address": "Plot 123, Lusaka",
+  "region": "Lusaka Province",
+  "district": "Lusaka Central",
+  "status": "active",
+  "organization_email": "info@shieldministries.org",
+  "type": "church"
+}
+
+http://localhost:3000/api/organizations/register

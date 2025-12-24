@@ -1,0 +1,82 @@
+To generate the `INSERT` statements for the `asset_assignments` table, based on the data provided, I'll assume the following:
+
+* The `assignment_id` is an auto-incremented field, so no need to manually insert values for it.
+* The `assigned_to_user` is randomly chosen from the user IDs (1–11).
+* The `assigned_to_department` corresponds to the department ID from your assets list.
+* The `assignment_date` will be the current date or a provided date (let's assume '2025-11-30' for consistency).
+* The `return_date` will be a future date (let's assume it to be 30 days after the `assignment_date`).
+* The `status` will be either `Assigned`, `Returned`, or `Pending` (randomly assigned).
+* The `created_at` will be the current timestamp.
+
+Here are some sample `INSERT` statements based on the data:
+
+```sql
+-- Inserting asset assignments
+INSERT INTO asset_assignments (asset_id, assigned_to_user, assigned_to_department, assignment_date, return_date, status, created_at)
+VALUES
+    -- Laptop - Admin assigned to User 1 (Department 14)
+    (9, 1, 14, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Projector - Conference assigned to User 2 (Department 16)
+    (10, 2, 16, '2025-11-30', '2025-12-30', 'Returned', '2025-11-30 01:30:08'),
+
+    -- Desktop Computer - Admin assigned to User 3 (Department 14)
+    (11, 3, 14, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Printer - Office assigned to User 4 (Department 14)
+    (12, 4, 14, '2025-11-30', '2025-12-30', 'Pending', '2025-11-30 01:30:08'),
+
+    -- Pulpit assigned to User 5 (Department 15)
+    (13, 5, 15, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Executive Desk assigned to User 6 (Department 14)
+    (14, 6, 14, '2025-11-30', '2025-12-30', 'Returned', '2025-11-30 01:30:08'),
+
+    -- Church Chair Set assigned to User 7 (Department 16)
+    (15, 7, 16, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Filing Cabinet assigned to User 8 (Department 14)
+    (16, 8, 14, '2025-11-30', '2025-12-30', 'Pending', '2025-11-30 01:30:08'),
+
+    -- Church Van assigned to User 9 (Department 16)
+    (17, 9, 16, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Motorcycle assigned to User 10 (Department 13)
+    (18, 10, 13, '2025-11-30', '2025-12-30', 'Returned', '2025-11-30 01:30:08'),
+
+    -- Church Bus assigned to User 11 (Department 16)
+    (19, 11, 16, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Pickup Truck assigned to User 1 (Department 16)
+    (20, 1, 16, '2025-11-30', '2025-12-30', 'Pending', '2025-11-30 01:30:08'),
+
+    -- Communion Set assigned to User 2 (Department 15)
+    (21, 2, 15, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Altar assigned to User 3 (Department 15)
+    (22, 3, 15, '2025-11-30', '2025-12-30', 'Returned', '2025-11-30 01:30:08'),
+
+    -- Baptismal Pool assigned to User 4 (Department 15)
+    (23, 4, 15, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Choir Microphones assigned to User 5 (Department 16)
+    (24, 5, 16, '2025-11-30', '2025-12-30', 'Pending', '2025-11-30 01:30:08'),
+
+    -- Security Camera assigned to User 6 (Department 16)
+    (25, 6, 16, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Air Conditioning Unit assigned to User 7 (Department 16)
+    (26, 7, 16, '2025-11-30', '2025-12-30', 'Assigned', '2025-11-30 01:30:08'),
+
+    -- Sound System assigned to User 8 (Department 16)
+    (27, 8, 16, '2025-11-30', '2025-12-30', 'Pending', '2025-11-30 01:30:08');
+```
+
+### Explanation:
+
+* **Assigned_to_user**: Randomly assigned user IDs from 1 to 11.
+* **Assigned_to_department**: Based on the `department_id` from your asset data.
+* **Assignment_date**: Set to `'2025-11-30'`.
+* **Return_date**: Set to 30 days after the assignment date.
+* **Status**: Randomly selected between `Assigned`, `Returned`, and `Pending`.
+* **Created_at**: Set to the timestamp `'2025-11-30 01:30:08'` for consistency.

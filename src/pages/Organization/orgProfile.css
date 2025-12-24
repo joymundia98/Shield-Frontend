@@ -1,0 +1,346 @@
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+.orgProfileContainer a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.orgProfileContainer img {
+  display: block;
+  max-width: 100%;
+}
+
+/* orgProfileContainer */
+.orgProfileContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Header */
+.orgProfileContainer header {
+  position: relative;
+  background: transparent;
+  box-shadow: none;
+}
+
+.orgProfileContainer .banner {
+  height: 12rem;
+  background-color: #1e293b;
+  border-bottom-left-radius: 3rem;
+  border-bottom-right-radius: 3rem;
+  overflow: hidden;
+  background: 
+    linear-gradient(120deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 40%),
+    linear-gradient(90deg, #d7d7d7 0%, #efefef 25%, #bababa 50%, #efefef 75%, #d7d7d7 100%);
+  background-size: 200% 100%;
+  animation: shine 130s linear infinite;
+  box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+}
+
+.orgProfileContainer .profile-wrapper {
+  position: absolute;
+  top: 6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: 100%;
+}
+
+.orgProfileContainer .profile-pic {
+  height: 9rem;
+  width: 9rem;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  margin: 0 auto;
+}
+
+/* Animation for shine effect */
+@keyframes shine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Profile Info */
+.orgProfileContainer .profile-info {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.orgProfileContainer .profile-info h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  display: inline-block;
+}
+
+.orgProfileContainer .verified-icon {
+  color: #5C4736;
+  font-size: 1.75rem;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+}
+
+.orgProfileContainer .profile-info p {
+  font-size: 1.125rem;
+  color: #475569;
+  margin-top: 0.25rem;
+}
+
+.orgProfileContainer .profile-info p a {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.orgProfileContainer .action-buttons {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.orgProfileContainer .action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 2px 19px 31px rgba(0, 0, 0, 0.2);
+}
+
+.orgProfileContainer .action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.orgProfileContainer .action-button.bg-blue {
+  background-color: #2563eb;
+  color: #fff;
+}
+
+.orgProfileContainer .action-button.bg-blue:hover {
+  background-color: #1d4ed8;
+}
+
+.orgProfileContainer .action-button.bg-gray {
+  background-color: #e2e8f0;
+  color: #1e293b;
+}
+
+.orgProfileContainer .action-button.bg-gray:hover {
+  background-color: #cbd5e1;
+}
+
+.orgProfileContainer .social-icons {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  color: #94a3b8;
+}
+
+.orgProfileContainer .social-icons a:hover {
+  transform: translateY(-2px);
+  color: #2563eb;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Main Grid */
+.orgProfileContainer main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-top: 0.5rem;
+}
+
+@media(min-width: 1024px) {
+  .orgProfileContainer main {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.orgProfileContainer .content-card {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 2rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease-in-out;
+}
+
+.orgProfileContainer .content-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.orgProfileContainer .content-card h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.orgProfileContainer .content-card p {
+  font-size: 1rem;
+  color: #475569;
+  margin-bottom: 0.75rem;
+}
+
+/* Timeline */
+.timeline {
+  border-left: 2px solid #e2e8f0;
+  padding-left: 1.5rem;
+  margin-left: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -1.5rem;
+  top: 0.25rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: #5C4736;
+  border: 4px solid #fff;
+}
+
+.timeline-item.gray::before {
+  background-color: #e2e8f0;
+}
+
+/* Contact Card */
+.orgProfileContainer .contact-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.orgProfileContainer .contact-item i {
+  width: 1.25rem;
+  text-align: center;
+  color: #94a3b8;
+  margin-right: 0.75rem;
+}
+
+.orgProfileContainer hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 1.5rem 0;
+}
+
+/* Check List */
+.orgProfileContainer .check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.orgProfileContainer .check-list-item {
+  display: flex;
+  align-items: center;
+}
+
+.orgProfileContainer .check-list-item i {
+  color: #AF907A;
+  width: 1.25rem;
+  text-align: center;
+  margin-right: 0.75rem;
+}
+
+/* Footer */
+.orgProfileContainer footer {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  padding: 2rem 0;
+}
+
+/* Utility */
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-5 { margin-bottom: 1.25rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-10 { margin-top: 2.5rem; }
+.mt-20 { margin-top: 5rem; }
+
+/* Ensure consistent spacing between main cards */
+.orgProfileContainer .left-column .content-card:not(:last-child),
+.orgProfileContainer .right-column .content-card:not(:last-child) {
+  margin-bottom: 1.25rem;
+}
+
+.space-y-5 > * + * {
+  margin-top: 1.25rem;
+}
+
+
+/* Email CSS */
+.email-btn {
+  color: #fff;
+  padding: 15px 25px;
+  border-radius: 100px;
+  background-color: #4C43CD;
+  background-image: radial-gradient(93% 87% at 87% 89%, rgba(0, 0, 0, 0.23) 0%, transparent 86.18%), radial-gradient(66% 87% at 26% 20%, rgba(255, 255, 255, 0.41) 0%, rgba(255, 255, 255, 0) 69.79%, rgba(255, 255, 255, 0) 100%);
+  box-shadow: 2px 19px 31px rgba(0, 0, 0, 0.2);
+  font-weight: bold;
+  font-size: 16px;
+
+  border: 0;
+
+  -webkit-user-select: none;
+  user-select: none;
+  
+  touch-action: manipulation;
+
+  cursor: pointer;
+}
+
+.email-profile,
+.email-btn i{
+  color: #fff;
+}
+
+.orgProfileContainer textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s;
+    background: #fafafa;
+}
+
+.orgProfileContainer textarea:focus {
+    border-color: #4e8bf3;
+    box-shadow: 0 0 4px rgba(78, 139, 243, 0.4);
+    background: #fff;
+}

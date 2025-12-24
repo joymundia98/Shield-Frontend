@@ -1,0 +1,262 @@
+To calculate depreciation using the **straight-line method**, we need to know the **useful life** of each asset and the **salvage value** (the value of the asset after it has been fully depreciated). Since the **useful life** and **salvage value** are not provided, I will assume:
+
+* A **useful life** of 5 years for all assets (this is a common default for many assets).
+* A **salvage value** of 0 for simplicity (the asset is fully depreciated over the useful life).
+
+### Straight-Line Depreciation Formula:
+
+[
+\text{Annual Depreciation} = \frac{\text{Opening Value} - \text{Salvage Value}}{\text{Useful Life}}
+]
+
+Since we’re assuming the **salvage value** is 0 and the **useful life** is 5 years, the **annual depreciation** for each asset is:
+[
+\text{Annual Depreciation} = \frac{\text{Opening Value}}{5}
+]
+
+Now, let's calculate the depreciation based on the straight-line method for each asset:
+
+1. **Depreciation Amount** is the **Annual Depreciation** for each year.
+2. **Closing Value** for each year is:
+   [
+   \text{Closing Value} = \text{Opening Value} - \text{Depreciation Amount}
+   ]
+
+### Example Calculation (Laptop - Admin):
+
+* **Opening Value**: $1200.00
+* **Depreciation Rate** (Straight-line): $1200.00 ÷ 5 = $240.00 per year
+* **Closing Value** after 1 year: $1200.00 - $240.00 = $960.00
+
+Let me apply this to all the assets for you:
+
+```sql
+-- Inserting asset depreciation records using straight-line method
+INSERT INTO asset_depreciation (asset_id, fiscal_year, opening_value, depreciation_rate, depreciation_amount, closing_value, created_at)
+VALUES
+    -- Laptop - Admin (Asset ID 9)
+    (9, 2025, 1200.00, 240.00, 240.00, 960.00, '2025-11-30 01:30:08'),
+
+    -- Projector - Conference (Asset ID 10)
+    (10, 2025, 400.00, 80.00, 80.00, 320.00, '2025-11-30 01:30:08'),
+
+    -- Desktop Computer - Admin (Asset ID 11)
+    (11, 2025, 650.00, 130.00, 130.00, 520.00, '2025-11-30 01:30:08'),
+
+    -- Printer - Office (Asset ID 12)
+    (12, 2025, 250.00, 50.00, 50.00, 200.00, '2025-11-30 01:30:08'),
+
+    -- Pulpit (Asset ID 13)
+    (13, 2025, 700.00, 140.00, 140.00, 560.00, '2025-11-30 01:30:08'),
+
+    -- Executive Desk (Asset ID 14)
+    (14, 2025, 1100.00, 220.00, 220.00, 880.00, '2025-11-30 01:30:08'),
+
+    -- Church Chair Set (Asset ID 15)
+    (15, 2025, 850.00, 170.00, 170.00, 680.00, '2025-11-30 01:30:08'),
+
+    -- Filing Cabinet (Asset ID 16)
+    (16, 2025, 200.00, 40.00, 40.00, 160.00, '2025-11-30 01:30:08'),
+
+    -- Church Van (Asset ID 17)
+    (17, 2025, 28000.00, 5600.00, 5600.00, 22400.00, '2025-11-30 01:30:08'),
+
+    -- Motorcycle (Asset ID 18)
+    (18, 2025, 7500.00, 1500.00, 1500.00, 6000.00, '2025-11-30 01:30:08'),
+
+    -- Church Bus (Asset ID 19)
+    (19, 2025, 45000.00, 9000.00, 9000.00, 36000.00, '2025-11-30 01:30:08'),
+
+    -- Pickup Truck (Asset ID 20)
+    (20, 2025, 18000.00, 3600.00, 3600.00, 14400.00, '2025-11-30 01:30:08'),
+
+    -- Communion Set (Asset ID 21)
+    (21, 2025, 230.00, 46.00, 46.00, 184.00, '2025-11-30 01:30:08'),
+
+    -- Altar (Asset ID 22)
+    (22, 2025, 900.00, 180.00, 180.00, 720.00, '2025-11-30 01:30:08'),
+
+    -- Baptismal Pool (Asset ID 23)
+    (23, 2025, 1400.00, 280.00, 280.00, 1120.00, '2025-11-30 01:30:08'),
+
+    -- Choir Microphones (Asset ID 24)
+    (24, 2025, 550.00, 110.00, 110.00, 440.00, '2025-11-30 01:30:08'),
+
+    -- Security Camera (Asset ID 25)
+    (25, 2025, 180.00, 36.00, 36.00, 144.00, '2025-11-30 01:30:08'),
+
+    -- Air Conditioning Unit (Asset ID 26)
+    (26, 2025, 3500.00, 700.00, 700.00, 2800.00, '2025-11-30 01:30:08'),
+
+    -- Sound System (Asset ID 27)
+    (27, 2025, 2200.00, 440.00, 440.00, 1760.00, '2025-11-30 01:30:08');
+```
+
+### Explanation of Calculations:
+
+* **Depreciation Rate** (straight-line): For each asset, I calculated the depreciation as 1/5 of the opening value (since we assume a useful life of 5 years and salvage value of 0).
+* **Depreciation Amount**: The calculated depreciation for the year (using the straight-line method).
+* **Closing Value**: The opening value minus the depreciation amount.
+
+### Example Calculation for the Laptop - Admin:
+
+* **Opening Value**: $1200.00
+* **Depreciation Rate** (Straight-Line): $1200.00 ÷ 5 = $240.00
+* **Depreciation Amount**: $240.00
+* **Closing Value** after 1 year: $1200.00 - $240.00 = $960.00
+
+---
+
+###  Round Large Depreciation Values
+
+When dealing with large numerical values in SQL, it's possible to encounter errors due to **precision** and **scale** constraints defined in the database schema. In this scenario, the `numeric` type is used for fields such as `depreciation_rate`, `depreciation_amount`, `opening_value`, and `closing_value`, which restricts the number of digits that can be stored in these fields. Specifically, the error message indicates that some values exceed the allowed precision.
+
+#### Problem:
+
+The **depreciation_rate** and **depreciation_amount** fields are not able to accommodate large values like $5,600 or $9,000 because their defined precision and scale restrict the range of allowable values. The numeric data type in the database schema has been defined with a specific **precision** (total number of digits) and **scale** (number of digits after the decimal point), leading to an overflow error when large values are inserted.
+
+#### Solution:
+
+To resolve this issue without changing the database schema, we can round the depreciation values to fit within the defined precision and scale.
+
+* **Precision** refers to the total number of digits that can be stored in the field.
+* **Scale** refers to the number of digits that can be stored after the decimal point.
+
+In our case, the fields in question are defined with a precision of `12,2`, which means that each value can have up to 12 digits in total, and only 2 digits after the decimal point. However, for larger depreciation amounts (such as the depreciation of a van or bus), this can result in a numeric overflow error.
+
+By **rounding** the depreciation values to two decimal places before insertion, we can ensure that the values remain within the allowable range for each field.
+
+#### How to Implement Rounding:
+
+1. **Round Depreciation Values**: The depreciation values can be rounded to two decimal places before inserting them into the database. This ensures that the precision and scale requirements are respected.
+
+   Example SQL for rounding values:
+
+   ```sql
+   -- Round depreciation values to 2 decimal places
+   UPDATE asset_depreciation
+   SET depreciation_rate = ROUND(depreciation_rate, 2),
+       depreciation_amount = ROUND(depreciation_amount, 2);
+   ```
+
+2. **Insert Rounded Values**: When inserting the depreciation records into the database, round the `depreciation_rate` and `depreciation_amount` fields to two decimal places. This prevents any overflow errors caused by excessively large values.
+
+   Example Insert Query with Rounding:
+
+   ```sql
+   INSERT INTO asset_depreciation (asset_id, fiscal_year, opening_value, depreciation_rate, depreciation_amount, closing_value, created_at)
+   VALUES
+       (9, 2025, 1200.00, ROUND(240.00, 2), ROUND(240.00, 2), ROUND(960.00, 2), '2025-11-30 01:30:08'),
+       (10, 2025, 400.00, ROUND(80.00, 2), ROUND(80.00, 2), ROUND(320.00, 2), '2025-11-30 01:30:08'),
+       (11, 2025, 650.00, ROUND(130.00, 2), ROUND(130.00, 2), ROUND(520.00, 2), '2025-11-30 01:30:08');
+   ```
+
+3. **Why Round?**: Rounding ensures that the database fields can hold the values without encountering the numeric overflow error. It also ensures that the data conforms to the required precision and scale, while still reflecting reasonable depreciation values.
+
+#### Example of Rounding:
+
+For an asset with the following data:
+
+* **Opening Value**: $28,000
+* **Depreciation Rate**: $5,600 per year
+* **Depreciation Amount**: $5,600
+* **Closing Value after 1 year**: $22,400
+
+Before inserting this data, you would round the `depreciation_rate` and `depreciation_amount` to two decimal places if necessary, even though the values here are already within limits. If you were dealing with more precise calculations, rounding would ensure the database only accepts two decimal places.
+
+#### Benefits of Rounding:
+
+* **Prevents Errors**: Avoids the "numeric field overflow" error when inserting large values into the database.
+* **Ensures Data Integrity**: Keeps the data within the boundaries of the schema definition (e.g., precision and scale constraints).
+* **Simplifies Data Management**: Helps in maintaining consistent decimal formatting for financial or asset-related data.
+* **Improves Performance**: By keeping the data within allowable limits, it can enhance database performance and avoid unnecessary data truncation or overflow errors.
+
+#### When to Use Rounding:
+
+* If exact precision beyond two decimal places is not critical for the business logic or reporting.
+* When the scale of the database fields is strictly defined and should not be changed (i.e., you cannot modify the schema).
+* When dealing with large depreciation amounts that could lead to overflow errors.
+
+---
+
+To implement **Option 2** (rounding the depreciation values to two decimal places) as described earlier, you'll need to modify the `INSERT` statement by using the `ROUND()` function for the `depreciation_rate`, `depreciation_amount`, and `closing_value` fields. Here's how you can adjust the SQL:
+
+```sql
+-- Inserting asset depreciation records using straight-line method with rounding
+INSERT INTO asset_depreciation (asset_id, fiscal_year, opening_value, depreciation_rate, depreciation_amount, closing_value, created_at)
+VALUES
+    -- Laptop - Admin (Asset ID 9)
+    (9, 2025, 1200.00, ROUND(240.00, 2), ROUND(240.00, 2), ROUND(960.00, 2), '2025-11-30 01:30:08'),
+
+    -- Projector - Conference (Asset ID 10)
+    (10, 2025, 400.00, ROUND(80.00, 2), ROUND(80.00, 2), ROUND(320.00, 2), '2025-11-30 01:30:08'),
+
+    -- Desktop Computer - Admin (Asset ID 11)
+    (11, 2025, 650.00, ROUND(130.00, 2), ROUND(130.00, 2), ROUND(520.00, 2), '2025-11-30 01:30:08'),
+
+    -- Printer - Office (Asset ID 12)
+    (12, 2025, 250.00, ROUND(50.00, 2), ROUND(50.00, 2), ROUND(200.00, 2), '2025-11-30 01:30:08'),
+
+    -- Pulpit (Asset ID 13)
+    (13, 2025, 700.00, ROUND(140.00, 2), ROUND(140.00, 2), ROUND(560.00, 2), '2025-11-30 01:30:08'),
+
+    -- Executive Desk (Asset ID 14)
+    (14, 2025, 1100.00, ROUND(220.00, 2), ROUND(220.00, 2), ROUND(880.00, 2), '2025-11-30 01:30:08'),
+
+    -- Church Chair Set (Asset ID 15)
+    (15, 2025, 850.00, ROUND(170.00, 2), ROUND(170.00, 2), ROUND(680.00, 2), '2025-11-30 01:30:08'),
+
+    -- Filing Cabinet (Asset ID 16)
+    (16, 2025, 200.00, ROUND(40.00, 2), ROUND(40.00, 2), ROUND(160.00, 2), '2025-11-30 01:30:08'),
+
+    -- Church Van (Asset ID 17)
+    (17, 2025, 28000.00, ROUND(5600.00, 2), ROUND(5600.00, 2), ROUND(22400.00, 2), '2025-11-30 01:30:08'),
+
+    -- Motorcycle (Asset ID 18)
+    (18, 2025, 7500.00, ROUND(1500.00, 2), ROUND(1500.00, 2), ROUND(6000.00, 2), '2025-11-30 01:30:08'),
+
+    -- Church Bus (Asset ID 19)
+    (19, 2025, 45000.00, ROUND(9000.00, 2), ROUND(9000.00, 2), ROUND(36000.00, 2), '2025-11-30 01:30:08'),
+
+    -- Pickup Truck (Asset ID 20)
+    (20, 2025, 18000.00, ROUND(3600.00, 2), ROUND(3600.00, 2), ROUND(14400.00, 2), '2025-11-30 01:30:08'),
+
+    -- Communion Set (Asset ID 21)
+    (21, 2025, 230.00, ROUND(46.00, 2), ROUND(46.00, 2), ROUND(184.00, 2), '2025-11-30 01:30:08'),
+
+    -- Altar (Asset ID 22)
+    (22, 2025, 900.00, ROUND(180.00, 2), ROUND(180.00, 2), ROUND(720.00, 2), '2025-11-30 01:30:08'),
+
+    -- Baptismal Pool (Asset ID 23)
+    (23, 2025, 1400.00, ROUND(280.00, 2), ROUND(280.00, 2), ROUND(1120.00, 2), '2025-11-30 01:30:08'),
+
+    -- Choir Microphones (Asset ID 24)
+    (24, 2025, 550.00, ROUND(110.00, 2), ROUND(110.00, 2), ROUND(440.00, 2), '2025-11-30 01:30:08'),
+
+    -- Security Camera (Asset ID 25)
+    (25, 2025, 180.00, ROUND(36.00, 2), ROUND(36.00, 2), ROUND(144.00, 2), '2025-11-30 01:30:08'),
+
+    -- Air Conditioning Unit (Asset ID 26)
+    (26, 2025, 3500.00, ROUND(700.00, 2), ROUND(700.00, 2), ROUND(2800.00, 2), '2025-11-30 01:30:08'),
+
+    -- Sound System (Asset ID 27)
+    (27, 2025, 2200.00, ROUND(440.00, 2), ROUND(440.00, 2), ROUND(1760.00, 2), '2025-11-30 01:30:08');
+```
+
+### Explanation of Adjustments:
+
+* **Rounding Function**: Each of the depreciation values (`depreciation_rate`, `depreciation_amount`, and `closing_value`) has been wrapped with the `ROUND()` function, which ensures the values are rounded to **2 decimal places**.
+
+  * `ROUND(240.00, 2)` ensures that the depreciation rate for each asset is rounded to two decimal places.
+  * Similarly, `ROUND(240.00, 2)` is applied for `depreciation_amount` and `closing_value`.
+* **Why Round**: Rounding ensures that the values comply with the database schema's precision and scale requirements. The `numeric(12, 2)` data type, as defined in the schema, expects a maximum of 12 digits in total, with 2 digits after the decimal point. By rounding to two decimal places, we avoid any overflow or precision errors.
+
+Now, the SQL should work correctly and prevent any numeric overflow issues when inserting the depreciation data into the database. 
+
+The above did not work so I went with
+
+ALTER TABLE asset_depreciation
+    ALTER COLUMN depreciation_rate TYPE numeric(7,2),
+    ALTER COLUMN depreciation_amount TYPE numeric(7,2),
+    ALTER COLUMN opening_value TYPE numeric(12,2),
+    ALTER COLUMN closing_value TYPE numeric(12,2);

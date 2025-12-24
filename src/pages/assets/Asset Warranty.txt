@@ -1,0 +1,81 @@
+To populate the `asset_warranty` table, you will need to associate each asset with its corresponding warranty details, such as the `vendor`, `start_date`, `end_date`, `support_contact`, and the `created_at` timestamp.
+
+Here’s an example SQL `INSERT` statement for populating the `asset_warranty` table based on some of the assets you previously listed. I'll include warranty information for different types of assets like electronics, furniture, and vehicles.
+
+### Example SQL Query to Insert Warranty Information:
+
+```sql
+-- Inserting warranty details for assets
+INSERT INTO asset_warranty (asset_id, vendor, start_date, end_date, support_contact, created_at)
+VALUES
+    -- Warranty for Laptop - Admin (Electronics)
+    (1, 'TechCorp Solutions', '2023-05-10', '2026-05-10', 'support@techcorp.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Projector - Conference (Electronics)
+    (2, 'VisionTech Projectors', '2024-02-15', '2027-02-15', 'support@visiontech.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Desktop Computer - Admin (Electronics)
+    (3, 'CompuTech Ltd.', '2023-07-20', '2026-07-20', 'service@computech.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Printer - Office (Electronics)
+    (4, 'PrintMaster Inc.', '2023-08-10', '2026-08-10', 'support@printmaster.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Church Van (Vehicles)
+    (5, 'AutoCare Dealership', '2022-11-05', '2025-11-05', 'service@autocare.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Motorcycle (Vehicles)
+    (6, 'SpeedRider Motorcycles', '2023-08-12', '2026-08-12', 'help@speedrider.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Church Bus (Vehicles)
+    (7, 'CityBus Motors', '2024-02-01', '2027-02-01', 'support@citybusmotors.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Pickup Truck (Vehicles)
+    (8, 'TruckMasters', '2023-12-10', '2026-12-10', 'contact@truckmasters.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Pulpit (Furniture)
+    (9, 'Sacred Furnishings', '2023-06-20', '2028-06-20', 'service@sacredfurnishings.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Executive Desk (Furniture)
+    (10, 'Elite Office Furnishings', '2024-01-10', '2027-01-10', 'support@eliteoffice.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Church Chair Set (Furniture)
+    (11, 'Comfort Seating Co.', '2022-03-15', '2025-03-15', 'contact@comfortseating.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Filing Cabinet (Furniture)
+    (12, 'Storage Solutions Ltd.', '2024-05-25', '2027-05-25', 'support@storagesolutions.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Communion Set (Religious Items)
+    (13, 'Sacred Treasures', '2022-12-01', '2025-12-01', 'support@sacredtreasures.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Altar (Religious Items)
+    (14, 'Holy Artifacts Co.', '2021-05-20', '2024-05-20', 'service@holyartifacts.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Baptismal Pool (Religious Items)
+    (15, 'Pure Water Installations', '2023-01-14', '2026-01-14', 'support@purewater.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Choir Microphones (Religious Items)
+    (16, 'SoundMasters Inc.', '2024-06-05', '2027-06-05', 'support@soundmasters.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Security Camera (Miscellaneous)
+    (17, 'SafeGuard Technologies', '2024-09-01', '2027-09-01', 'support@safeguardtech.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Air Conditioning Unit (Miscellaneous)
+    (18, 'CoolAir Systems', '2023-07-10', '2026-07-10', 'support@coolairsystems.com', '2025-11-30 03:30:08.698095+02'),
+
+    -- Warranty for Sound System (Miscellaneous)
+    (19, 'ProSound Ltd.', '2024-11-01', '2027-11-01', 'support@prosound.com', '2025-11-30 03:30:08.698095+02');
+```
+
+### Notes:
+
+1. **`asset_id`**: This is the `asset_id` for each asset from the `assets` table. Ensure these `asset_id` values correspond to actual records in your `assets` table.
+2. **`vendor`**: The company or supplier providing the warranty for each asset. I've provided example vendor names (e.g., `TechCorp Solutions`, `AutoCare Dealership`).
+3. **`start_date` and `end_date`**: The start and end dates of the warranty. These can be adjusted based on the actual warranty periods.
+4. **`support_contact`**: The contact email or phone number for warranty support. In this case, I've used email addresses for each vendor, but you can change this to a phone number or another contact method if needed.
+5. **`created_at`**: This timestamp corresponds to when the record is inserted into the database. You can set it to the current timestamp or any other value.
+
+### Additional Considerations:
+
+* **Adjust Warranty Periods**: Depending on the assets, the warranty period may vary. For example, electronics might have a 3-year warranty, while some furniture or vehicles might have longer warranties.
+* **Update `asset_id`**: Ensure that the `asset_id` values in the warranty table match those in the `assets` table. If the `asset_id` is auto-generated, use the actual values or match the `asset_name` in both tables.
+

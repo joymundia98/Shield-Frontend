@@ -1,0 +1,21 @@
+Breakdown of the locations:
+
+Warehouse 1 – Electronics storage
+
+Warehouse 2 – Large equipment and machinery
+
+Office 1 – Head office, overall asset management
+
+Office 3A – Administration and accounting
+
+Storage Unit B – Cold storage for perishable goods
+
+Storage Unit C – High-security storage for valuable assets
+
+Shipping Dock A – Bulk goods receiving/shipping
+
+Retail Store Front – Display and sale of assets directly to customers
+
+R&D Lab – Storage of experimental equipment and prototypes
+
+Maintenance Shop – Workshop for repair and maintenance tasks

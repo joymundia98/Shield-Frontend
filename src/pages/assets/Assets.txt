@@ -1,0 +1,57 @@
+To insert asset data into the `assets` table for a church with both spiritual and corporate functions, we'll need to add assets that span various categories such as religious items, electronics, vehicles, and furniture. Since you have asset categories related to both spiritual and operational needs, we’ll include items that could be used in both areas.
+
+For the purpose of this example, I'll assume you're adding a few sample assets, each corresponding to an appropriate category, and providing general values for `acquisition_date`, `purchase_cost`, `current_value`, `condition_status`, and `status`.
+
+Here is an SQL query to insert assets into your `assets` table:
+
+```sql
+-- Inserting assets for the church
+INSERT INTO assets (name, category_id, location_id, department_id, acquisition_date, purchase_cost, current_value, condition_status, status, serial_number, description, latitude, longitude, created_at)
+VALUES
+    -- Electronics (Corporate)
+    ('Laptop - Admin', 1, 1, 14, '2023-05-10', 1500.00, 1200.00, 'Good', 'In Use', 'SN123456789', 'Laptop for administrative tasks in the Finance department', 40.7128, -74.0060, '2025-11-30 03:30:08.698095+02'),
+    ('Projector - Conference', 1, 9, 16, '2024-02-15', 500.00, 400.00, 'Excellent', 'In Use', 'SN987654321', 'Projector used for corporate presentations and meetings in the R&D Lab', 40.7138, -74.0070, '2025-11-30 03:30:08.698095+02'),
+    
+    -- Furniture (Spiritual and Corporate)
+    ('Pulpit', 2, 1, 15, '2023-06-20', 800.00, 700.00, 'Good', 'In Use', 'SN112233445', 'Pulpit for the main church service area', 40.7120, -74.0050, '2025-11-30 03:30:08.698095+02'),
+    ('Executive Desk', 2, 3, 14, '2024-01-10', 1200.00, 1100.00, 'Good', 'In Use', 'SN998877665', 'Executive desk for the Finance department office', 40.7130, -74.0045, '2025-11-30 03:30:08.698095+02'),
+    
+    -- Vehicles (For both spiritual and operational needs)
+    ('Church Van', 3, 7, 16, '2022-11-05', 30000.00, 28000.00, 'Fair', 'In Use', 'SN554433221', 'Van used for transporting church members and equipment to events', 40.7100, -74.0090, '2025-11-30 03:30:08.698095+02'),
+    ('Motorcycle', 3, 7, 13, '2023-08-12', 8000.00, 7500.00, 'Good', 'In Use', 'SN223344556', 'Motorcycle for the IT department to move quickly around the site', 40.7140, -74.0055, '2025-11-30 03:30:08.698095+02'),
+    
+    -- Religious Items (Spiritual)
+    ('Communion Set', 4, 1, 15, '2022-12-01', 250.00, 230.00, 'Excellent', 'In Use', 'SN556677889', 'Set of communion items for church services', 40.7125, -74.0035, '2025-11-30 03:30:08.698095+02'),
+    ('Altar', 4, 1, 15, '2021-05-20', 1000.00, 900.00, 'Good', 'In Use', 'SN445566778', 'Altar for the main worship area', 40.7115, -74.0025, '2025-11-30 03:30:08.698095+02');
+```
+
+### Explanation of Columns and Sample Data:
+
+1. **`name`**: The asset name, like 'Laptop - Admin', 'Church Van', etc.
+2. **`category_id`**: The category of the asset, mapped to the `category_id` from the `asset_categories` table.
+
+   * `1` = Electronics
+   * `2` = Furniture
+   * `3` = Vehicles
+   * `4` = Religious Items
+3. **`location_id`**: The location where the asset is stored or used, referencing the `asset_locations` table.
+
+   * Example: `1` = 'Warehouse 1', `7` = 'Shipping Dock A', etc.
+4. **`department_id`**: The department responsible for the asset, corresponding to the `department_id` from the `departments` table.
+
+   * Example: `14` = Finance Department, `16` = Operations Department, etc.
+5. **`acquisition_date`**: The date the asset was acquired.
+6. **`purchase_cost`**: The initial purchase cost of the asset.
+7. **`current_value`**: The current value of the asset, after depreciation or revaluation.
+8. **`condition_status`**: The current condition of the asset, e.g., 'Excellent', 'Good', 'Fair'.
+9. **`status`**: Whether the asset is 'In Use', 'Out of Service', etc.
+10. **`serial_number`**: A unique identifier for the asset.
+11. **`description`**: A brief description of the asset's purpose or use.
+12. **`latitude`** and **`longitude`**: Geographical coordinates of where the asset is located (optional, but added here for completeness).
+13. **`created_at`**: The timestamp when the record was created.
+
+### Notes:
+
+* Adjust the values as necessary (e.g., specific purchase costs, asset conditions, etc.).
+* For the `category_id`, I’ve chosen categories based on common asset types found in both spiritual and corporate church functions.
+* Ensure the correct `location_id` and `department_id` are referenced based on your database setup.
