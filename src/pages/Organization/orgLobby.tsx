@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import './OrgLobby.css';
+import { orgFetch } from "../../utils/api"; // Import orgFetch
 import johnImage from '../../assets/Man.jpg';
-//import janeImage from '../../assets/girl.jpg';
-//import davidImage from '../../assets/Man2.jpg';
+
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface LobbyUser {
   name: string;
@@ -14,35 +13,45 @@ interface LobbyUser {
 
 const OrgLobby: React.FC = () => {
   const navigate = useNavigate();
-
   const [users, setUsers] = useState<LobbyUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [jwtToken, _setJwtToken] = useState<string | null>(localStorage.getItem("jwt"));
-  const [organization, setOrganization] = useState<any | null>(null); // Store organization data
-
+  const [organization, setOrganization] = useState<any | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  // Fetch token from localStorage on mount
   useEffect(() => {
-    console.log('JWT Token from localStorage:', jwtToken); // Debug log to check token from localStorage
-    if (sidebarOpen) {
-      document.body.classList.add("sidebar-open");
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      setAuthToken(token);
     } else {
-      document.body.classList.remove("sidebar-open");
+      console.log("No authToken found in localStorage");
     }
-  }, [sidebarOpen, jwtToken]);
+  }, []);
+
+  // Load organization data from localStorage
+  useEffect(() => {
+    const savedOrg = localStorage.getItem('organization');
+    if (savedOrg) {
+      const parsedOrg = JSON.parse(savedOrg);
+      setOrganization(parsedOrg);
+    } else {
+      console.log('No organization data found in localStorage.');
+    }
+  }, []);
 
   const fetchUsers = useCallback(async () => {
-    console.log('Fetching users with JWT:', jwtToken); // Debug log: Check the token being used
+    console.log('Fetching users with authToken:', authToken);
 
-    if (!jwtToken) {
-      setError("No JWT token found, please log in.");
+    if (!authToken) {
+      setError("No authToken found, please log in.");
       navigate("/login");
       return;
     }
 
-    // Check organization ID
     const orgId = organization ? organization.id : null;
     if (!orgId) {
       setError("No organization found.");
@@ -50,32 +59,14 @@ const OrgLobby: React.FC = () => {
     }
 
     try {
-      const response = await axios.get("${baseURL}/api/users", {
-        headers: {
-          Authorization: `Bearer ${jwtToken}`,
-        },
-        params: {
-          organization_id: orgId, // Pass organization_id as a parameter
-        },
-      });
+      const response = await orgFetch(`${baseURL}/api/users?organization_id=${orgId}`);
+      console.log('Fetched users response:', response);
 
-      console.log('Fetched users response:', response.data); // Log the full response
-
-      const allUsers = response.data;
-      if (allUsers.length === 0) {
-        console.log('No users found for the organization.');
-      }
-
-      // Filter users with status "pending" or null
-      const filteredUsers = allUsers.filter(
-        (user: any) => user.status === "pending" || user.status === null
-      );
-
-      console.log('Filtered users:', filteredUsers); // Log filtered users
+      const filteredUsers = response.filter((user: any) => user.status === "pending" || user.status === null);
 
       const formattedUsers = filteredUsers.map((user: any) => ({
         name: `${user.first_name} ${user.last_name}`,
-        imageSrc: johnImage, // Use actual user images or a default one
+        imageSrc: johnImage,
         altText: `${user.first_name} ${user.last_name}`,
       }));
 
@@ -86,26 +77,14 @@ const OrgLobby: React.FC = () => {
       setError("There was an error fetching users.");
       setLoading(false);
     }
-  }, [jwtToken, navigate, organization]);
+  }, [authToken, navigate, organization]);
 
+  // Fetch users when authToken and organization are ready
   useEffect(() => {
-    if (jwtToken) {
+    if (authToken && organization) {
       fetchUsers();
-    } else {
-      setLoading(false);
     }
-  }, [jwtToken, fetchUsers]);
-
-  useEffect(() => {
-    const savedOrg = localStorage.getItem('organization');
-    if (savedOrg) {
-      const parsedOrg = JSON.parse(savedOrg);
-      console.log('Organization loaded from localStorage:', parsedOrg);
-      setOrganization(parsedOrg);  // Store the organization data in state
-    } else {
-      console.log('No organization data found in localStorage.');
-    }
-  }, []);
+  }, [authToken, organization, fetchUsers]);
 
   return (
     <div className="dashboard-wrapper">
@@ -137,7 +116,6 @@ const OrgLobby: React.FC = () => {
           Please take a moment to review and either confirm or reject their account registration.
         </h3>
 
-        {/* Display Organization Name */}
         {organization && (
           <div className="organization-info">
             <h3>Welcome to {organization.name}</h3>

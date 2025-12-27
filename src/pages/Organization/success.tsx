@@ -56,7 +56,7 @@ const OrganizationSuccessPage = () => {
         </div>
 
         {/* Button to navigate to OrgLogin */}
-        <button className="create-account-btn" onClick={() => navigate('../../components/orgLogin.tsx', { state: { organizationID, accountID } })}>
+        <button className="create-account-btn" onClick={() => navigate('/org-login', { state: { organizationID, accountID } })}>
           Organization Login
         </button>
       </div>

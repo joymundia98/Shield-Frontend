@@ -36,69 +36,71 @@ export const OrgLoginForm = () => {
   }
   const { login } = auth;
 
-  const onSubmit = async (data: OrgLoginFormData) => {
-    setError('');
-    try {
-      const response = await axios.post(
-        `${baseURL}/api/organizations/login`,
-        {
-          organization_account_id: data.organization_account_id.trim(),
-          password: data.password.trim(),
-        }
-      );
-
-      console.log('📡 Login response:', response.data);
-
-      if (response.data.message === 'Login successful') {
-        const { accessToken, organization } = response.data;
-
-        // 🧠 Map ORGANIZATION → User shape (required by AuthContext)
-        const orgAsUser = {
-          id: organization.id,
-          full_name: organization.name,
-          email: organization.organization_email || '', // Added optional email
-          org_id: organization.id, // ✅ Organization ID for EditableProfile
-          org_type: organization.denomination, // Using denomination or type as org type
-          roles: ['organization'],
-        };
-
-        // 🔥 Save JWT + org info via AuthContext
-        login(accessToken, orgAsUser, {
-          id: organization.id,
-          name: organization.name,
-          denomination: organization.denomination,
-          address: organization.address,
-          region: organization.region,
-          district: organization.district,
-          status: organization.status || 'active', // Default to 'active' if missing
-          created_at: organization.created_at,
-          organization_email: organization.organization_email,
-          organization_account_id: organization.organization_account_id,
-          org_type_id: organization.org_type_id,
-        }); 
-
-        console.log('✅ Organization login successful');
-        console.log('🔐 JWT:', accessToken);
-        console.log('🏢 Organization object:', organization);
-        console.log('🆔 Organization ID:', organization.id);
-
-        // Show success card and navigate
-        setShowSuccessCard(true);
-        setTimeout(() => {
-          setShowSuccessCard(false);
-          console.log('➡️ Navigating to /Organization/orgLobby');
-          navigate('/Organization/orgLobby');
-        }, 2000);
-      } else {
-        setError(response.data.message || 'Invalid credentials.');
-        setShowSuccessCard(false);
+  // Inside the onSubmit function in your login page
+const onSubmit = async (data: OrgLoginFormData) => {
+  setError('');
+  try {
+    const response = await axios.post(
+      `${baseURL}/api/organizations/login`,
+      {
+        organization_account_id: data.organization_account_id.trim(),
+        password: data.password.trim(),
       }
-    } catch (err: any) {
-      console.error('❌ Login error:', err);
-      setError(err.response?.data?.message || 'Organization login failed.');
+    );
+
+    console.log('📡 Login response:', response.data);
+
+    if (response.data.message === 'Login successful') {
+      const { accessToken, organization } = response.data;
+
+      // 🧠 Map ORGANIZATION → User shape (required by AuthContext)
+      const orgAsUser = {
+        id: organization.id,
+        full_name: organization.name,
+        email: organization.organization_email || '', // Added optional email
+        org_id: organization.id, // ✅ Organization ID for EditableProfile
+        org_type: organization.denomination, // Using denomination or type as org type
+        roles: ['organization'],
+      };
+
+      // 🔥 Save JWT + org info via AuthContext
+      login(accessToken, orgAsUser, {
+        id: organization.id,
+        name: organization.name,
+        denomination: organization.denomination,
+        address: organization.address,
+        region: organization.region,
+        district: organization.district,
+        status: organization.status || 'active', // Default to 'active' if missing
+        created_at: organization.created_at,
+        organization_email: organization.organization_email,
+        organization_account_id: organization.organization_account_id,
+        org_type_id: organization.org_type_id,
+      });
+
+      console.log('✅ Organization login successful');
+      console.log('🔐 JWT:', accessToken);
+      console.log('🏢 Organization object:', organization);
+      console.log('🆔 Organization ID:', organization.id);
+
+      // Show success card and navigate after a small delay
+      setShowSuccessCard(true);
+      setTimeout(() => {
+        setShowSuccessCard(false);
+        console.log('➡️ Navigating to /Organization/Lobby');
+        navigate('/Organization/orgLobby');
+      }, 2000); // Adjust timeout as necessary
+    } else {
+      setError(response.data.message || 'Invalid credentials.');
       setShowSuccessCard(false);
     }
-  };
+  } catch (err: any) {
+    console.error('❌ Login error:', err);
+    setError(err.response?.data?.message || 'Organization login failed.');
+    setShowSuccessCard(false);
+  }
+};
+
 
   const handleUserLogin = () => {
     navigate('/login');

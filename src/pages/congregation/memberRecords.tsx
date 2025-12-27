@@ -4,7 +4,6 @@ import axios from "axios";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
 
-// Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface Member {
@@ -18,22 +17,79 @@ interface Member {
   phone?: string;
   email?: string;
   photo?: string;
+  disabled: boolean;
+  widowed: boolean;
+  orphan: boolean;
 }
 
 const ChurchMembersPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
+  useEffect(() => {
+    const body = document.body;
+    if (sidebarOpen) {
+      body.classList.add("sidebar-open");
+    } else {
+      body.classList.remove("sidebar-open");
+    }
+    return () => body.classList.remove("sidebar-open");
+  }, [sidebarOpen]);
+
   const [members, setMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [_editMember, _setEditMember] = useState<Member | null>(null);
+  const [_editIndex, _setEditIndex] = useState<number | null>(null);
 
-  const [editMember, setEditMember] = useState<Member | null>(null);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [recordsToShow, setRecordsToShow] = useState<number>(5);
+  const [showAll, setShowAll] = useState<boolean>(false);
 
-  // Fetch members from backend
+  // Filter states
+  const [filter, setFilter] = useState({
+    gender: "",
+    ageRange: { min: "", max: "" },
+    joinDate: { from: "", to: "" },
+    disabled: false,
+    widowed: false,
+    orphaned: false
+  });
+
+  const [tempFilter, setTempFilter] = useState(filter);
+  const [showFilterPopup, setShowFilterPopup] = useState(false);
+
+  const openFilter = () => {
+    setTempFilter(filter);
+    setShowFilterPopup(true);
+  };
+  const closeFilter = () => setShowFilterPopup(false);
+
+  const handleApplyFilter = () => {
+    setFilter(tempFilter);
+    closeFilter();
+  };
+
+  const handleClearFilter = () => {
+    setFilter({
+      gender: "",
+      ageRange: { min: "", max: "" },
+      joinDate: { from: "", to: "" },
+      disabled: false,
+      widowed: false,
+      orphaned: false
+    });
+    setTempFilter({
+      gender: "",
+      ageRange: { min: "", max: "" },
+      joinDate: { from: "", to: "" },
+      disabled: false,
+      widowed: false,
+      orphaned: false
+    });
+    closeFilter();
+  };
+
   useEffect(() => {
     const fetchMembers = async () => {
       try {
@@ -55,6 +111,9 @@ const ChurchMembersPage: React.FC = () => {
             phone: m.phone || "",
             email: m.email || "",
             photo: m.photo || "https://via.placeholder.com/120",
+            disabled: m.disabled,
+            widowed: m.widowed,
+            orphan: m.orphan
           };
         });
         setMembers(data);
@@ -66,10 +125,33 @@ const ChurchMembersPage: React.FC = () => {
   }, []);
 
   const filteredMembers = useMemo(() => {
-    return members.filter((m) =>
-      m.full_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [members, searchQuery]);
+  return members
+    .filter((m) => {
+      const genderMatch = filter.gender ? m.gender === filter.gender : true;
+      const ageMatch =
+        (filter.ageRange.min ? m.age >= parseInt(filter.ageRange.min) : true) &&
+        (filter.ageRange.max ? m.age <= parseInt(filter.ageRange.max) : true);
+      const dateMatch =
+        (filter.joinDate.from ? new Date(m.date_joined) >= new Date(filter.joinDate.from) : true) &&
+        (filter.joinDate.to ? new Date(m.date_joined) <= new Date(filter.joinDate.to) : true);
+      const disabledMatch = filter.disabled ? m.disabled : true;
+      const orphanedMatch = filter.orphaned ? m.orphan : true;
+      const widowedMatch = filter.widowed ? m.widowed : true;
+
+      // Apply search query filter only on full_name
+      const searchMatch = m.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return (
+        genderMatch &&
+        ageMatch &&
+        dateMatch &&
+        disabledMatch &&
+        orphanedMatch &&
+        widowedMatch &&
+        searchMatch // Include search match for full_name only
+      );
+    });
+}, [members, filter, searchQuery]); // Add searchQuery as a dependency
 
   const groupedMembers = useMemo(() => {
     return filteredMembers.reduce<Record<string, Member[]>>((groups, m) => {
@@ -79,41 +161,28 @@ const ChurchMembersPage: React.FC = () => {
     }, {} as Record<string, Member[]>);
   }, [filteredMembers]);
 
-  // Edit Member Logic
-  const openEditModal = (member: Member, index: number) => {
-    setEditMember(member);
-    setEditIndex(index);
+  const openEditPage = (member: Member) => {
+    const url = `/congregation/editMember/${member.member_id}`;
+    window.open(url, "_blank"); 
   };
 
-  const closeEditModal = () => setEditMember(null);
-
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    if (editMember) {
-      const { name, value } = e.target;
-      setEditMember({ ...editMember, [name]: value });
-    }
-  };
-
-  const handleSaveEdit = () => {
-    if (editMember && editIndex !== null) {
-      const updatedMembers = [...members];
-      updatedMembers[editIndex] = editMember;
-      setMembers(updatedMembers);
-      closeEditModal();
-    }
-  };
-
-  // Open the member view modal in a new tab
   const openViewModal = (member: Member) => {
     window.open(`/congregation/viewMember/${member.member_id}`, "_blank");
   };
 
+  const handleViewMore = () => {
+    setShowAll(true);
+    setRecordsToShow(filteredMembers.length); 
+  };
+
+  const handleViewLess = () => {
+    setShowAll(false);
+    setRecordsToShow(5); 
+  };
+
   return (
     <div className="dashboard-wrapper members-wrapper">
-      {/* Hamburger */}
-      <button className="hamburger" onClick={toggleSidebar}>
-        &#9776;
-      </button>
+      <button className="hamburger" onClick={toggleSidebar}> &#9776; </button>
 
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
@@ -132,7 +201,6 @@ const ChurchMembersPage: React.FC = () => {
         <a href="/congregation/followups">Follow-ups</a>
         <a href="/congregation/visitors">Visitors</a>
         <a href="/congregation/converts">New Converts</a>
-
         <hr className="sidebar-separator" />
         <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
         <a
@@ -141,7 +209,7 @@ const ChurchMembersPage: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/");
+            navigate("/"); 
           }}
         >
           ➜ Logout
@@ -150,23 +218,16 @@ const ChurchMembersPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
-        <CongregationHeader/><br/>
-        
+        <CongregationHeader /><br />
         <header>
           <h1>Church Members Records</h1>
           <div className="header-buttons">
             <br />
-            <button
-              className="add-btn"
-              onClick={() => navigate("/congregation/members")}
-            >
-              ← Members Overview
-            </button>
+            <button className="add-btn" onClick={() => navigate("/congregation/members")}> ← Members Overview </button>
           </div>
         </header>
 
-        {/* Search Bar */}
+        {/* Search and Filter buttons */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem" }}>
           <input
             type="text"
@@ -175,9 +236,89 @@ const ChurchMembersPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="add-btn" onClick={() => navigate("/congregation/addMember")}>
-            + Add New Member
+          <button className="add-btn" onClick={() => navigate("/congregation/addMember")}>+ Add New Member</button>&emsp;
+          <button className="filter-btn" onClick={openFilter}>
+            📂 Filter
           </button>
+        </div>
+
+        {/* Filter Popup */}
+        {showFilterPopup && (
+          <div className="overlay" style={{ display: showFilterPopup ? "block" : "none" }} onClick={closeFilter}></div>
+        )}
+        <div className="filter-popup" style={{ display: showFilterPopup ? "block" : "none" }}>
+          <div className="popup-content">
+            <h3>Filter Members</h3>
+            <label>Gender:
+              <select
+                value={tempFilter.gender}
+                onChange={(e) => setTempFilter({ ...tempFilter, gender: e.target.value })}
+              >
+                <option value="">All</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </label>
+            <label>Age Range:&emsp;
+              <input
+                type="number"
+                placeholder="Min Age"
+                value={tempFilter.ageRange.min}
+                onChange={(e) => setTempFilter({ ...tempFilter, ageRange: { ...tempFilter.ageRange, min: e.target.value } })}
+              />&emsp;
+              <input
+                type="number"
+                placeholder="Max Age"
+                value={tempFilter.ageRange.max}
+                onChange={(e) => setTempFilter({ ...tempFilter, ageRange: { ...tempFilter.ageRange, max: e.target.value } })}
+              />
+            </label>
+
+            <label>Join Date Range:&emsp;
+              <input
+                type="date"
+                value={tempFilter.joinDate.from}
+                onChange={(e) => setTempFilter({ ...tempFilter, joinDate: { ...tempFilter.joinDate, from: e.target.value } })}
+              />&emsp;
+              <input
+                type="date"
+                value={tempFilter.joinDate.to}
+                onChange={(e) => setTempFilter({ ...tempFilter, joinDate: { ...tempFilter.joinDate, to: e.target.value } })}
+              />
+            </label>
+
+            <div className="checkbox-group">
+              <label>
+                Disabled:&nbsp;
+                <input
+                  type="checkbox"
+                  checked={tempFilter.disabled}
+                  onChange={(e) => setTempFilter({ ...tempFilter, disabled: e.target.checked })}
+                />
+              </label>
+              <label>
+                Orphaned:&nbsp;
+                <input
+                  type="checkbox"
+                  checked={tempFilter.orphaned}
+                  onChange={(e) => setTempFilter({ ...tempFilter, orphaned: e.target.checked })}
+                />
+              </label>
+              <label>
+                Widowed:&nbsp;
+                <input
+                  type="checkbox"
+                  checked={tempFilter.widowed}
+                  onChange={(e) => setTempFilter({ ...tempFilter, widowed: e.target.checked })}
+                />
+              </label>
+            </div>
+
+            <div className="filter-popup-buttons">
+              <button className="add-btn" onClick={handleApplyFilter}>Apply Filter</button>&emsp;
+              <button className="delete-btn" onClick={handleClearFilter}>Clear All</button>
+            </div>
+          </div>
         </div>
 
         {/* Display Members Grouped by Category */}
@@ -196,23 +337,17 @@ const ChurchMembersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {memberList.map((m, index) => (
+                {memberList.slice(0, recordsToShow).map((m) => (
                   <tr key={m.member_id}>
                     <td>{m.full_name}</td>
                     <td>{m.age}</td>
                     <td>{m.gender}</td>
                     <td>{m.date_joined}</td>
                     <td className="actions">
-                      <button
-                        className="view-btn"
-                        onClick={() => openViewModal(m)}
-                      >
+                      <button className="view-btn" onClick={() => openViewModal(m)}>
                         View
                       </button>
-                      <button
-                        className="edit-btn"
-                        onClick={() => openEditModal(m, index)}
-                      >
+                      <button className="edit-btn" onClick={() => openEditPage(m)}>
                         Edit
                       </button>
                     </td>
@@ -220,85 +355,13 @@ const ChurchMembersPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
+
+            <button onClick={showAll ? handleViewLess : handleViewMore} className="add-btn">
+              {showAll ? "View Less" : "View More"}
+            </button>
           </div>
         ))}
       </div>
-
-      {/* Edit Modal */}
-      {editMember && (
-        <div className="overlay" onClick={closeEditModal}></div>
-      )}
-      {editMember && (
-        <div className="filter-popup modal-wide">
-          <h3>Edit Member</h3>
-          <label>Name</label>
-          <input
-            type="text"
-            name="full_name"
-            value={editMember.full_name}
-            onChange={handleEditChange}
-          />
-          <label>Category</label>
-          <input
-            type="text"
-            name="category"
-            value={editMember.category}
-            onChange={handleEditChange}
-            disabled
-          />
-          <label>Age</label>
-          <input
-            type="number"
-            name="age"
-            value={editMember.age}
-            onChange={handleEditChange}
-          />
-          <label>Gender</label>
-          <select
-            name="gender"
-            value={editMember.gender}
-            onChange={handleEditChange}
-          >
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          <label>Join Date</label>
-          <input
-            type="date"
-            name="date_joined"
-            value={editMember.date_joined}
-            onChange={handleEditChange}
-          />
-          <label>Phone</label>
-          <input
-            type="text"
-            name="phone"
-            value={editMember.phone || ""}
-            onChange={handleEditChange}
-          />
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            value={editMember.email || ""}
-            onChange={handleEditChange}
-          />
-          <div className="filter-popup-buttons">
-            <button
-              className="add-btn"
-              onClick={handleSaveEdit}
-            >
-              Save
-            </button>
-            <button
-              className="delete-btn"
-              onClick={closeEditModal}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

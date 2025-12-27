@@ -20,6 +20,7 @@ const AddConvert: React.FC = () => {
   const [convertDate, setConvertDate] = useState("");
   const [followUpStatus, setFollowUpStatus] = useState<"required" | "not_required" | "">("");
 
+
   // State for visitors and members data
   const [visitors, setVisitors] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
@@ -56,6 +57,15 @@ const AddConvert: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Get the organization ID from local storage
+    const user = localStorage.getItem("user");
+    let organization_id = null; // Default to null
+
+    if (user) {
+      const parsedUser = JSON.parse(user);
+      organization_id = parsedUser.organization || null; // Fetch organization ID or set to null if not present
+    }
+
     // Prepare data to be sent to the backend
     const data = {
       convert_type: convertType,
@@ -63,7 +73,7 @@ const AddConvert: React.FC = () => {
       follow_up_status: followUpStatus,  // Add the follow-up status
       member_id: convertType === "member" ? selectedMember : null,
       visitor_id: convertType === "visitor" ? selectedVisitor : null,
-      organization_id: 1,  // Assuming you're sending a static organization ID (could be dynamic)
+      organization_id: organization_id,  // Using the organization_id from local storage (or null if missing)
     };
 
     console.log("Sending data to the backend:", data);  // Debugging: Check the data being sent
@@ -92,9 +102,7 @@ const AddConvert: React.FC = () => {
         alert("An unexpected error occurred.");
       }
     }
-
   };
-
 
   return (
     <div className="dashboard-wrapper converts-wrapper">

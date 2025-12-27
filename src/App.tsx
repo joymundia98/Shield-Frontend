@@ -82,12 +82,15 @@ import ChurchMembersDashboard from "./pages/congregation/members";
 import MembersRecords from "./pages/congregation/memberRecords";
 import AddMemberPage from "./pages/congregation/addMember";
 import ViewMemberPage from "./pages/congregation/viewMember"; // ViewMember Page will be the component for viewing individual member details
+import EditMemberPage from "./pages/congregation/editMember";
 import ConvertsDashboard from "./pages/congregation/converts";
 import ConvertsPage from "./pages/congregation/convertRecords";
 import AddConvert from "./pages/congregation/addConvert";
 import VisitorsDashboard from "./pages/congregation/visitors";
 import AddVisitorPage from "./pages/congregation/addVisitors";
 import VisitorRecordsPage from "./pages/congregation/visitorRecords";
+import ViewVisitorPage from "./pages/congregation/viewVisitor";
+import EditVisitorPage from "./pages/congregation/editVisitor";
 import ViewConvert from "./pages/congregation/viewConvert";
 
 // Programs Module Functional Pages
@@ -186,6 +189,9 @@ function App() {
           <Route path="/congregation/memberRecords" element={<MembersRecords />} />
           <Route path="/congregation/addMember" element={<AddMemberPage />} />
           <Route path="/congregation/viewMember/:id" element={<ViewMemberPage />} />
+          <Route path="/congregation/editMember/:memberId" element={<EditMemberPage />} />
+          <Route path="/congregation/viewVisitor/:id" element={<ViewVisitorPage />} />
+          <Route path="/congregation/editVisitor/:id" element={<EditVisitorPage />} />
           <Route path="/congregation/converts" element={<ConvertsDashboard />} />
           <Route path="/congregation/convertRecords" element={<ConvertsPage />} />
           <Route path="/congregation/addConvert" element={<AddConvert />} />

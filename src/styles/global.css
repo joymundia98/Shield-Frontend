@@ -1111,6 +1111,7 @@
         will-change: box-shadow,transform;
         font-size: 0.92rem;
         }
+        
 
         .filter-btn:focus {
         box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
@@ -1829,9 +1830,16 @@
                     flex-direction: column;
                 }
 
-                .additional-info{
+                .additional-info, .radio-group{
                     display: flex;
-                    flex-direction: column;
+                    
+                    justify-content: center;
+                    align-items: center;
+                }
+
+                .additional-info .selection{
+                    display: flex;
+                    flex-direction: row;
                 }
 
                 /* Payroll Card styling */

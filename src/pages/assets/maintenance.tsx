@@ -130,10 +130,10 @@ const MaintenancePage: React.FC = () => {
                 <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <button className="add-btn" onClick={handleAdd}>
                         + &nbsp; Schedule Maintenance
-                    </button>
+                    </button>&emsp;
 
                     <button className="filter-btn" onClick={openFilter}>
-                        &#x1F5D1; Filter
+                        📂 Filter
                     </button>
                 </div>
 
@@ -204,7 +204,7 @@ const MaintenancePage: React.FC = () => {
                     </label>
 
                     <div className="filter-popup-buttons">
-                        <button className="add-btn" onClick={handleApplyFilter}>Apply Filter</button>
+                        <button className="add-btn" onClick={handleApplyFilter}>Apply Filter</button>&emsp;
                         <button className="delete-btn" onClick={handleClearFilter}>Clear All</button>
                     </div>
                 </div>

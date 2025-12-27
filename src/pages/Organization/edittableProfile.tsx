@@ -9,6 +9,9 @@ import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import axios from 'axios'; // Add this import // Ensure AxiosError is imported
 
+// Declare the base URL here
+const baseURL = import.meta.env.VITE_BASE_URL;
+
 const EdittableChurchProfilePage: React.FC = () => {
   const location = useLocation();
   const orgData = location.state?.org;
@@ -65,33 +68,37 @@ const EdittableChurchProfilePage: React.FC = () => {
 
   // Fetch organization data when the component is mounted or when organizationId changes
   useEffect(() => {
-    if (!organizationId) {
-      console.warn('Organization ID missing, cannot fetch data.');
-      return;
-    }
+  const storedOrgId = localStorage.getItem('organizationId'); // Retrieve from localStorage
+  const orgId = storedOrgId || auth?.user?.org_id; // Check context first, fall back to localStorage
 
-    api.get(`/organizations/${organizationId}`)
-      .then((response) => {
-        const org = response.data[0];
-        if (!org) {
-          console.warn('No organization data returned');
-          return;
-        }
+  if (!orgId) {
+    console.warn('Organization ID missing, cannot fetch data.');
+    return;
+  }
 
-        setChurchData((prev) => ({
-          ...prev,
-          name: org.name || prev.name,
-          email: org.organization_email || prev.email,
-          phone: org.phone || prev.phone,
-          address: org.address || prev.address,
-          denomination: org.denomination || prev.denomination,
-          establishmentYear: org.establishment_year || prev.establishmentYear,
-        }));
-      })
-      .catch((error) => {
-        console.error('Error fetching organization data:', error.response || error);
-      });
-  }, [organizationId]);
+  api.get(`${baseURL}/api/organizations/${orgId}`)
+    .then((response) => {
+      const org = response.data;
+      if (!org) {
+        console.warn('No organization data returned');
+        return;
+      }
+
+      // Update the church data with the fetched organization data
+      setChurchData((prev) => ({
+        ...prev,
+        name: org.name || prev.name,
+        email: org.organization_email || prev.email,
+        phone: org.phone || prev.phone,
+        address: org.address || prev.address,
+        denomination: org.denomination || prev.denomination,
+        establishmentYear: org.establishment_year || prev.establishmentYear,
+      }));
+    })
+    .catch((error) => {
+      console.error('Error fetching organization data:', error);
+    });
+}, [auth?.user?.org_id]);  // Dependency array ensures fetch is triggered when org_id is available
 
 
   // Handle input change

@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+
+// Declare the base URL here
+const baseURL = import.meta.env.VITE_BASE_URL;
+const BACKEND_URL = `${baseURL}/api/members`;
 
 interface MemberForm {
   photo: string;
   name: string;
-  category: string; // This will be calculated, not visible to user
+  category: string;
   age: number | "";
   gender: "Male" | "Female" | "";
   joinDate: string;
@@ -19,36 +24,17 @@ interface MemberForm {
   NRC?: string;
   guardianName?: string;
   guardianPhone?: string;
-  dateOfBirth?: string; // Calculated from age
+  dateOfBirth?: string;
 }
 
-// Declare the base URL here
-const baseURL = import.meta.env.VITE_BASE_URL;
+const EditMemberPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { memberId } = useParams<{ memberId: string }>(); // Get memberId from URL
 
-const BACKEND_URL = `${baseURL}/api/members`;
-
-const AddMemberPage: React.FC = () => {
-const navigate = useNavigate();
-
-  // Sidebar state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
-  useEffect(() => {
-      const body = document.body;
-      if (sidebarOpen) {
-        body.classList.add("sidebar-open");
-      } else {
-        body.classList.remove("sidebar-open");
-      }
-      return () => body.classList.remove("sidebar-open");
-    }, [sidebarOpen]);
-
-  // Form state
   const [formData, setFormData] = useState<MemberForm>({
     photo: "",
     name: "",
-    category: "", // We'll calculate this
+    category: "",
     age: "",
     gender: "",
     joinDate: "",
@@ -62,43 +48,66 @@ const navigate = useNavigate();
     guardianName: "",
     guardianPhone: "",
   });
+  const [isAdult, _setIsAdult] = useState<boolean | null>(null);
 
-  const [isAdult, setIsAdult] = useState<boolean | null>(null);
+  // Sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Helper to calculate date of birth from age
-  const calculateDateOfBirth = (age: number): string => {
-    const today = new Date();
-    const birthYear = today.getFullYear() - age;
-    const birthDate = new Date(today.setFullYear(birthYear));
-    return birthDate.toISOString().split("T")[0]; // Format as YYYY-MM-DD
-  };
-
-  // Helper to calculate category based on age
-  const calculateCategory = (age: number): string => {
-    if (age < 18) return "Child";
-    else if (age <= 30) return "Youth";
-    else if (age <= 60) return "Adult";
-    else return "Elderly";
-  };
-
-  // Update age-related information
   useEffect(() => {
-    if (formData.age !== "") {
-      const calculatedAge = Number(formData.age);
-
-      setFormData((prev) => ({
-        ...prev,
-        dateOfBirth: calculateDateOfBirth(calculatedAge),
-        category: calculateCategory(calculatedAge), // Calculate category based on age
-      }));
-
-      if (calculatedAge >= 18) {
-        setIsAdult(true);
-      } else {
-        setIsAdult(false);
-      }
+    const body = document.body;
+    if (sidebarOpen) {
+      body.classList.add("sidebar-open");
+    } else {
+      body.classList.remove("sidebar-open");
     }
-  }, [formData.age]);
+    return () => body.classList.remove("sidebar-open");
+  }, [sidebarOpen]);
+
+  // Format date function to ensure the correct format (YYYY-MM-DD)
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toISOString().split('T')[0]; // Returns the date in YYYY-MM-DD format
+  };
+
+  useEffect(() => {
+    console.log("Member ID from URL:", memberId); // Add this line to check if memberId is correct
+    const fetchMemberData = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_URL}/${memberId}`);
+        const data = res.data;
+        console.log(data); // Check if the response data is correct
+
+        // Prefill formData with fetched data
+        setFormData({
+          photo: data.photo || "",
+          name: data.full_name || "",
+          category: data.category || "",
+          age: data.age || "",
+          gender: data.gender || "",
+          joinDate: formatDate(data.date_joined) || "", // Format joinDate
+          address: data.address || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          disabled: data.disabled || false,
+          orphan: data.orphan || false,
+          widowed: data.widowed || false,
+          NRC: data.nrc || "",
+          guardianName: data.guardian_name || "",
+          guardianPhone: data.guardian_phone || "",
+          dateOfBirth: data.date_of_birth || "",
+        });
+      } catch (err) {
+        console.error("Failed to fetch member data:", err);
+        alert("Error fetching member data");
+      }
+    };
+
+    if (memberId) {
+      fetchMemberData();
+    }
+  }, [memberId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;
@@ -112,29 +121,25 @@ const navigate = useNavigate();
     }
   };
 
-
-  // --- Backend submission ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Map frontend fields to backend-required fields
     const payload: Record<string, any> = {
       photo: formData.photo || null,
-      full_name: formData.name || null, // backend expects "full_name"
-      category: formData.category || null, // This is calculated
+      full_name: formData.name || null,
+      category: formData.category || null,
       age: formData.age !== "" ? Number(formData.age) : null,
       gender: formData.gender || null,
-      join_date: formData.joinDate || null, // backend expects "join_date"
+      join_date: formData.joinDate || null,
       address: formData.address || null,
       phone: formData.phone || null,
       email: formData.email || null,
       disabled: Boolean(formData.disabled),
       orphan: Boolean(formData.orphan),
       widowed: Boolean(formData.widowed),
-      date_of_birth: formData.dateOfBirth || null, // Send calculated dateOfBirth
+      date_of_birth: formData.dateOfBirth || null,
     };
 
-    // Optional adult/minor fields
     if (isAdult) {
       payload.nrc = formData.NRC || null;
     } else if (isAdult === false) {
@@ -142,12 +147,9 @@ const navigate = useNavigate();
       payload.guardian_phone = formData.guardianPhone || null;
     }
 
-    // DEBUG: log the payload before sending
-    console.log("Submitting Member Payload:", JSON.stringify(payload, null, 2));
-
     try {
-      const res = await fetch(BACKEND_URL, {
-        method: "POST",
+      const res = await fetch(`${BACKEND_URL}/${memberId}`, {
+        method: "PUT", // Use PUT method to update
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -158,10 +160,10 @@ const navigate = useNavigate();
         return;
       }
 
-      alert("Member added successfully!");
-      navigate("/congregation/members"); // redirect to members overview
+      alert("Member updated successfully!");
+      navigate("/congregation/members"); // Redirect after success
     } catch (err) {
-      console.error("Failed to submit member:", err);
+      console.error("Failed to submit member update:", err);
       alert("Server error. Check console for details.");
     }
   };
@@ -208,16 +210,10 @@ const navigate = useNavigate();
 
       {/* Main Content */}
       <div className="dashboard-content">
-
-        <CongregationHeader/><br/>
-        
+        <CongregationHeader /><br />
         <header>
-          <h1>Add New Member</h1>
+          <h1>Edit Member</h1>
           <div className="header-buttons">
-            <br />
-            <button className="add-btn" onClick={() => navigate("/congregation/memberRecords")}>
-              ← Member Records
-            </button>&nbsp;&nbsp;
             <button className="add-btn" onClick={() => navigate("/congregation/members")}>
               ← Members Overview
             </button>
@@ -231,10 +227,6 @@ const navigate = useNavigate();
 
             <label>Name</label>
             <input type="text" name="name" value={formData.name} onChange={handleChange} required />
-
-            {/* Category field is now hidden */}
-            {/* <label>Category</label>
-            <input type="text" name="category" value={formData.category} disabled /> */}
 
             <label>Age</label>
             <input type="number" name="age" min={0} max={120} value={formData.age} onChange={handleChange} required />
@@ -263,20 +255,19 @@ const navigate = useNavigate();
                 <label>
                   <input type="checkbox" name="disabled" checked={formData.disabled} onChange={handleChange} /> Disabled
                 </label>
-              </div><br/>
+              </div><br />
 
               <div className="selection">
-                 <label>
+                <label>
                   <input type="checkbox" name="orphan" checked={formData.orphan} onChange={handleChange} /> Orphan
                 </label>
-              </div><br/>
-              
-             <div className="selection">
-              <label>
-                <input type="checkbox" name="widowed" checked={formData.widowed} onChange={handleChange} /> Widowed (if Female)
-              </label>
-             </div><br/>
+              </div><br />
 
+              <div className="selection">
+                <label>
+                  <input type="checkbox" name="widowed" checked={formData.widowed} onChange={handleChange} /> Widowed (if Female)
+                </label>
+              </div><br />
             </div>
 
             {isAdult ? (
@@ -294,7 +285,7 @@ const navigate = useNavigate();
             ) : null}
 
             <div className="form-buttons">
-              <button type="submit" className="add-btn">Add Member</button>
+              <button type="submit" className="add-btn">Save Changes</button>
               <button type="button" className="cancel-btn" onClick={() => navigate("/congregation/members")}>
                 Cancel
               </button>
@@ -306,4 +297,4 @@ const navigate = useNavigate();
   );
 };
 
-export default AddMemberPage;
+export default EditMemberPage;

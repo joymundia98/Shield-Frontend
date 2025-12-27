@@ -103,7 +103,7 @@ const RecordAttendance: React.FC = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await axios.get("${baseURL}/api/services");
+        const res = await axios.get(`${baseURL}/api/services`);
         setServices(res.data);
       } catch (err) {
         console.error("Error fetching services:", err);
@@ -135,7 +135,7 @@ const RecordAttendance: React.FC = () => {
     console.log("Attendance records being sent:", records);
 
     try {
-      const response = await axios.post("${baseURL}/api/congregation/attendance", { records });
+      const response = await axios.post(`${baseURL}/api/congregation/attendance`, { records });
       console.log("Server response:", response); // Log the response from the backend
       alert("Attendance saved successfully!");
       navigate("/congregation/attendance");
