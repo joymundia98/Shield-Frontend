@@ -7,6 +7,14 @@ import CongregationHeader from './CongregationHeader';
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
+// Define the type for `convert.convert_type` to ensure it's either "member" or "visitor"
+type ConvertType = "member" | "visitor";
+
+interface AgeDetail {
+  member: number;
+  visitor: number;
+}
+
 const ConvertsDashboard: React.FC = () => {
   const navigate = useNavigate();
 
@@ -16,9 +24,16 @@ const ConvertsDashboard: React.FC = () => {
   // State for the data to be fetched from backend
   const [totalConverts, setTotalConverts] = useState(0);
   const [newThisMonth, setNewThisMonth] = useState(0);
-  const [genderData, setGenderData] = useState([0, 0]); // Male, Female
+  const [genderData, setGenderData] = useState([0, 0, 0, 0]); // Male Members, Female Members, Male Visitors, Female Visitors
   const [ageGroupData, setAgeGroupData] = useState([0, 0, 0, 0, 0]); // Age ranges: 0-12, 13-18, 19-35, 36-60, 60+
   const [growthData, setGrowthData] = useState<number[]>([]); // Converts growth over 12 months
+  const [ageGroupDetails, setAgeGroupDetails] = useState<AgeDetail[]>([
+    { member: 0, visitor: 0 }, // 0-12
+    { member: 0, visitor: 0 }, // 13-18
+    { member: 0, visitor: 0 }, // 19-35
+    { member: 0, visitor: 0 }, // 36-60
+    { member: 0, visitor: 0 }, // 60+
+  ]); // To store member/visitor breakdown by age
 
   // Chart references (Chart.js instances)
   const growthChartRef = useRef<Chart | null>(null);
@@ -49,26 +64,52 @@ const ConvertsDashboard: React.FC = () => {
         const convertsResponse = await fetch(`${baseURL}/api/converts`);
         const convertsData = await convertsResponse.json();
 
-        // Process gender distribution
-        const genderCount = { male: 0, female: 0 };
-        convertsData.forEach((convert: any) => {
+        // Initialize gender count
+        const genderCount = { maleMember: 0, femaleMember: 0, maleVisitor: 0, femaleVisitor: 0 };
+
+        // Process each convert entry
+        convertsData.forEach((convert: { convert_type: ConvertType; member_id?: string; visitor_id?: string }) => {
           if (convert.convert_type === "member") {
+            // Find the member from the members data and increment gender count
             const member = membersData.find((m: any) => m.member_id === convert.member_id);
-            if (member) {
-              member.gender === "Male" ? genderCount.male++ : genderCount.female++;
+            if (member && member.gender) {
+              if (member.gender === "Male") {
+                genderCount.maleMember++;
+              } else if (member.gender === "Female") {
+                genderCount.femaleMember++;
+              }
             }
           } else if (convert.convert_type === "visitor") {
+            // Find the visitor from the visitors data and increment gender count
             const visitor = visitorsData.find((v: any) => v.id === convert.visitor_id);
-            if (visitor) {
-              visitor.gender === "Male" ? genderCount.male++ : genderCount.female++;
+            if (visitor && visitor.gender) {
+              if (visitor.gender === "Male") {
+                genderCount.maleVisitor++;
+              } else if (visitor.gender === "Female") {
+                genderCount.femaleVisitor++;
+              }
             }
           }
         });
-        setGenderData([genderCount.male, genderCount.female]);
 
-        // Process age distribution based only on converts
+        setGenderData([
+          genderCount.maleMember,
+          genderCount.femaleMember,
+          genderCount.maleVisitor,
+          genderCount.femaleVisitor,
+        ]);
+
+        // Process age distribution and age details
         const ageGroups = [0, 0, 0, 0, 0]; // 0-12, 13-18, 19-35, 36-60, 60+
-        convertsData.forEach((convert: any) => {
+        const ageDetails: AgeDetail[] = [
+          { member: 0, visitor: 0 }, // 0-12
+          { member: 0, visitor: 0 }, // 13-18
+          { member: 0, visitor: 0 }, // 19-35
+          { member: 0, visitor: 0 }, // 36-60
+          { member: 0, visitor: 0 }, // 60+
+        ];
+
+        convertsData.forEach((convert: { convert_type: ConvertType; member_id?: string; visitor_id?: string }) => {
           let age = null;
 
           if (convert.convert_type === "member") {
@@ -84,18 +125,31 @@ const ConvertsDashboard: React.FC = () => {
           }
 
           if (age !== null) {
-            if (age <= 12) ageGroups[0]++;
-            else if (age <= 18) ageGroups[1]++;
-            else if (age <= 35) ageGroups[2]++;
-            else if (age <= 60) ageGroups[3]++;
-            else ageGroups[4]++;
+            if (age <= 12) {
+              ageGroups[0]++;
+              ageDetails[0][convert.convert_type]++;
+            } else if (age <= 18) {
+              ageGroups[1]++;
+              ageDetails[1][convert.convert_type]++;
+            } else if (age <= 35) {
+              ageGroups[2]++;
+              ageDetails[2][convert.convert_type]++;
+            } else if (age <= 60) {
+              ageGroups[3]++;
+              ageDetails[3][convert.convert_type]++;
+            } else {
+              ageGroups[4]++;
+              ageDetails[4][convert.convert_type]++;
+            }
           }
         });
+
         setAgeGroupData(ageGroups);
+        setAgeGroupDetails(ageDetails);
 
         // Process growth data (new converts per month)
         const growthByMonth: number[] = new Array(12).fill(0);
-        convertsData.forEach((convert: any) => {
+        convertsData.forEach((convert: { convert_date: string }) => {
           const date = new Date(convert.convert_date);
           const month = date.getMonth(); // 0-based month
           growthByMonth[month]++;
@@ -104,7 +158,7 @@ const ConvertsDashboard: React.FC = () => {
 
         // Calculate total converts and new converts this month
         const totalConvertsCount = convertsData.length;
-        const newThisMonthCount = convertsData.filter((convert: any) => {
+        const newThisMonthCount = convertsData.filter((convert: { convert_date: string }) => {
           const date = new Date(convert.convert_date);
           const currentMonth = new Date().getMonth();
           return date.getMonth() === currentMonth;
@@ -157,15 +211,31 @@ const ConvertsDashboard: React.FC = () => {
       genderChartRef.current = new Chart(genderCtx, {
         type: "doughnut",
         data: {
-          labels: ["Male", "Female"],
+          labels: ["Male Members", "Female Members", "Male Visitors", "Female Visitors"],
           datasets: [
             {
               data: genderData,
-              backgroundColor: ["#1A3D7C", "#AF907A"],
+              backgroundColor: ["#1A3D7C", "#AF907A", "#5C4736", "#D48E7C"],
             },
           ],
         },
-        options: { responsive: true },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function (tooltipItem) {
+                  const dataset = tooltipItem.dataset;
+                  const total = dataset.data.reduce((acc: number, value: number) => acc + value, 0);
+                  const currentValue = dataset.data[tooltipItem.dataIndex];
+                  const percentage = ((currentValue / total) * 100).toFixed(2);
+                  const groupName = tooltipItem.label || tooltipItem.dataset.label;
+                  return `${groupName}: ${currentValue} (${percentage}%)`;
+                },
+              },
+            },
+          },
+        },
       });
     }
 
@@ -179,20 +249,32 @@ const ConvertsDashboard: React.FC = () => {
           datasets: [
             {
               data: ageGroupData,
-              backgroundColor: [
-                "#5C4736",
-                "#817E7A",
-                "#AF907A",
-                "#1A3D7C",
-                "#20262C",
-              ],
+              backgroundColor: ["#5C4736", "#817E7A", "#AF907A", "#1A3D7C", "#20262C"],
             },
           ],
         },
-        options: { responsive: true },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function (tooltipItem) {
+                  const dataset = tooltipItem.dataset;
+                  const total = dataset.data.reduce((acc: number, value: number) => acc + value, 0);
+                  const currentValue = dataset.data[tooltipItem.dataIndex];
+                  const percentage = ((currentValue / total) * 100).toFixed(2);
+                  const groupName = tooltipItem.label || tooltipItem.dataset.label;
+                  const memberCount = ageGroupDetails[tooltipItem.dataIndex]?.member || 0;
+                  const visitorCount = ageGroupDetails[tooltipItem.dataIndex]?.visitor || 0;
+                  return `${groupName}: ${currentValue} (${percentage}%) - Members: ${memberCount}, Visitors: ${visitorCount}`;
+                },
+              },
+            },
+          },
+        },
       });
     }
-  }, [growthData, genderData, ageGroupData]); // Dependencies to re-render the charts when data changes
+  }, [growthData, genderData, ageGroupData, ageGroupDetails]); // Dependencies to re-render the charts when data changes
 
   return (
     <div className="dashboard-wrapper converts-wrapper">
@@ -212,12 +294,12 @@ const ConvertsDashboard: React.FC = () => {
         </div>
 
         <h2>CONGREGATION</h2>
-        <a href="/congregation/dashboard" className="active">Dashboard</a>
+        <a href="/congregation/dashboard">Dashboard</a>
         <a href="/congregation/members">Members</a>
         <a href="/congregation/attendance">Attendance</a>
         <a href="/congregation/followups">Follow-ups</a>
         <a href="/congregation/visitors">Visitors</a>
-        <a href="/congregation/converts">New Converts</a>
+        <a href="/congregation/converts" className="active">New Converts</a>
 
         <hr className="sidebar-separator" />
 
@@ -239,7 +321,7 @@ const ConvertsDashboard: React.FC = () => {
       <div className="dashboard-content">
 
         <CongregationHeader/><br/>
-        
+
         {/* HEADER */}
         <header>
           <h1>New Converts Overview</h1>
