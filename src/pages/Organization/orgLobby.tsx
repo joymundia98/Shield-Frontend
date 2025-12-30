@@ -160,6 +160,12 @@ const OrgLobby: React.FC = () => {
     }
   }, [sidebarOpen]);
 
+  // Open the view visitor page in a new tab
+  const openViewUser = (id: number) => {
+    console.log('User ID from URL:', id);
+    window.open(`/Organization/viewUser/${id}`, "_blank");
+  };
+
   return (
     <div className="dashboard-wrapper">
       {/* SIDEBAR */}
@@ -226,7 +232,7 @@ const OrgLobby: React.FC = () => {
                   <div className="lobbyCard-buttons">
                     <button className="approve-btn" onClick={() => handleApprove(user)}>Approve</button>
                     <button className="reject-btn" onClick={() => handleReject(user)}>Reject</button>
-                    <button className="add-btn">View</button>
+                    <button className="add-btn" onClick={() => openViewUser(user.id)}>View</button>
                   </div>
                 </div>
               </div>

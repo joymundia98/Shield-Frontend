@@ -109,6 +109,7 @@ import OrganizationSuccessPage from "./pages/Organization/success";
 import ChurchProfilePage from "./pages/Organization/orgProfile";
 import EdittableChurchProfilePage from "./pages/Organization/edittableProfile";
 import UserTrackerPage from "./pages/Organization/ListedAccounts";
+import ViewUserPage from "./pages/Organization/viewUser";
 
 import { AuthProvider } from "./context/AuthContext";
 
@@ -292,6 +293,7 @@ function App() {
           <Route path="/Organization/orgProfile" element={<ChurchProfilePage />} />
           <Route path="/Organization/edittableProfile" element={<EdittableChurchProfilePage />} />
           <Route path="/Organization/ListedAccounts" element={<UserTrackerPage />} />
+          <Route path="/Organization/viewUser/:id" element={<ViewUserPage />} />
 
         </Routes>
       </BrowserRouter>
