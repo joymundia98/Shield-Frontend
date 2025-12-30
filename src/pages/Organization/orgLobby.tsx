@@ -2,25 +2,35 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { orgFetch } from "../../utils/api"; // Import orgFetch
 import johnImage from '../../assets/Man.jpg';
+import "./OrgLobby.css";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface LobbyUser {
+  id: number;
   name: string;
   imageSrc: string;
   altText: string;
+  status: string | null;
 }
 
 const OrgLobby: React.FC = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<LobbyUser[]>([]);
+  const [users, setUsers] = useState<LobbyUser[]>([]); // All users (including all statuses)
+  const [filteredUsers, setFilteredUsers] = useState<LobbyUser[]>([]); // Filtered users (only pending or null)
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [organization, setOrganization] = useState<any | null>(null);
+
+  // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const [authToken, setAuthToken] = useState<string | null>(null);
+
+  const [selectedUser, setSelectedUser] = useState<LobbyUser | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
 
   // Fetch token from localStorage on mount
   useEffect(() => {
@@ -43,41 +53,48 @@ const OrgLobby: React.FC = () => {
     }
   }, []);
 
+  // Function to fetch users from the API
   const fetchUsers = useCallback(async () => {
-    console.log('Fetching users with authToken:', authToken);
+  console.log('Fetching users with authToken:', authToken);
 
-    if (!authToken) {
-      setError("No authToken found, please log in.");
-      navigate("/login");
-      return;
-    }
+  if (!authToken) {
+    setError("No authToken found, please log in.");
+    navigate("/login");
+    return;
+  }
 
-    const orgId = organization ? organization.id : null;
-    if (!orgId) {
-      setError("No organization found.");
-      return;
-    }
+  const orgId = organization ? organization.id : null;
+  if (!orgId) {
+    setError("No organization found.");
+    return;
+  }
 
-    try {
-      const response = await orgFetch(`${baseURL}/api/users?organization_id=${orgId}`);
-      console.log('Fetched users response:', response);
+  try {
+    const response = await orgFetch(`${baseURL}/api/users`);
+    console.log('Fetched users response:', response);
 
-      const filteredUsers = response.filter((user: any) => user.status === "pending" || user.status === null);
+    // Manually filter the users by the organization_id (frontend filtering)
+    const filteredUsersByOrg = response.filter((user: any) => user.organization_id === orgId);
 
-      const formattedUsers = filteredUsers.map((user: any) => ({
-        name: `${user.first_name} ${user.last_name}`,
-        imageSrc: johnImage,
-        altText: `${user.first_name} ${user.last_name}`,
-      }));
+    const formattedUsers = filteredUsersByOrg.map((user: any) => ({
+      id: user.id,
+      name: `${user.first_name} ${user.last_name}`,
+      imageSrc: johnImage,
+      altText: `${user.first_name} ${user.last_name}`,
+      status: user.status, // Ensure status is included in the response
+    }));
 
-      setUsers(formattedUsers);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching users:', err);
-      setError("There was an error fetching users.");
-      setLoading(false);
-    }
-  }, [authToken, navigate, organization]);
+    setUsers(formattedUsers);
+    // Initially, filter users by 'pending' or 'null' status
+    setFilteredUsers(formattedUsers.filter((user: any) => user.status === "pending" || user.status === null));
+    setLoading(false);
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    setError("There was an error fetching users.");
+    setLoading(false);
+  }
+}, [authToken, navigate, organization]);
+
 
   // Fetch users when authToken and organization are ready
   useEffect(() => {
@@ -86,8 +103,66 @@ const OrgLobby: React.FC = () => {
     }
   }, [authToken, organization, fetchUsers]);
 
+  // Handle approve action
+  const handleApprove = (user: LobbyUser) => {
+    setSelectedUser(user);
+    setActionType("approve");
+    setModalOpen(true);
+  };
+
+  // Handle reject action
+  const handleReject = (user: LobbyUser) => {
+    setSelectedUser(user);
+    setActionType("reject");
+    setModalOpen(true);
+  };
+
+  // Handle status update (approve/reject) and UI refresh
+  const handleStatusUpdate = async (user: LobbyUser, action: "approve" | "reject") => {
+    if (!authToken || !organization) return;
+
+    const updatedStatus = action === "approve" ? "active" : "inactive";
+
+    try {
+      // Update user status in the database
+      const response = await orgFetch(`${baseURL}/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${authToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status: updatedStatus })
+      });
+
+      console.log('Updated user response:', response);  // Log the response to verify
+
+      if (response && response.status === updatedStatus) {
+        console.log(`User ${user.name} status updated to ${updatedStatus}`);
+
+        // Re-fetch users after a status update to get the latest state
+        fetchUsers();  // This will re-fetch all users, including updated status
+      } else {
+        console.error("Failed to update status:", response);
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+    } finally {
+      setModalOpen(false); // Close the modal after the action
+    }
+  };
+
+  // Sidebar toggle effect
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add("sidebar-open");
+    } else {
+      document.body.classList.remove("sidebar-open");
+    }
+  }, [sidebarOpen]);
+
   return (
     <div className="dashboard-wrapper">
+      {/* SIDEBAR */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
           <div className="toggle close-btn">
@@ -96,6 +171,7 @@ const OrgLobby: React.FC = () => {
             <span className="label">X</span>
           </div>
         </div>
+        
         <h2>ORG MANAGER</h2>
         <a href="/Organization/edittableProfile">Profile</a>
         <a href="/Organization/orgLobby" className="active">The Lobby</a>
@@ -105,38 +181,51 @@ const OrgLobby: React.FC = () => {
         <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}> ➜ Logout </a>
       </div>
 
+      {/* Main Dashboard Content */}
       <div className="dashboard-content">
         <header className="page-header">
           <h1>The Lobby</h1>
           <button className="hamburger" onClick={toggleSidebar}> ☰ </button>
         </header>
 
+        {/* Lobby Guide */}
         <h3 className="lobby-guide">
-          The users listed below are presently in the lobby.<br />
-          Please take a moment to review and either confirm or reject their account registration.
-        </h3>
+          <br />
+          {organization ? (
+            <>
+              <h3>Welcome to {organization.name}</h3><br />
+              <p>The users listed below are presently in the lobby.<br />
+                Please take a moment to review and either confirm or reject their account registration.<br/>
+                <br/>
+                Please refresh your browser regularly to get the latest users. Thank you...
+              </p>
+            </>
+          ) : (
+            <p>Loading organization data...</p>
+          )}
+        </h3><br />
 
         {organization && (
           <div className="organization-info">
-            <h3>Welcome to {organization.name}</h3>
-            <p>Status: {organization.status}</p>
+            {/* Render any additional organization info here */}
           </div>
         )}
 
+        {/* User Lobby Cards */}
         <div className="lobbyContainer">
-          {error && <div className="error">{error}</div>} 
+          {error && <div className="error">{error}</div>}
 
           {loading ? (
             <p>Loading users...</p>
-          ) : users.length > 0 ? (
-            users.map((user, index) => (
-              <div key={index} className="lobbyCard">
+          ) : filteredUsers.length > 0 ? (
+            filteredUsers.map((user, index) => (
+              <div key={user.id} className="lobbyCard"> {/* Use user.id as key for better reconciliation */}
                 <img src={user.imageSrc} alt={user.altText} className="lobbyCard-image" />
                 <div className="lobbyCard-content">
                   <h3 className="lobbyCard-name">{user.name}</h3>
                   <div className="lobbyCard-buttons">
-                    <button className="approve-btn">Approve</button>
-                    <button className="reject-btn">Reject</button>
+                    <button className="approve-btn" onClick={() => handleApprove(user)}>Approve</button>
+                    <button className="reject-btn" onClick={() => handleReject(user)}>Reject</button>
                     <button className="add-btn">View</button>
                   </div>
                 </div>
@@ -146,6 +235,27 @@ const OrgLobby: React.FC = () => {
             <p>No users in the lobby with pending or null status.</p>
           )}
         </div>
+
+        {/* Confirmation Modal for Approve/Reject */}
+        {modalOpen && selectedUser && actionType && (
+          <div className="confirmation-modal">
+            <div className="modal-content">
+              <h2>{actionType === "approve" ? "Approve this user?" : "Reject this user?"}</h2>
+              <p>This action cannot be undone. Are you sure you want to proceed?</p>
+              <div className="modal-buttons">
+                <button onClick={() => setModalOpen(false)} className="cancel-btn">Cancel</button>
+                <button
+                  onClick={async () => {
+                    await handleStatusUpdate(selectedUser, actionType);
+                  }}
+                  className={actionType === "approve" ? "approve-btn" : "reject-btn"}
+                >
+                  {actionType === "approve" ? "Approve" : "Reject"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
