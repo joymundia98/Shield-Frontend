@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { orgFetch } from "../../utils/api";
 import "../../styles/global.css";
 
 interface User {
@@ -7,61 +8,121 @@ interface User {
   first_name: string;
   last_name: string;
   position: string;
-  status: "Active" | "Pending" | "Inactive";
-  fullName?: string; // Optional fullName property
-}
-
-interface UserGroup {
-  name: string;
-  users: User[];
+  status: "active" | "pending" | "inactive";
+  fullName?: string;
 }
 
 interface UserStatusCategories {
-  [status: string]: UserGroup[];
+  [status: string]: User[];
 }
 
-//const BACKEND_URL = "${baseURL}/api";
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 const UserTrackerPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Static data for KPI cards
-  const totalActive = 10; // Static value for active users
-  const totalPending = 5; // Static value for pending users
-  const totalInactive = 3; // Static value for inactive users
-
-  // Static user data (can be replaced with actual API data later)
-  const [userCategories, _setUserCategories] = useState<UserStatusCategories>({
-    Active: [
-      {
-        name: "Active",
-        users: [
-          { id: 1, first_name: "John", last_name: "Doe", position: "Developer", status: "Active", fullName: "John Doe" },
-          { id: 2, first_name: "Jane", last_name: "Smith", position: "Designer", status: "Active", fullName: "Jane Smith" },
-        ]
-      }
-    ],
-    Pending: [
-      {
-        name: "Pending",
-        users: [
-          { id: 3, first_name: "Alice", last_name: "Brown", position: "Manager", status: "Pending", fullName: "Alice Brown" },
-        ]
-      }
-    ],
-    Inactive: [
-      {
-        name: "Inactive",
-        users: [
-          { id: 4, first_name: "Bob", last_name: "Johnson", position: "Intern", status: "Inactive", fullName: "Bob Johnson" },
-        ]
-      }
-    ],
+  const [userCategories, setUserCategories] = useState<UserStatusCategories>({
+    active: [],
+    pending: [],
+    inactive: [],
   });
+
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState(""); // Search query state
+
+  // Pagination states
+  const [recordsToShow, setRecordsToShow] = useState<number>(5);
+  const [showAll, setShowAll] = useState<boolean>(false);
+
+  // Fetch token from localStorage on mount
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      setAuthToken(token);
+    } else {
+      console.log("No authToken found in localStorage");
+    }
+  }, []);
+
+  // Fetch users based on token and organization
+  const fetchUsers = useCallback(async () => {
+    if (!authToken) {
+      setError("No authToken found, please log in.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const response = await orgFetch(`${baseURL}/api/users`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      console.log("Fetched users response:", response);
+
+      const categorizedUsers: UserStatusCategories = {
+        active: [],
+        pending: [],
+        inactive: [],
+      };
+
+      response.forEach((user: any) => {
+        const formattedUser: User = {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          position: user.position,
+          status: user.status,
+          fullName: `${user.first_name} ${user.last_name}`,
+        };
+
+        if (user.status === "active") {
+          categorizedUsers.active.push(formattedUser);
+        } else if (user.status === "pending") {
+          categorizedUsers.pending.push(formattedUser);
+        } else if (user.status === "inactive") {
+          categorizedUsers.inactive.push(formattedUser);
+        }
+      });
+
+      setUserCategories(categorizedUsers);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError("There was an error fetching users.");
+      setLoading(false);
+    }
+  }, [authToken, navigate]);
+
+  useEffect(() => {
+    if (authToken) {
+      fetchUsers();
+    }
+  }, [authToken, fetchUsers]);
+
+  // Apply search query and filter (status) together
+  const filteredUsers = useMemo(() => {
+    // Filter users based on selectedFilter and searchQuery
+    let filtered = selectedFilter === "all"
+      ? [
+          ...userCategories.active,
+          ...userCategories.pending,
+          ...userCategories.inactive,
+        ]
+      : userCategories[selectedFilter] || [];
+
+    return filtered.filter((user) =>
+      user.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [userCategories, selectedFilter, searchQuery]);
 
   // Sidebar toggle effect
   useEffect(() => {
@@ -72,28 +133,27 @@ const UserTrackerPage: React.FC = () => {
     }
   }, [sidebarOpen]);
 
-  // Filter users by status (All, Active, Pending, Inactive)
-  const [selectedFilter, setSelectedFilter] = useState("All");
-
-  const filteredUsers = selectedFilter === "All" ? userCategories : { [selectedFilter]: userCategories[selectedFilter] || [] };
-
-  // View User Modal logic
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [viewUser, setViewUser] = useState<User | null>(null);
-
-  const openViewModal = (user: User) => {
-    setViewUser(user);
-    setViewModalOpen(true);
+  const openViewUser = (id: number) => {
+    window.open(`/Organization/viewUser/${id}`, "_blank");
   };
 
-  const closeViewModal = () => {
-    setViewUser(null);
-    setViewModalOpen(false);
+  const handleViewMore = () => {
+    setShowAll(true);
+    setRecordsToShow(Infinity); // Display all records
+  };
+
+  const handleViewLess = () => {
+    setShowAll(false);
+    setRecordsToShow(5); // Reset to initial limit
   };
 
   return (
     <div className="dashboard-wrapper">
       {/* SIDEBAR */}
+      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+        &#9776;
+      </button>
+
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
           <div className="toggle close-btn">
@@ -113,9 +173,13 @@ const UserTrackerPage: React.FC = () => {
         <a
           href="/"
           className="logout-link"
-          onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}
-        >  
-        ➜ Logout
+          onClick={(e) => {
+            e.preventDefault();
+            localStorage.clear();
+            navigate("/"); 
+          }}
+        >
+          ➜ Logout
         </a>
       </div>
 
@@ -130,105 +194,78 @@ const UserTrackerPage: React.FC = () => {
           </div>
         </header>
 
+        {/* Error or loading state */}
+        {error && <div className="error">{error}</div>}
+        {loading && <p>Loading users...</p>}
+
         <br /><br />
 
-        {/* KPI CARDS */}
-        <div className="kpi-container">
-          <div className="kpi-card kpi-active">
-            <h3>Total Active Users</h3>
-            <p>{totalActive}</p>
-          </div>
-          <div className="kpi-card kpi-pending">
-            <h3>Total Pending Users</h3>
-            <p>{totalPending}</p>
-          </div>
-          <div className="kpi-card kpi-inactive">
-            <h3>Total Inactive Users</h3>
-            <p>{totalInactive}</p>
-          </div>
-        </div>
-
-        {/* Filter */}
+        {/* Search and Filter */}
         <div className="user-filter-box">
-          <h3>Filter by Status</h3>
-          <select
-            className="user-filter-select"
-            value={selectedFilter}
-            onChange={(e) => setSelectedFilter(e.target.value)}
-          >
-            <option value="All">All</option>
-            <option value="Active">Active</option>
-            <option value="Pending">Pending</option>
-            <option value="Inactive">Inactive</option>
-          </select>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <input
+              type="text"
+              placeholder="Search by name..."
+              className="search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <select
+              className="user-filter-select"
+              value={selectedFilter}
+              onChange={(e) => setSelectedFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
         </div>
 
-        <br/>
-        {/* TABLE RENDER */}
-        {Object.entries(filteredUsers).map(([status, groups]) => (
-          <div key={status}>
-            <h2>{status}</h2>
+        <br />
+        {/* GROUPED TABLE RENDERING */}
+        {["active", "pending", "inactive"].map((status) => {
+          const users = filteredUsers.filter((user) => user.status === status);
 
-            {groups.length > 0 ? (
-              groups.map((group) => (
-                <div key={group.name}>
-                  <h3>{group.name}</h3>
-
-                  <table className="responsive-table">
-                    <thead>
-                      <tr>
-                        <th>Full Name</th>
-                        <th>Position</th>
-                        <th>Actions</th>
+          return (
+            <div key={status}>
+              <h2>{status.charAt(0).toUpperCase() + status.slice(1)} Users</h2>
+              {users.length > 0 ? (
+                <table className="responsive-table">
+                  <thead>
+                    <tr>
+                      <th>Full Name</th>
+                      <th>Position</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.slice(0, recordsToShow).map((user) => (
+                      <tr key={user.id}>
+                        <td>{user.first_name} {user.last_name}</td>
+                        <td>{user.position}</td>
+                        <td>
+                          <button className="add-btn" onClick={() => openViewUser(user.id)}>
+                            View
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>No users found under this category.</p>
+              )}
 
-                    <tbody>
-                      {group.users.map((user) => (
-                        <tr key={user.id}>
-                          <td>{user.first_name} {user.last_name}</td> {/* Correctly accessing the user data */}
-                          <td>{user.position}</td>
-                          <td>
-                            <button className="add-btn" onClick={() => openViewModal(user)}>
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-
-                  </table>
-                </div>
-              ))
-            ) : (
-              <p>No users</p>
-            )}
-          </div>
-        ))}
-
-        {/* View Modal */}
-        {viewModalOpen && viewUser && (
-          <div className="userModal" style={{ display: "flex" }} onClick={closeViewModal}>
-            <div className="userModal-content" onClick={(e) => e.stopPropagation()}>
-              <h2>User Details</h2>
-              <table>
-                <tbody>
-                  <tr>
-                    <th>Full Name</th>
-                    <td>{viewUser.fullName}</td>
-                  </tr>
-                  <tr>
-                    <th>Position</th>
-                    <td>{viewUser.position}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <button className="userModal-cancel" onClick={closeViewModal}>
-                Close
+              {/* View More/Less */}
+              <button onClick={showAll ? handleViewLess : handleViewMore} className="add-btn">
+                {showAll ? "View Less" : "View More"}
               </button>
+              <br /><br />
             </div>
-          </div>
-        )}
+          );
+        })}
       </div>
     </div>
   );

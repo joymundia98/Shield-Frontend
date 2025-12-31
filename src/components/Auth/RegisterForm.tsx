@@ -85,7 +85,7 @@ export const RegisterForm = () => {
         role_id: data.role, // send role id
         organization_id: data.organization, // send organization id
         password: data.password,
-        status: "inactive", // Set status to inactive
+        status: "pending", // Set status to pending
       });
 
       // Show success message and redirect to lobby

@@ -16,7 +16,7 @@ interface LobbyUser {
 
 const OrgLobby: React.FC = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<LobbyUser[]>([]); // All users (including all statuses)
+  const [_users, setUsers] = useState<LobbyUser[]>([]); // All users (including all statuses)
   const [filteredUsers, setFilteredUsers] = useState<LobbyUser[]>([]); // Filtered users (only pending or null)
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -224,7 +224,7 @@ const OrgLobby: React.FC = () => {
           {loading ? (
             <p>Loading users...</p>
           ) : filteredUsers.length > 0 ? (
-            filteredUsers.map((user, index) => (
+            filteredUsers.map((user, _index) => (
               <div key={user.id} className="lobbyCard"> {/* Use user.id as key for better reconciliation */}
                 <img src={user.imageSrc} alt={user.altText} className="lobbyCard-image" />
                 <div className="lobbyCard-content">
