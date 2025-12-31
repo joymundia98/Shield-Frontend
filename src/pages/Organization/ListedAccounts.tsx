@@ -110,15 +110,20 @@ const UserTrackerPage: React.FC = () => {
 
   // Apply search query and filter (status) together
   const filteredUsers = useMemo(() => {
-    // Filter users based on selectedFilter and searchQuery
-    let filtered = selectedFilter === "all"
-      ? [
-          ...userCategories.active,
-          ...userCategories.pending,
-          ...userCategories.inactive,
-        ]
-      : userCategories[selectedFilter] || [];
+    let filtered: User[] = [];
+    
+    // Filter users based on selectedFilter (active, pending, inactive, or all)
+    if (selectedFilter === "all") {
+      filtered = [
+        ...userCategories.active,
+        ...userCategories.pending,
+        ...userCategories.inactive,
+      ];
+    } else {
+      filtered = userCategories[selectedFilter] || [];
+    }
 
+    // Further filter based on searchQuery
     return filtered.filter((user) =>
       user.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -226,6 +231,9 @@ const UserTrackerPage: React.FC = () => {
         <br />
         {/* GROUPED TABLE RENDERING */}
         {["active", "pending", "inactive"].map((status) => {
+          // Only render groups that match the selected filter
+          if (selectedFilter !== "all" && selectedFilter !== status) return null;
+
           const users = filteredUsers.filter((user) => user.status === status);
 
           return (
