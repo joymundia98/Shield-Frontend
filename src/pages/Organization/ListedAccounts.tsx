@@ -111,7 +111,7 @@ const UserTrackerPage: React.FC = () => {
   // Apply search query and filter (status) together
   const filteredUsers = useMemo(() => {
     let filtered: User[] = [];
-    
+
     // Filter users based on selectedFilter (active, pending, inactive, or all)
     if (selectedFilter === "all") {
       filtered = [
@@ -142,6 +142,62 @@ const UserTrackerPage: React.FC = () => {
     window.open(`/Organization/viewUser/${id}`, "_blank");
   };
 
+  const handleStatusChange = async (userId: number, newStatus: "active" | "pending" | "inactive") => {
+  if (!authToken) return;
+
+  try {
+    // Optimistically update the UI
+    setUserCategories((prevCategories) => {
+      const updatedCategories = { ...prevCategories };
+
+      // Find and update the user in the appropriate category
+      for (const status in updatedCategories) {
+        const userIndex = updatedCategories[status as keyof UserStatusCategories].findIndex(user => user.id === userId);
+        if (userIndex !== -1) {
+          const updatedUser = { 
+            ...updatedCategories[status as keyof UserStatusCategories][userIndex], 
+            status: newStatus 
+          };
+
+          // Remove from the current category
+          updatedCategories[status as keyof UserStatusCategories].splice(userIndex, 1);
+
+          // Add to the new status category
+          updatedCategories[newStatus].push(updatedUser);
+          break;
+        }
+      }
+
+      return updatedCategories;
+    });
+
+    // Send the PATCH request to update the user's status
+    const response = await orgFetch(`${baseURL}/api/users/${userId}`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status: newStatus }),
+    });
+
+    // Check if the response was successful
+    if (response.ok) {
+      // Refetch users if needed (optional)
+      fetchUsers();
+    } else {
+      // Handle error
+      const errorData = await response.json();
+      setError(`Failed to update user status: ${errorData.error || 'Unknown error'}`);
+    }
+  } catch (err) {
+    // Handle network or unexpected errors
+    console.error("Error updating status:", err);
+    setError("Error updating user status.");
+  }
+};
+
+  // Handle View More functionality
   const handleViewMore = () => {
     setShowAll(true);
     setRecordsToShow(Infinity); // Display all records
@@ -192,11 +248,6 @@ const UserTrackerPage: React.FC = () => {
       <div className="dashboard-content">
         <header className="page-header user-header">
           <h1>User Tracker</h1>
-          <div>
-            <button className="hamburger" onClick={toggleSidebar}>
-              ☰
-            </button>
-          </div>
         </header>
 
         {/* Error or loading state */}
@@ -257,6 +308,33 @@ const UserTrackerPage: React.FC = () => {
                           <button className="add-btn" onClick={() => openViewUser(user.id)}>
                             View
                           </button>
+                          {/* Action Buttons */}
+                          {user.status !== "active" && (
+                            <button
+                              className="user-status-btn active"
+                              onClick={() => handleStatusChange(user.id, "active")}
+                            >
+                              Set Active
+                            </button> 
+                          )}
+                          {user.status !== "pending" && (
+                            <button
+                              className="user-status-btn pending"
+                              onClick={() => handleStatusChange(user.id, "pending")}
+                            >
+                              Set Pending
+                            </button>
+                          )}
+                          {user.status !== "inactive" && (
+                            <button
+                              className="user-status-btn inactive"
+                              onClick={() => handleStatusChange(user.id, "inactive")}
+                            >
+                              Set Inactive
+                            </button>
+                          )}
+
+                          
                         </td>
                       </tr>
                     ))}
