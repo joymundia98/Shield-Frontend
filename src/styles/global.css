@@ -767,7 +767,7 @@
 
 
         /* Add Button CSS */
-        .add-btn, .submit-btn {
+        .add-btn, .submit-btn, .user-status-btn {
         align-items: center;
         appearance: none;
         background-image: radial-gradient(100% 100% at 100% 0, #5adaff 0, #5468ff 100%);
@@ -803,7 +803,8 @@
         }
 
         .add-btn:hover,
-        .submit-btn:hover {
+        .submit-btn:hover,
+        .user-status-btn:hover {
         box-shadow: rgba(45, 35, 66, .4) 0 4px 8px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
         transform: translateY(-2px);
         }
@@ -1979,64 +1980,42 @@
                 }
 
                 /* User Status */
-
-                /* Base Button Styles */
-                    .user-status-btn {
-                    align-items: center;
-                    appearance: none;
-                    border: 0;
-                    border-radius: 6px;
-                    box-shadow: rgba(45, 35, 66, .4) 0 2px 4px, rgba(45, 35, 66, .3) 0 7px 13px -3px, rgba(58, 65, 111, .5) 0 -3px 0 inset;
-                    box-sizing: border-box;
-                    color: #fff;
-                    cursor: pointer;
-                    display: inline-flex;
-                    height: 48px;
-                    justify-content: center;
-                    line-height: 1;
-                    list-style: none;
-                    overflow: hidden;
-                    padding-left: 16px;
-                    padding-right: 16px;
-                    position: relative;
-                    text-align: center;
-                    text-decoration: none;
-                    transition: box-shadow .15s, transform .15s;
-                    -webkit-user-select: none;
-                    user-select: none;
-                    touch-action: manipulation;
-                    white-space: nowrap;
-                    will-change: box-shadow, transform;
-                    }
-
                     /* Focus State */
                     .user-status-btn:focus {
                     box-shadow: #3c4fe0 0 0 0 1.5px inset, rgba(45, 35, 66, .4) 0 2px 4px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
                     }
 
-                    /* Hover State */
-                    .user-status-btn:hover {
-                    box-shadow: rgba(45, 35, 66, .4) 0 4px 8px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
-                    transform: translateY(-2px);
+
+                    /* Active & Hover State */
+                    .user-status-btn.active:active,
+                    .user-status-btn.active:hover {
+                    box-shadow: rgba(56, 142, 60, 0.75) 0 3px 7px inset;
+                    transform: translateY(2px);
                     }
 
-                    /* Active State */
-                    .user-status-btn:active {
-                    box-shadow: #3c4fe0 0 3px 7px inset;
+                    .user-status-btn.pending:active,
+                    .user-status-btn.pending:hover {
+                    box-shadow: rgba(255, 140, 0, 0.75) 0 3px 7px inset;
+                    transform: translateY(2px);
+                    }
+
+                    .user-status-btn.inactive:active,
+                    .user-status-btn.inactive:hover {
+                    box-shadow: rgba(211, 47, 47, 0.75) 0 3px 7px inset;
                     transform: translateY(2px);
                     }
 
                     /* Set Active Button */
                     .user-status-btn.active {
-                    background-image: radial-gradient(100% 100% at 100% 0, #4CAF50 0, #388E3C 100%); /* Green Gradient */
+                    background-image: radial-gradient(100% 100% at 100% 0, rgba(76, 175, 79, 0.75) 0, rgba(56, 142, 60, 0.75) 100%); /* Green Gradient */
                     }
 
                     /* Set Pending Button */
                     .user-status-btn.pending {
-                    background-image: radial-gradient(100% 100% at 100% 0, #FFA500 0, #FF8C00 100%); /* Orange Gradient */
+                    background-image: radial-gradient(100% 100% at 100% 0, rgba(255, 166, 0, 0.75) 0, rgba(255, 140, 0, 0.75) 100%); /* Orange Gradient */
                     }
 
                     /* Set Inactive Button */
                     .user-status-btn.inactive {
-                    background-image: radial-gradient(100% 100% at 100% 0, #F44336 0, #D32F2F 100%); /* Red Gradient */
+                    background-image: radial-gradient(100% 100% at 100% 0, rgba(244, 67, 54, 0.75) 0, rgba(211, 47, 47, 0.75) 100%); /* Red Gradient */
                     }

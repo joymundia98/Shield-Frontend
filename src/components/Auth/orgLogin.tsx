@@ -174,7 +174,7 @@ const onSubmit = async (data: OrgLoginFormData) => {
       {showSuccessCard && (
         <div className="success-card">
           <h3>✅ Login Successful!</h3>
-          <p>Redirecting to your profile...</p>
+          <p>Redirecting to Lobby...</p>
         </div>
       )}
     </div>

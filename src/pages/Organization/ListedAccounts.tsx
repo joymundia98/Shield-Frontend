@@ -308,22 +308,30 @@ const UserTrackerPage: React.FC = () => {
                           <button className="add-btn" onClick={() => openViewUser(user.id)}>
                             View
                           </button>
+                          &emsp;
+
                           {/* Action Buttons */}
                           {user.status !== "active" && (
+                            <>
                             <button
                               className="user-status-btn active"
                               onClick={() => handleStatusChange(user.id, "active")}
                             >
                               Set Active
-                            </button> 
+                            </button>
+                            &emsp; 
+                            </>
                           )}
                           {user.status !== "pending" && (
+                            <>
                             <button
                               className="user-status-btn pending"
                               onClick={() => handleStatusChange(user.id, "pending")}
                             >
                               Set Pending
                             </button>
+                            &emsp;
+                            </>
                           )}
                           {user.status !== "inactive" && (
                             <button
