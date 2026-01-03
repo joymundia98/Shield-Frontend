@@ -12,6 +12,78 @@ import axios from 'axios'; // Add this import // Ensure AxiosError is imported
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
+type ChurchData = {
+  name: string;
+  establishmentYear: number;
+  denomination: string;
+  email: string;
+  phone: string;
+  address: string;
+  profilePic: string;
+  socialLinks: {
+    facebook: string;
+    instagram: string;
+    twitter: string;
+  };
+  leadership: Array<{
+    role: string;
+    name: string;
+    yearStart: number | string;
+    yearEnd: number | string;
+  }>;
+  ministries: Array<{
+    name: string;
+    description: string;
+  }>;
+  coreValues: string[];
+  worshipTimes: {
+    sunday: string;
+    midweek: string;
+  };
+  sacraments: string[];
+  specialServices: string[];
+  about: string;
+  vision: string;
+  mission: string;
+  district: string;
+  province: string;
+};
+
+const denominationMapping = {
+  "Catholicism-Roman Catholic": 1,
+  "Catholicism-Eastern Catholic": 2,
+  "Orthodoxy-Eastern Orthodox": 3,
+  "Orthodoxy-Oriental Orthodox": 4,
+  "Protestantism-Anglican": 5,
+  "Protestantism-Lutheran": 6,
+  "Protestantism-Presbyterian": 7,
+  "Protestantism-Methodist": 8,
+  "Protestantism-Baptist": 9,
+  "Protestantism-Reformed": 10,
+  "Protestantism-Pentecostal": 11,
+  "Protestantism-Non-denominational": 12,
+  "Protestantism-Charismatic": 13,
+  "Protestantism-Not Listed": 14,
+  "Evangelical-Pentecostal": 15,
+  "Evangelical-Non-denominational": 16,
+  "Evangelical-Charismatic": 17,
+  "Evangelical-Not Listed": 18,
+  "Adventist-Seventh-day Adventist": 19,
+  "Adventist-Mormon": 20,
+  "Adventist-Jehovah's Witnesses": 21,
+  "Adventist-Not Listed": 22,
+  "Anabaptist-Mennonite": 23,
+  "Anabaptist-Amish": 24,
+  "Anabaptist-Hutterites": 25,
+  "Anabaptist-Not Listed": 26,
+  "Other-Quakers": 27,
+  "Other-Salvation Army": 28,
+  "Other-Christian Science": 29,
+  "Other-Unitarian": 30,
+  "Other-Not Listed": 31
+};
+
+
 const EdittableChurchProfilePage: React.FC = () => {
   const location = useLocation();
   const orgData = location.state?.org;
@@ -60,6 +132,8 @@ const EdittableChurchProfilePage: React.FC = () => {
     about: 'Eternal Hope Ministries is dedicated to bringing hope, transforming lives, and empowering communities through the love of Jesus Christ.',
     vision: 'To expand ministries, empower youth and women, and create a positive impact in Lusaka.',
     mission: 'To serve with love, share the Gospel, and transform communities through practical support and spiritual growth.',
+    district: 'Lusaka',
+    province: 'Lusaka',
   });
 
   const navigate = useNavigate();
@@ -93,6 +167,8 @@ const EdittableChurchProfilePage: React.FC = () => {
         address: org.address || prev.address,
         denomination: org.denomination || prev.denomination,
         establishmentYear: org.establishment_year || prev.establishmentYear,
+        district: org.district || prev.district,   // Update district here
+        province: org.region || prev.province,
       }));
     })
     .catch((error) => {
@@ -146,35 +222,114 @@ const EdittableChurchProfilePage: React.FC = () => {
 
   // Save Profile Function
   const saveProfile = async () => {
-    try {
-      const response = await api.post(`/churches`, {
-        name: churchData.name,
-        establishment_year: churchData.establishmentYear,
-        denomination: churchData.denomination,
-        email: churchData.email,
-        phone: churchData.phone,
-        address: churchData.address,
-        profile_pic: churchData.profilePic,
-        social_links: churchData.socialLinks,
-        leadership: churchData.leadership,
-        ministries: churchData.ministries,
-        core_values: churchData.coreValues,
-        worship_times: churchData.worshipTimes,
-        sacraments: churchData.sacraments,
-        special_services: churchData.specialServices,
-        about: churchData.about,
-        vision: churchData.vision,
-        mission: churchData.mission,
-      });
+  try {
+    // Map the denomination name to the corresponding denomination_id
+    const denominationId = denominationMapping[churchData.denomination];
 
-      console.log('Profile saved successfully:', response.data);
-      navigate('/Organization/orgLobby'); // redirect after saving
-    } catch (error: unknown) {  // Explicitly typing the error as 'unknown'
-    if (axios.isAxiosError(error)) {  // Checking if the error is an Axios error
-      console.error('Error saving profile:', error.response || error.message);
-    } else {
-      console.error('Unexpected error:', error);
+    // First, save the church information to the `churches` table
+    const churchResponse = await api.post(`${baseURL}/api/profiles/churches`, {
+      name: churchData.name,
+      establishment_year: churchData.establishmentYear,
+      denomination_id: denominationId,  // Pass the denomination_id here instead of denomination
+      email: churchData.email,
+      phone: churchData.phone,
+      address: churchData.address,
+      profile_pic: churchData.profilePic,
+      vision: churchData.vision,
+      mission: churchData.mission,
+      organization_id: organizationId,  // Use the organization ID here
+    });
+
+    // Get the church_id from the response
+    const churchId = churchResponse.data.church_id;
+
+    console.log("Church ID:", churchId);  // Add logging to verify
+
+    if (!churchId) {
+      throw new Error("Church ID is missing in response");
     }
+
+    // Temporarily comment out social links saving
+    // const socialLinksPromises = churchData.socialLinks ? Object.keys(churchData.socialLinks).map((platform) => {
+    //   return api.post(`${baseURL}/api/profiles/social_links`, {
+    //     church_id: churchId,
+    //     platform,
+    //     url: churchData.socialLinks[platform],
+    //   });
+    // }) : [];
+    // await Promise.all(socialLinksPromises);  // Wait for all social links to be saved
+
+    // Save leadership members to `leadership` table
+    const leadershipPromises = churchData.leadership.map((member) => {
+      return api.post(`${baseURL}/api/profiles/leadership`, {
+        church_id: churchId,
+        role: member.role,
+        name: member.name,
+        year_start: member.yearStart,
+        year_end: member.yearEnd === 'Present' ? null : member.yearEnd, // Use NULL if 'Present'
+      });
+    });
+
+    await Promise.all(leadershipPromises);  // Wait for all leadership members to be saved
+
+    // Save ministries to `ministries` table
+    const ministriesPromises = churchData.ministries.map((ministry) => {
+      return api.post(`${baseURL}/api/profiles/ministries`, {
+        church_id: churchId,
+        name: ministry.name,
+        description: ministry.description,
+      });
+    });
+
+    await Promise.all(ministriesPromises);  // Wait for all ministries to be saved
+
+    // Save core values to `core_values` table
+    const coreValuesPromises = churchData.coreValues.map((value) => {
+      return api.post(`${baseURL}/api/profiles/core_values`, {
+        church_id: churchId,
+        value,
+      });
+    });
+
+    await Promise.all(coreValuesPromises);  // Wait for all core values to be saved
+
+    // Save worship times to `worship_times` table
+    const worshipTimesPromises = Object.keys(churchData.worshipTimes).map((day) => {
+      return api.post(`${baseURL}/api/profiles/worship`, {
+        church_id: churchId,
+        day,
+        time: churchData.worshipTimes[day],
+      });
+    });
+
+    await Promise.all(worshipTimesPromises);  // Wait for all worship times to be saved
+
+    // Save sacraments to `sacraments` table
+    const sacramentsPromises = churchData.sacraments.map((sacrament) => {
+      return api.post(`${baseURL}/api/profiles/sacraments`, {
+        church_id: churchId,
+        sacrament_name: sacrament,
+      });
+    });
+
+    await Promise.all(sacramentsPromises);  // Wait for all sacraments to be saved
+
+    // Save special services to `special_services` table
+    const specialServicesPromises = churchData.specialServices.map((service) => {
+      return api.post(`${baseURL}/api/profiles/special_services`, {
+        church_id: churchId,
+        service_name: service,
+      });
+    });
+
+    await Promise.all(specialServicesPromises);  // Wait for all special services to be saved
+
+    // Finally, confirm that all the data is saved and navigate away
+    console.log('Profile saved successfully');
+    navigate('/Organization/orgLobby'); // Redirect after saving
+
+  } catch (error) {
+    console.error('Error saving profile:', error);
   }
 };
 
@@ -252,7 +407,7 @@ const EdittableChurchProfilePage: React.FC = () => {
               placeholder="Enter Denomination"
             />
           ) : (
-            `${churchData.denomination} Church in Lusaka, Zambia`
+            `${churchData.denomination} Church in ${churchData.district}, ${churchData.province}`
           )}
         </p>
 
@@ -328,35 +483,39 @@ const EdittableChurchProfilePage: React.FC = () => {
             <div className="timeline">
               {churchData.leadership.map((member, index) => (
                 <div key={index} className="timeline-item">
-                  <h3>{isEditing ? (
-                    <input
-                      type="text"
-                      value={member.role}
-                      onChange={(e) => {
-                        const updatedLeadership = [...churchData.leadership];
-                        updatedLeadership[index].role = e.target.value;
-                        setChurchData({ ...churchData, leadership: updatedLeadership });
-                      }}
-                      placeholder="Enter Role"
-                    />
-                  ) : (
-                    member.role
-                  )}</h3>
+                  <h3>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={member.role}
+                        onChange={(e) => {
+                          const updatedLeadership = [...churchData.leadership];
+                          updatedLeadership[index].role = e.target.value;
+                          setChurchData({ ...churchData, leadership: updatedLeadership });
+                        }}
+                        placeholder="Enter Role"
+                      />
+                    ) : (
+                      member.role
+                    )}
+                  </h3>
 
-                  <p>{isEditing ? (
-                    <input
-                      type="text"
-                      value={member.name}
-                      onChange={(e) => {
-                        const updatedLeadership = [...churchData.leadership];
-                        updatedLeadership[index].name = e.target.value;
-                        setChurchData({ ...churchData, leadership: updatedLeadership });
-                      }}
-                      placeholder="Enter Name"
-                    />
-                  ) : (
-                    member.name
-                  )} | &nbsp;
+                  <p>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={member.name}
+                        onChange={(e) => {
+                          const updatedLeadership = [...churchData.leadership];
+                          updatedLeadership[index].name = e.target.value;
+                          setChurchData({ ...churchData, leadership: updatedLeadership });
+                        }}
+                        placeholder="Enter Name"
+                      />
+                    ) : (
+                      member.name
+                    )}{" "}
+                    | &nbsp;
                     {isEditing ? (
                       <input
                         type="number"
@@ -370,19 +529,33 @@ const EdittableChurchProfilePage: React.FC = () => {
                       />
                     ) : (
                       member.yearStart
-                    )}&nbsp;
-                    - &nbsp;
+                    )}
+                    &nbsp;-&nbsp;
                     {isEditing ? (
-                      <input
-                        type="number"
-                        value={member.yearEnd}
-                        onChange={(e) => {
-                          const updatedLeadership = [...churchData.leadership];
-                          updatedLeadership[index].yearEnd = e.target.value;
-                          setChurchData({ ...churchData, leadership: updatedLeadership });
-                        }}
-                        placeholder="Year End"
-                      />
+                      <>
+                        <input
+                          type="number"
+                          value={member.yearEnd === "Present" ? "" : member.yearEnd}
+                          onChange={(e) => {
+                            const updatedLeadership = [...churchData.leadership];
+                            updatedLeadership[index].yearEnd = e.target.value || "Present"; // Handle empty value as "Present"
+                            setChurchData({ ...churchData, leadership: updatedLeadership });
+                          }}
+                          placeholder="Year End"
+                        />
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={member.yearEnd === "Present"}
+                            onChange={(e) => {
+                              const updatedLeadership = [...churchData.leadership];
+                              updatedLeadership[index].yearEnd = e.target.checked ? "Present" : ""; // Toggle between "Present" and empty string
+                              setChurchData({ ...churchData, leadership: updatedLeadership });
+                            }}
+                          />
+                          Present
+                        </label>
+                      </>
                     ) : (
                       member.yearEnd
                     )}
