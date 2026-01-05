@@ -7,6 +7,8 @@ import { OrgLoginPage } from "./pages/orgLoginPage";
 import { OrgRegisterPage } from "./pages/orgRegisterPage";
 import { AdminAccountPage } from "./pages/AdminAccountPage";
 
+import NotFoundPage from "./pages/NotFoundPage"; // Import the 404 page
+
 import DashboardPage from "./pages/DashboardPage";
 
 // Department Dashboards
@@ -295,6 +297,8 @@ function App() {
           <Route path="/Organization/ListedAccounts" element={<UserTrackerPage />} />
           <Route path="/Organization/viewUser/:id" element={<ViewUserPage />} />
 
+          {/* Catch-all for undefined routes (404) */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

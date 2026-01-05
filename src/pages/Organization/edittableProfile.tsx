@@ -7,12 +7,12 @@ import api from '../../api/api'; // import your Axios instance
 import { useLocation } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
-import axios from 'axios'; // Add this import // Ensure AxiosError is imported
+//import axios from 'axios'; // Add this import // Ensure AxiosError is imported
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
-type ChurchData = {
+{/*type ChurchData = {
   name: string;
   establishmentYear: number;
   denomination: string;
@@ -47,7 +47,53 @@ type ChurchData = {
   mission: string;
   district: string;
   province: string;
-};
+};*/}
+
+// Define the types for church data structure
+interface SocialLinks {
+  facebook: string;
+  instagram: string;
+  twitter: string;
+}
+
+interface Leadership {
+  role: string;
+  name: string;
+  yearStart: number | string;
+  yearEnd: number | string;
+}
+
+interface Ministry {
+  name: string;
+  description: string;
+}
+
+interface ChurchData {
+  name: string;
+  establishmentYear: number;
+  denomination: string;
+  email: string;
+  phone: string;
+  address: string;
+  profilePic: string;
+  socialLinks: SocialLinks;
+  leadership: Leadership[];
+  ministries: Ministry[];
+  coreValues: string[];
+  worshipTimes: {
+    sunday: string;
+    midweek: string;
+    [key: string]: string;  // For dynamic worship times
+  };
+  sacraments: string[];
+  specialServices: string[];
+  about: string;
+  vision: string;
+  mission: string;
+  district: string;
+  province: string;
+  organization_id: string;
+}
 
 const denominationMapping = {
   "Catholicism-Roman Catholic": 1,
@@ -92,7 +138,7 @@ const EdittableChurchProfilePage: React.FC = () => {
   console.log("Organization ID:", organizationId); // Logs the organization_id passed from the login page
   console.log("Organization Data:", orgData);
 
-  const [churchData, setChurchData] = useState({
+  const [churchData, setChurchData] = useState<ChurchData>({
     name: 'Eternal Hope Ministries',
     establishmentYear: 2010,
     denomination: 'Pentecostal / Evangelical',
@@ -134,48 +180,132 @@ const EdittableChurchProfilePage: React.FC = () => {
     mission: 'To serve with love, share the Gospel, and transform communities through practical support and spiritual growth.',
     district: 'Lusaka',
     province: 'Lusaka',
+    organization_id: organizationId || '',  // Ensure it's set with the organizationId or a default value
   });
 
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // State to control sidebar visibility
 
+  const [showSuccessCard, setShowSuccessCard] = useState(false);
+
+  const checkChurchExists = async (organizationId: string | number) => {
+    if (!organizationId) {
+      throw new Error("Organization ID is required");
+    }
+
+    try {
+      const response = await api.get(`${baseURL}/api/profiles/churches?organization_id=${organizationId}`);
+      console.log(response);
+      if (response.data && response.data.length > 0) {
+        return response.data[0]; // Assuming the response returns an array with one church
+      }
+      return null; // No church data found
+    } catch (error) {
+      console.error("Error checking if church exists:", error);
+      return null;
+    }
+  };
+
   // Fetch organization data when the component is mounted or when organizationId changes
   useEffect(() => {
-  const storedOrgId = localStorage.getItem('organizationId'); // Retrieve from localStorage
-  const orgId = storedOrgId || auth?.user?.org_id; // Check context first, fall back to localStorage
+  const fetchChurchData = async () => {
+    const orgId = organizationId; // Retrieve the organization ID from context or localStorage
+    if (!orgId) {
+      console.warn("Organization ID missing, cannot fetch data.");
+      return;
+    }
 
-  if (!orgId) {
-    console.warn('Organization ID missing, cannot fetch data.');
-    return;
-  }
+    // First, check if a church profile exists for the organization
+    const existingChurch = await checkChurchExists(orgId);
 
-  api.get(`${baseURL}/api/organizations/${orgId}`)
-    .then((response) => {
-      const org = response.data;
-      if (!org) {
-        console.warn('No organization data returned');
-        return;
-      }
-
-      // Update the church data with the fetched organization data
+    if (existingChurch) {
+      // If church data exists, set the church data state and fetch related information
       setChurchData((prev) => ({
         ...prev,
-        name: org.name || prev.name,
-        email: org.organization_email || prev.email,
-        phone: org.phone || prev.phone,
-        address: org.address || prev.address,
-        denomination: org.denomination || prev.denomination,
-        establishmentYear: org.establishment_year || prev.establishmentYear,
-        district: org.district || prev.district,   // Update district here
-        province: org.region || prev.province,
+        name: existingChurch.name || prev.name,
+        establishmentYear: existingChurch.establishment_year || prev.establishmentYear,
+        denomination: existingChurch.denomination_id || prev.denomination,
+        email: existingChurch.email || prev.email,
+        phone: existingChurch.phone || prev.phone,
+        address: existingChurch.address || prev.address,
+        profilePic: existingChurch.profile_pic || prev.profilePic,
+        vision: existingChurch.vision || prev.vision,
+        mission: existingChurch.mission || prev.mission,
+        organization_id: existingChurch.organization_id || prev.organization_id,
       }));
-    })
-    .catch((error) => {
-      console.error('Error fetching organization data:', error);
-    });
-}, [auth?.user?.org_id]);  // Dependency array ensures fetch is triggered when org_id is available
 
+      // Fetch related data (leadership, ministries, etc.) using church_id
+      const churchId = existingChurch.church_id;
+      console.log("Church id:", churchId)
+
+      // Fetch leadership data for this church
+      const leadershipResponse = await api.get(`${baseURL}/api/profiles/leadership?church_id=${churchId}`);
+      const leadershipData = leadershipResponse.data;
+
+      // Fetch ministries data for this church
+      const ministriesResponse = await api.get(`${baseURL}/api/profiles/ministries?church_id=${churchId}`);
+      const ministriesData = ministriesResponse.data;
+
+      // Fetch core values data for this church
+      const coreValuesResponse = await api.get(`${baseURL}/api/profiles/core_values?church_id=${churchId}`);
+      const coreValuesData = coreValuesResponse.data;
+
+      // Fetch worship times data for this church
+      const worshipTimesResponse = await api.get(`${baseURL}/api/profiles/worship?church_id=${churchId}`);
+      const worshipTimesData = worshipTimesResponse.data;
+
+      // Fetch sacraments data for this church
+      const sacramentsResponse = await api.get(`${baseURL}/api/profiles/sacraments?church_id=${churchId}`);
+      const sacramentsData = sacramentsResponse.data;
+
+      // Fetch special services data for this church
+      const specialServicesResponse = await api.get(`${baseURL}/api/profiles/special_services?church_id=${churchId}`);
+      const specialServicesData = specialServicesResponse.data;
+
+      // Update the state with all related data
+      setChurchData((prev) => ({
+        ...prev,
+        leadership: leadershipData || [],
+        ministries: ministriesData || [],
+        coreValues: coreValuesData || [],
+        worshipTimes: worshipTimesData.reduce((acc: { [key: string]: string }, item: { day: string, time: string }) => {
+          return { ...acc, [item.day]: item.time };
+        }, {}),
+        sacraments: sacramentsData || [],
+        specialServices: specialServicesData || [],
+      }));
+    } else {
+      // If no church profile exists, fetch organization data as fallback
+      api.get(`${baseURL}/api/organizations/${orgId}`)
+        .then((response) => {
+          const org = response.data;
+          if (!org) {
+            console.warn('No organization data returned');
+            return;
+          }
+
+          // Update the church data with the fetched organization data
+          setChurchData((prev) => ({
+            ...prev,
+            name: org.name || prev.name,
+            email: org.organization_email || prev.email,
+            phone: org.phone || prev.phone,
+            address: org.address || prev.address,
+            denomination: org.denomination || prev.denomination,
+            establishmentYear: org.establishment_year || prev.establishmentYear,
+            district: org.district || prev.district,
+            province: org.region || prev.province,
+          }));
+        })
+        .catch((error) => {
+          console.error('Error fetching organization data:', error);
+        });
+    }
+  };
+
+  fetchChurchData();
+}, [organizationId]); // Trigger on organizationId change
 
   // Handle input change
   const handleChange = (key: string, value: string) => {
@@ -224,7 +354,7 @@ const EdittableChurchProfilePage: React.FC = () => {
   const saveProfile = async () => {
   try {
     // Map the denomination name to the corresponding denomination_id
-    const denominationId = denominationMapping[churchData.denomination];
+    const denominationId = denominationMapping[churchData.denomination as keyof typeof denominationMapping];
 
     // First, save the church information to the `churches` table
     const churchResponse = await api.post(`${baseURL}/api/profiles/churches`, {
@@ -304,37 +434,55 @@ const EdittableChurchProfilePage: React.FC = () => {
 
     await Promise.all(worshipTimesPromises);  // Wait for all worship times to be saved
 
+    // Temporarily Disable Sacraments because of Backend Issues
     // Save sacraments to `sacraments` table
-    const sacramentsPromises = churchData.sacraments.map((sacrament) => {
-      return api.post(`${baseURL}/api/profiles/sacraments`, {
-        church_id: churchId,
-        sacrament_name: sacrament,
-      });
-    });
+    //const sacramentsPromises = churchData.sacraments.map((sacrament) => {
+      //return api.post(`${baseURL}/api/profiles/sacraments`, {
+        //church_id: churchId,
+        //sacrament_name: sacrament,
+      //});
+    //});
 
-    await Promise.all(sacramentsPromises);  // Wait for all sacraments to be saved
+    //await Promise.all(sacramentsPromises);  // Wait for all sacraments to be saved
 
     // Save special services to `special_services` table
-    const specialServicesPromises = churchData.specialServices.map((service) => {
-      return api.post(`${baseURL}/api/profiles/special_services`, {
-        church_id: churchId,
-        service_name: service,
-      });
-    });
+    //const specialServicesPromises = churchData.specialServices.map((service) => {
+      //return api.post(`${baseURL}/api/profiles/special_services`, {
+        //church_id: churchId,
+        //service_name: service,
+      //});
+    //});
 
-    await Promise.all(specialServicesPromises);  // Wait for all special services to be saved
+    //await Promise.all(specialServicesPromises);  // Wait for all special services to be saved
 
     // Finally, confirm that all the data is saved and navigate away
-    console.log('Profile saved successfully');
-    navigate('/Organization/orgLobby'); // Redirect after saving
+    // After all the data is saved successfully, show the success card
+    setShowSuccessCard(true);
 
-  } catch (error) {
-    console.error('Error saving profile:', error);
-  }
-};
+    // Hide the success card and navigate to the lobby after a delay
+      setTimeout(() => {
+        setShowSuccessCard(false);
+        console.log('➡️ Navigating to /Organization/orgLobby');
+        navigate('/Organization/orgLobby'); // Redirect to the lobby
+      }, 2000); // Adjust timeout as necessary (2 seconds in this case)
+
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    }
+  };
 
   return (
     <div className="orgProfileContainer">
+
+      {/* Success Card */}
+      {showSuccessCard && (
+        <div className="success-card">
+          <h3>✅ Profile Created Successfully!</h3>
+          <p>Redirecting to Lobby...</p>
+        </div>
+      )}
+
+
       {/* Header */}
       <header>
         <div className="banner"></div>
