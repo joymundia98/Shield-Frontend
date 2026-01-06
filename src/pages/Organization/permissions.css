@@ -1,5 +1,32 @@
+/* Permissions Section Styles */
+    * {
+      box-sizing: border-box;
+    }
+
+    .permissions-body {
+      font-family: "Open Sans", sans-serif;
+      accent-color: #AF907A;
+      height: 100%; /* Change from min-height to height */
+      margin: 0; /* Ensure no extra margin at the top */
+      margin-top: -10rem;
+      /*padding-top: 2rem; /* Added space above the content */
+      display: grid;
+      place-items: center;
+      width: 100vw;
+    }
+
+    .permissions-page-content{
+      width: 100vw;
+      display: grid;
+      place-items: center;
+    }
+
+    .permissions-page-content p{
+      font-size: 1.2rem;
+    }
+
 /* From Uiverse.io by german_7619 */
-    .radio-inputs {
+    .permissions-radio-inputs {
       position: relative;
       display: flex;
       justify-content: space-between;
@@ -13,16 +40,16 @@
     }
 
     /* Hide the radio buttons but keep the checkboxes visible */
-    .radio-inputs .radio input[type="radio"] {
+    .permissions-radio-inputs .radio input[type="radio"] {
         display: none; /* Hides the radio button circle */
     }
 
     /* Keep checkboxes visible */
-    .radio-inputs .radio input[type="checkbox"] {
+    .permissions-radio-inputs .radio input[type="checkbox"] {
         display: inline-block; /* Ensure checkboxes are displayed */
     }
 
-    .radio-inputs .radio .name {
+    .permissions-radio-inputs .radio .name {
       display: flex;
       color: #c0c0c0;
       cursor: pointer;
@@ -35,12 +62,12 @@
       border-top-right-radius: 0.5rem;
     }
 
-    .radio-inputs .radio input + .name:hover {
+    .permissions-radio-inputs .radio input + .name:hover {
       color: #fff;
     }
 
-    .radio-inputs .radio input + .name .pre-name,
-    .radio-inputs .radio input + .name .pos-name {
+    .permissions-radio-inputs .radio input + .name .pre-name,
+    .permissions-radio-inputs .radio input + .name .pos-name {
       content: "";
       position: absolute;
       width: 10px;
@@ -50,21 +77,21 @@
       opacity: 0;
     }
 
-    .radio-inputs .radio input + .name .pre-name {
+    .permissions-radio-inputs .radio input + .name .pre-name {
       right: -10px;
       border-bottom-left-radius: 300px;
       box-shadow: -3px 3px 0px 3px #e8e8e8;
     }
 
-    .radio-inputs .radio input + .name .pos-name {
+    .permissions-radio-inputs .radio input + .name .pos-name {
       left: -10px;
       border-bottom-right-radius: 300px;
       box-shadow: 3px 3px 0px 3px #e8e8e8;
     }
 
-    .radio-inputs .radio input:checked + .name {
+    .permissions-radio-inputs .radio input:checked + .name {
       animation: name-activated;
-      animation-duration: 0.1s;
+      animation-duration: 0.08s;
       animation-fill-mode: forwards;
     }
 
@@ -84,8 +111,8 @@
       }
     }
 
-    .radio-inputs .radio input:checked + .name .pre-name,
-    .radio-inputs .radio input:checked + .name .pos-name {
+    .permissions-radio-inputs .radio input:checked + .name .pre-name,
+    .permissions-radio-inputs .radio input:checked + .name .pos-name {
       animation: name-border-activated;
       animation-duration: 0.1s;
       animation-fill-mode: forwards;
@@ -102,14 +129,14 @@
       }
     }
 
-    .radio-inputs .radio .name span:last-child {
+    .permissions-radio-inputs .radio .name span:last-child {
       z-index: 1;
       padding: 0.5rem 0.8rem;
       border-top-left-radius: 0.5rem;
       border-top-right-radius: 0.5rem;
     }
 
-    .radio-inputs .radio input:checked + .name span:last-child {
+    .permissions-radio-inputs .radio input:checked + .name span:last-child {
       animation: name-text-activated;
       animation-duration: 0.1s;
       animation-fill-mode: forwards;
@@ -125,21 +152,21 @@
       }
     }
 
-    .radio-inputs > .radio > .content {
+    .permissions-radio-inputs > .radio > .content {
       display: none;
     }
 
-    .radio-inputs > label.radio > input:checked ~ div.content {
+    .permissions-radio-inputs > label.radio > input:checked ~ div.content {
       display: block;
     }
 
-    .radio-inputs > label.radio > input:checked ~ div.content div * {
+    .permissions-radio-inputs > label.radio > input:checked ~ div.content div * {
       animation: content-activated;
       animation-duration: 1s;
       animation-fill-mode: forwards;
     }
 
-    .content {
+    .permissions-radio-inputs .content {
       background: linear-gradient(45deg, #1a1a1a, #444444); /* Updated background to gradient */
       position: absolute;
       left: 0px;
@@ -148,7 +175,7 @@
       border-bottom-right-radius: 0.5rem;
     }
 
-    .content > div {
+    .permissions-radio-inputs .content > div {
       background-color: #e8e8e8;
       border-radius: 0.5rem;
       padding: 1rem;
@@ -167,38 +194,23 @@
       }
     }
 
-    /* Permissions Section Styles */
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: "Open Sans", sans-serif;
-      accent-color: #AF907A;
-      height: 100%; /* Change from min-height to height */
-      margin: 0; /* Ensure no extra margin at the top */
-      padding-top: 2rem; /* Added space above the content */
-      display: grid;
-      place-items: center;
-    }
-
-    .wrapper {
+    .permissions-radio-inputs .wrapper {
       max-width: 75rem;
       width: 100%;
       padding: min(3rem, 5vw);
     }
 
-    .grid {
+    .permissions-radio-inputs .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
       gap: 3rem;
     }
 
-    h1 {
+    .permissions-radio-inputs h1 {
       text-align: center;
     }
 
-    form {
+    .permissions-radio-inputs form {
       padding: 1.5rem;
       background-color: rgba(245, 245, 245, 0.768);
       border-radius: 0.5rem;
@@ -206,32 +218,32 @@
       margin-bottom: 2rem; /* Added margin to separate forms */
     }
 
-    legend {
+    .permissions-radio-inputs legend {
       font-weight: 700;
     }
 
-    fieldset > * + * {
+    .permissions-radio-inputs fieldset > * + * {
       margin-top: 0.5rem;
     }
 
-    .form__group {
+    .permissions-radio-inputs .form__group {
     display: flex;
     flex-direction: row;  /* Align checkbox and label horizontally */
     align-items: center;  /* Center them vertically */
     margin-bottom: 0.75rem;  /* Space between each checkbox label pair */
     }
 
-    .form__group input[type="checkbox"] {
+    .permissions-radio-inputs.form__group input[type="checkbox"] {
     margin-right: 0.75rem;  /* Space between checkbox and label */
     }
 
-    form > fieldset {
+    .permissions-radio-inputs form > fieldset {
     display: flex;
     flex-direction: column;  /* Stack checkboxes vertically */
     gap: 1rem;  /* Optional: Adds space between each checkbox set */
     }
 
-    input[type="checkbox"] {
+    .permissions-radio-inputs input[type="checkbox"] {
       width: 1.5em;
       height: 1.5em;
       margin-right: 0.65rem;
