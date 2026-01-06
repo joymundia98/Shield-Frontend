@@ -508,7 +508,6 @@ const EdittableChurchProfilePage: React.FC = () => {
         <a href="/Organization/orgLobby">The Lobby</a>
         <a href="/Organization/ListedAccounts">Accounts Tracker</a>
         <a href="/Organization/roles">Roles</a>
-        <a href="/Organization/permissions">Permissions</a>
 
         <hr className="sidebar-separator" />
         <a href="/dashboard" className="return-main">To SCI-ELD ERP</a>
