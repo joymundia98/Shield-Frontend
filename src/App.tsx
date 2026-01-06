@@ -112,6 +112,7 @@ import ChurchProfilePage from "./pages/Organization/orgProfile";
 import EdittableChurchProfilePage from "./pages/Organization/edittableProfile";
 import UserTrackerPage from "./pages/Organization/ListedAccounts";
 import ViewUserPage from "./pages/Organization/viewUser";
+import RolesPage from "./pages/Organization/roles";
 
 import { AuthProvider } from "./context/AuthContext";
 
@@ -296,6 +297,7 @@ function App() {
           <Route path="/Organization/edittableProfile" element={<EdittableChurchProfilePage />} />
           <Route path="/Organization/ListedAccounts" element={<UserTrackerPage />} />
           <Route path="/Organization/viewUser/:id" element={<ViewUserPage />} />
+          <Route path="/Organization/roles" element={<RolesPage />} />
 
           {/* Catch-all for undefined routes (404) */}
           <Route path="*" element={<NotFoundPage />} />

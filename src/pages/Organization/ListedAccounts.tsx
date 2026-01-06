@@ -228,6 +228,7 @@ const UserTrackerPage: React.FC = () => {
         <a href="/Organization/edittableProfile">Profile</a>
         <a href="/Organization/orgLobby">The Lobby</a>
         <a href="/Organization/ListedAccounts" className="active">Accounts Tracker</a>
+        <a href="/Organization/roles">Roles</a>
 
         <hr className="sidebar-separator" />
         <a href="/dashboard" className="return-main">To SCI-ELD ERP</a>

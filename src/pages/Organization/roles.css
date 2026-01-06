@@ -1,0 +1,180 @@
+/* Basic styling */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f7fc;
+  margin: 0;
+  padding: 20px;
+  color: #333;
+}
+
+h1 {
+  text-align: center;
+  font-size: 2.5em;
+  margin-bottom: 30px;
+}
+
+/* Flexbox container for wrapping the cards */
+.department-grid {
+  display: flex;
+  flex-wrap: wrap; /* Allow items to wrap to the next line */
+  gap: 20px; /* Space between cards */
+  padding: 10px 0;
+  margin-bottom: 20px;
+}
+
+.department-card {
+  background-color: #fff;
+  box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+  border-radius: 10px;
+  transition: transform 0.3s;
+  position: relative;
+  min-width: 280px; /* Set minimum width for cards */
+  flex: 1 1 calc(33.333% - 20px); /* Take up 1/3 of the container, minus gap */
+}
+
+.department-card:hover {
+  transform: translateY(-5px);
+}
+
+.department-card-header {
+  background-color: #5c4736;
+  color: #fff;
+  padding: 15px;
+  text-align: center;
+}
+
+.department-card-header h3 {
+  margin: 0;
+  font-size: 1.6em;
+}
+
+.department-card-body {
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+.role-card {
+  background-color: #af907a41;
+  border: 1px solid #af907a;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 15px 0;
+  position: relative;
+  transition: transform 0.3s;
+}
+
+.role-card:hover {
+  transform: scale(1.05);
+}
+
+.role-card .tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: -30px; /* Move tooltip to the bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  text-align: center;
+  padding: 5px;
+  border-radius: 5px;
+  width: 200px;
+  font-size: 0.9em;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.role-card:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Media Queries for responsiveness */
+@media (max-width: 768px) {
+  .department-card-header h3 {
+    font-size: 1.4em;
+  }
+
+  .role-card h4 {
+    font-size: 1em;
+  }
+
+  .department-grid {
+    gap: 15px;
+  }
+
+  .department-card {
+    flex: 1 1 calc(50% - 20px); /* On medium screens, cards take up half the space */
+  }
+}
+
+@media (max-width: 480px) {
+  .department-card-header h3 {
+    font-size: 1.2em;
+  }
+
+  .role-card h4 {
+    font-size: 0.9em;
+  }
+
+  .department-grid {
+    gap: 10px;
+  }
+
+  .department-card {
+    flex: 1 1 calc(100% - 20px); /* On small screens, cards take up the full width */
+  }
+
+  .department-card-body {
+    padding: 10px;
+  }
+
+  .role-card {
+    padding: 8px;
+  }
+}
+
+.button-30 {
+  align-items: center;
+  appearance: none;
+  background-color: #FCFCFD;
+  border-radius: 4px;
+  border-width: 0;
+  box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+  box-sizing: border-box;
+  color: #36395A;
+  cursor: pointer;
+  display: inline-flex;
+  height: 48px;
+  justify-content: center;
+  line-height: 1;
+  list-style: none;
+  overflow: hidden;
+  padding-left: 16px;
+  padding-right: 16px;
+  position: relative;
+  text-align: left;
+  text-decoration: none;
+  transition: box-shadow .15s, transform .15s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  white-space: nowrap;
+  will-change: box-shadow, transform;
+  font-size: 18px;
+}
+
+.button-30:focus {
+  box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+}
+
+.button-30:hover {
+  box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+  transform: translateY(-2px);
+}
+
+.button-30:active {
+  box-shadow: #D6D6E7 0 3px 7px inset;
+  transform: translateY(2px);
+}
+
