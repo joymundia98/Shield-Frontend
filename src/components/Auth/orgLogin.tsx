@@ -50,7 +50,7 @@ const onSubmit = async (data: OrgLoginFormData) => {
 
     console.log('📡 Login response:', response.data);
 
-    if (response.data.message === 'Login successful') {
+    if (response.data.message === 'Organization login successful') {
       const { accessToken, organization } = response.data;
 
       // 🧠 Map ORGANIZATION → User shape (required by AuthContext)
