@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import "../styles/global.css";
 import HeaderNav from '../components/HeaderNav';
+import Calendar from "../pages/programs/Calendar"; // Import the Calendar component
+
+import type { Program } from "../pages/programs/dashboard";  // Using type-only import
+
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface KPI {
   totalMembers: number;
@@ -198,8 +203,9 @@ const DashboardPage: React.FC = () => {
       });
     }
 
-    const givingCtx = document.getElementById("givingChart") as HTMLCanvasElement;
-    if (givingCtx) {
+    // Replaced it with calendar
+    //const givingCtx = document.getElementById("givingChart") as HTMLCanvasElement;
+    {/*if (givingCtx) {
       givingChartRef.current = new Chart(givingCtx, {
         type: "pie",
         data: {
@@ -213,8 +219,33 @@ const DashboardPage: React.FC = () => {
         },
         options: { responsive: true },
       });
-    }
+    }*/}
   }, [chartData]);
+
+  const [events, setEvents] = useState<Event[]>([]);
+
+useEffect(() => {
+  fetch(`${baseURL}/api/programs`)
+    .then((response) => response.json())
+    .then((data) => {
+      const formattedEvents = data.map((program: Program) => ({
+        id: program.id.toString(),
+        name: program.name,
+        description: program.description,
+        date: program.date.slice(0, 10),
+        start: program.time,
+        end: "17:00",  // You can adjust this as needed
+        venue: program.venue,
+        event_type: program.event_type,
+        notes: program.notes,
+        category_id: program.category_id,
+        status: program.status || "Upcoming",
+      }));
+
+      setEvents(formattedEvents);
+    });
+}, []);
+
 
   const toggleDropdown = (label: string) => {
     setDropdownStates((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -322,10 +353,13 @@ const DashboardPage: React.FC = () => {
             <h3>Attendance Trends</h3>
             <canvas id="attendanceChart"></canvas>
           </div>
+
           <div className="chart-box">
-            <h3>Donations by Fund</h3>
-            <canvas id="givingChart"></canvas>
+            <h3>Event Calendar</h3>
+            <Calendar events={events} />  {/* Pass events as prop */}
           </div>
+
+
         </div>
       </div>
     </div>
