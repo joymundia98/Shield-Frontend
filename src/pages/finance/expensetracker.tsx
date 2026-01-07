@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import both authFetch and orgFetch
+
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -60,19 +62,37 @@ const ExpenseTrackerPage: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
 
+  // Helper function to decide which fetch function to use
+    const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
+      try {
+        // Try to use authFetch first
+        return await authFetch(url, options);
+      } catch (error) {
+        console.log("authFetch failed, falling back to orgFetch");
+        return await orgFetch(url, options); // Fallback to orgFetch
+      }
+    };
+
+
   // ------------------- FETCH CATEGORY TABLE -------------------
   const fetchExpenseCategories = async () => {
-    const res = await fetch(`${BACKEND_URL}/finance/expense_categories`);
-    const data = await res.json();
-    setExpenseCategories(data);
-    setCategoryList(["All", ...data.map((c: any) => c.name)]);
+    try {
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/Expense_categories`);
+      setExpenseCategories(data);
+      setCategoryList(["All", ...data.map((c: any) => c.name)]);
+    } catch (error) {
+      console.error("Failed to fetch Expense categories", error);
+    }
   };
 
   // ------------------- FETCH SUBCATEGORY TABLE -------------------
   const fetchSubcategories = async () => {
-    const res = await fetch(`${BACKEND_URL}/finance/expense_subcategories`);
-    const data = await res.json();
-    setSubcategories(data);
+    try {
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/Expense_subcategories`);
+      setSubcategories(data);
+    } catch (error) {
+      console.error("Failed to fetch subcategories", error);
+    }
   };
 
   // ------------------- FETCH DEPARTMENTS -------------------
@@ -89,25 +109,43 @@ const ExpenseTrackerPage: React.FC = () => {
 
   // ------------------- FETCH EXPENSE TABLE -------------------
   const fetchExpenseData = async () => {
-    const res = await fetch(`${BACKEND_URL}/finance/expenses`);
-    const data = await res.json();
+    try {
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/Expenses`);
 
-    const mapped = data.map((item: any) => {
-      const sub = subcategories.find((s) => s.id === item.subcategory_id);
-      const cat = expenseCategories.find((c) => c.id === sub?.category_id);
-      const dept = departments.find((d) => d.id === item.department_id);
+      const mappedExpenses = data.map((item: any) => {
+        const sub = subcategories.find((s) => s.id === item.subcategory_id);
+        const cat = ExpenseCategories.find((c) => c.id === sub?.category_id);
 
-      return {
-        ...item,
-        amount: Number(item.amount),
-        department: dept?.name || "N/A",
-        subcategory_name: sub?.name || "Unknown",
-        category_name: cat?.name || "Uncategorized",
-        status: item.status || "Pending",
-      };
-    });
+        return {
+          ...item,
+          amount: Number(item.amount),
+          subcategory_name: sub?.name || "Unknown",
+          category_name: cat?.name || "Uncategorized",
+          status: item.status || "Pending", // status fetched from backend
+        };
+      });
 
-    setExpenses(mapped);
+      // Group Expenses
+      const grouped: ExpenseCategories = {};
+      mappedExpenses.forEach((item: ExpenseItem) => {
+        if (!grouped[item.category_name]) grouped[item.category_name] = [];
+
+        let group = grouped[item.category_name].find(
+          (g) => g.name === item.subcategory_name
+        );
+
+        if (!group) {
+          group = { name: item.subcategory_name, items: [] };
+          grouped[item.category_name].push(group);
+        }
+
+        group.items.push(item);
+      });
+
+      setCategories(grouped);
+    } catch (error) {
+      console.error("Failed to fetch Expense data", error);
+    }
   };
 
   // Load categories, subcategories, and departments first
@@ -309,7 +347,7 @@ const ExpenseTrackerPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Add Income */}
+        {/* Add Expense */}
         <button
           className="add-btn"
           onClick={() => navigate("/finance/addExpense")}

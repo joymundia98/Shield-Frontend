@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import both authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -49,58 +50,77 @@ const IncomeTrackerPage: React.FC = () => {
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<any[]>([]);
 
-  // Fetch category table
+  // Helper function to decide which fetch function to use
+  const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
+    try {
+      // Try to use authFetch first
+      return await authFetch(url, options);
+    } catch (error) {
+      console.log("authFetch failed, falling back to orgFetch");
+      return await orgFetch(url, options); // Fallback to orgFetch
+    }
+  };
+
+  // Fetch category table using authFetch or orgFetch
   const fetchIncomeCategories = async () => {
-    const res = await fetch(`${BACKEND_URL}/finance/income_categories`);
-    const data = await res.json();
-
-    setIncomeCategories(data);
-    setCategoryList(["All", ...data.map((c: any) => c.name)]);
+    try {
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/income_categories`);
+      setIncomeCategories(data);
+      setCategoryList(["All", ...data.map((c: any) => c.name)]);
+    } catch (error) {
+      console.error("Failed to fetch income categories", error);
+    }
   };
 
-  // Fetch subcategory table
+  // Fetch subcategory table using authFetch or orgFetch
   const fetchSubcategories = async () => {
-    const res = await fetch(`${BACKEND_URL}/finance/income_subcategories`);
-    const data = await res.json();
-    setSubcategories(data);
+    try {
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/income_subcategories`);
+      setSubcategories(data);
+    } catch (error) {
+      console.error("Failed to fetch subcategories", error);
+    }
   };
 
-  // Fetch income table + JOIN with statuses
+  // Fetch income data and join with status using authFetch or orgFetch
   const fetchIncomeData = async () => {
-    const res = await fetch(`${BACKEND_URL}/finance/incomes`);
-    const data = await res.json();
+    try {
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/incomes`);
 
-    const mappedIncomes = data.map((item: any) => {
-      const sub = subcategories.find((s) => s.id === item.subcategory_id);
-      const cat = incomeCategories.find((c) => c.id === sub?.category_id);
+      const mappedIncomes = data.map((item: any) => {
+        const sub = subcategories.find((s) => s.id === item.subcategory_id);
+        const cat = incomeCategories.find((c) => c.id === sub?.category_id);
 
-      return {
-        ...item,
-        amount: Number(item.amount),
-        subcategory_name: sub?.name || "Unknown",
-        category_name: cat?.name || "Uncategorized",
-        status: item.status || "Pending", // status fetched from backend
-      };
-    });
+        return {
+          ...item,
+          amount: Number(item.amount),
+          subcategory_name: sub?.name || "Unknown",
+          category_name: cat?.name || "Uncategorized",
+          status: item.status || "Pending", // status fetched from backend
+        };
+      });
 
-    // Group incomes
-    const grouped: IncomeCategories = {};
-    mappedIncomes.forEach((item: IncomeItem) => {
-      if (!grouped[item.category_name]) grouped[item.category_name] = [];
+      // Group incomes
+      const grouped: IncomeCategories = {};
+      mappedIncomes.forEach((item: IncomeItem) => {
+        if (!grouped[item.category_name]) grouped[item.category_name] = [];
 
-      let group = grouped[item.category_name].find(
-        (g) => g.name === item.subcategory_name
-      );
+        let group = grouped[item.category_name].find(
+          (g) => g.name === item.subcategory_name
+        );
 
-      if (!group) {
-        group = { name: item.subcategory_name, items: [] };
-        grouped[item.category_name].push(group);
-      }
+        if (!group) {
+          group = { name: item.subcategory_name, items: [] };
+          grouped[item.category_name].push(group);
+        }
 
-      group.items.push(item);
-    });
+        group.items.push(item);
+      });
 
-    setCategories(grouped);
+      setCategories(grouped);
+    } catch (error) {
+      console.error("Failed to fetch income data", error);
+    }
   };
 
   useEffect(() => {
@@ -154,7 +174,7 @@ const IncomeTrackerPage: React.FC = () => {
     setViewModalOpen(false);
   };
 
-  // Update status (Approve/Reject)
+  // Update status (Approve/Reject) using authFetch or orgFetch
   const updateStatus = async (
     catName: string,
     groupName: string,
@@ -167,19 +187,22 @@ const IncomeTrackerPage: React.FC = () => {
 
     if (!item) return;
 
-    await fetch(`${BACKEND_URL}/finance/incomes/${item.id}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
+    try {
+      await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/incomes/${item.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
 
-    // Update UI locally
-    setCategories((prev) => {
-      const updated = { ...prev };
-      const group = updated[catName]?.find((g) => g.name === groupName);
-      if (group) group.items[index].status = status;
-      return updated;
-    });
+      // Update UI locally
+      setCategories((prev) => {
+        const updated = { ...prev };
+        const group = updated[catName]?.find((g) => g.name === groupName);
+        if (group) group.items[index].status = status;
+        return updated;
+      });
+    } catch (error) {
+      console.error("Failed to update status", error);
+    }
   };
 
   // KPI totals
@@ -201,11 +224,37 @@ const IncomeTrackerPage: React.FC = () => {
     return { totalApproved: approved, totalPending: pending, totalRejected: rejected };
   }, [categories]);
 
+  // Create state to track the number of rows per group
+  const [visibleRows, setVisibleRows] = useState<{ [key: string]: number }>({});
+
+  const handleViewMore = (groupKey: string, totalItems: number) => {
+    setVisibleRows((prev) => {
+      const currentRows = prev[groupKey] || 3; // Default to 3 rows
+      const newRows = Math.min(currentRows + 5, totalItems); // Add 5 or limit to total rows
+      return { ...prev, [groupKey]: newRows };
+    });
+  };
+
+  const handleViewLess = (groupKey: string) => {
+    setVisibleRows((prev) => {
+      const currentRows = prev[groupKey] || 3;
+      const newRows = Math.max(currentRows - 5, 3); // Don't go below 3 rows
+      return { ...prev, [groupKey]: newRows };
+    });
+  };
+
+  const handleViewAll = (groupKey: string, totalItems: number) => {
+    setVisibleRows((prev) => ({ ...prev, [groupKey]: totalItems }));
+  };
+
+  const handleBackToInitial = (groupKey: string) => {
+    setVisibleRows((prev) => ({ ...prev, [groupKey]: 3 }));
+  };
+
   return (
     <div className="dashboard-wrapper">
-
       {/* SIDEBAR */}
-      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
+      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
           <div className="toggle close-btn">
             <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
@@ -223,14 +272,16 @@ const IncomeTrackerPage: React.FC = () => {
         <a href="/finance/financeCategory">Finance Categories</a>
 
         <hr className="sidebar-separator" />
+
         <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+
         <a
           href="/"
           className="logout-link"
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/");
+            navigate("/"); // Redirect to home page after logout
           }}
         >
           ➜ Logout
@@ -239,14 +290,12 @@ const IncomeTrackerPage: React.FC = () => {
 
       {/* MAIN */}
       <div className="dashboard-content">
-
         <FinanceHeader />
-                        
-        <br/>
+
+        <br />
 
         <header className="page-header income-header">
           <h1>Church Income Tracker</h1>
-
           <div>
             <br /><br />
             <button
@@ -262,8 +311,6 @@ const IncomeTrackerPage: React.FC = () => {
           </div>
         </header>
 
-        <br /><br />
-
         {/* KPI CARDS */}
         <div className="kpi-container">
           <div className="kpi-card kpi-approved">
@@ -274,7 +321,7 @@ const IncomeTrackerPage: React.FC = () => {
             <h3>Total Pending Income</h3>
             <p>${totalPending.toLocaleString()}</p>
           </div>
-          <div className="kpi-card kpi-rejected">
+                    <div className="kpi-card kpi-rejected">
             <h3>Total Rejected Income</h3>
             <p>${totalRejected.toLocaleString()}</p>
           </div>
@@ -307,96 +354,115 @@ const IncomeTrackerPage: React.FC = () => {
 
         {/* TABLE RENDER */}
         {Object.entries(filteredCategories).map(([catName, groups]) => (
+          <>
           <div key={catName}>
             <h2>{catName}</h2>
 
             {groups.length > 0 ? (
-              groups.map((group) => (
-                <div key={group.name}>
-                  <h3>{group.name}</h3>
+              groups.map((group) => {
+                const groupKey = `${catName}-${group.name}`;
+                const visibleCount = visibleRows[groupKey] || 3; // Default to 3 rows
+                const totalItems = group.items.length;
 
-                  <table className="responsive-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Source/Giver</th>
-                        <th>Description</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
+                return (
+                  <div key={group.name}>
+                    <h3>{group.name}</h3>
 
-                    <tbody>
-                      {group.items.map((item, idx) => (
-                        <tr key={item.id}>
-                          <td>{item.date}</td>
-                          <td>{item.giver || "N/A"}</td>
-                          <td>{item.description}</td>
-                          <td>${item.amount.toLocaleString()}</td>
-                          <td>
-                            <span className={`status ${item.status}`}>
-                              {item.status}
-                            </span>
-                          </td>
-
-                          <td>
-                            <button className="add-btn" onClick={() => openViewModal(item)}>
-                              View
-                            </button>
-                            &nbsp;&nbsp;
-
-                            {item.status === "Pending" && (
-                              <>
-                                <button
-                                  className="approve-btn"
-                                  onClick={() =>
-                                    openModal(
-                                      () =>
-                                        updateStatus(
-                                          catName,
-                                          group.name,
-                                          idx,
-                                          "Approved"
-                                        ),
-                                      "approve"
-                                    )
-                                  }
-                                >
-                                  Approve
-                                </button>
-                                &nbsp;&nbsp;
-
-                                <button
-                                  className="reject-btn"
-                                  onClick={() =>
-                                    openModal(
-                                      () =>
-                                        updateStatus(
-                                          catName,
-                                          group.name,
-                                          idx,
-                                          "Rejected"
-                                        ),
-                                      "reject"
-                                    )
-                                  }
-                                >
-                                  Reject
-                                </button>
-                              </>
-                            )}
-                          </td>
+                    <table className="responsive-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Source/Giver</th>
+                          <th>Description</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ))
+                      </thead>
+
+                      <tbody>
+                        {group.items.slice(0, visibleCount).map((item, idx) => (
+                          <tr key={item.id}>
+                            <td>{item.date}</td>
+                            <td>{item.giver || "N/A"}</td>
+                            <td>{item.description}</td>
+                            <td>${item.amount.toLocaleString()}</td>
+                            <td>
+                              <span className={`status ${item.status}`}>{item.status}</span>
+                            </td>
+                            <td>
+                              <button className="add-btn" onClick={() => openViewModal(item)}>
+                                View
+                              </button>
+                              &nbsp;&nbsp;
+
+                              {item.status === "Pending" && (
+                                <>
+                                  <button
+                                    className="approve-btn"
+                                    onClick={() =>
+                                      openModal(() => updateStatus(catName, group.name, idx, "Approved"), "approve")
+                                    }
+                                  >
+                                    Approve
+                                  </button>
+                                  &nbsp;&nbsp;
+
+                                  <button
+                                    className="reject-btn"
+                                    onClick={() =>
+                                      openModal(() => updateStatus(catName, group.name, idx, "Rejected"), "reject")
+                                    }
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {/* Buttons for View More, View Less, View All */}
+                    <div className="table-buttons">
+                      {visibleCount < totalItems && (
+                        <>
+                        <button className="pagination-btn" onClick={() => handleViewMore(groupKey, totalItems)}>View More</button>
+                        &emsp;
+                        </>
+                      )}
+
+                      {visibleCount > 3 && (
+                        <>
+                        <button className="pagination-btn" onClick={() => handleViewLess(groupKey)}>View Less</button>
+                        &emsp;
+                        </>
+                      )}
+
+                      {visibleCount !== totalItems && visibleCount > 3 && (
+                        <>
+                        <button className="pagination-btn" onClick={() => handleViewAll(groupKey, totalItems)}>View All</button>
+                        &emsp;
+                        </>
+                      )}
+
+                      {visibleCount === totalItems && (
+                        <>
+                        <button className="pagination-btn" onClick={() => handleBackToInitial(groupKey)}>Back to Initial</button>
+                        &emsp;
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
             ) : (
               <p>No items</p>
             )}
           </div>
+          <br/><br/>
+          </>
         ))}
 
         {/* Confirmation Modal */}
@@ -417,9 +483,7 @@ const IncomeTrackerPage: React.FC = () => {
                 </button>
 
                 <button
-                  className={`expenseModal-confirm ${
-                    modalType === "reject" ? "reject" : ""
-                  }`}
+                  className={`expenseModal-confirm ${modalType === "reject" ? "reject" : ""}`}
                   onClick={confirmModal}
                 >
                   Confirm
@@ -477,7 +541,6 @@ const IncomeTrackerPage: React.FC = () => {
                       </td>
                     </tr>
                   )}
-
                 </tbody>
               </table>
 
@@ -496,3 +559,4 @@ const IncomeTrackerPage: React.FC = () => {
 };
 
 export default IncomeTrackerPage;
+

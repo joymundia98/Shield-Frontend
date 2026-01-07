@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -34,6 +35,16 @@ interface Subcategory {
 }
 
 const BACKEND_URL = `${baseURL}/api`;
+
+// Helper function to handle fetching with fallback logic
+const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
+  try {
+    return await authFetch(url, options); // Try authFetch first
+  } catch (err) {
+    console.warn("authFetch failed, falling back to orgFetch", err);
+    return await orgFetch(url, options); // If authFetch fails, fall back to orgFetch
+  }
+};
 
 const AddIncome: React.FC = () => {
   const navigate = useNavigate();
@@ -69,15 +80,21 @@ const AddIncome: React.FC = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.id;
 
-  // Fetch categories + subcategories
+  // Fetch categories + subcategories using the new helper function
   useEffect(() => {
-    fetch(`${BACKEND_URL}/finance/income_categories`)
-      .then(res => res.json())
-      .then(data => setCategories(data));
+    const fetchData = async () => {
+      try {
+        const categoriesData = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/income_categories`);
+        setCategories(categoriesData);
 
-    fetch(`${BACKEND_URL}/finance/income_subcategories`)
-      .then(res => res.json())
-      .then(data => setAllSubcategories(data));
+        const subcategoriesData = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/income_subcategories`);
+        setAllSubcategories(subcategoriesData);
+      } catch (err) {
+        console.error("Failed to fetch categories or subcategories", err);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleCategoryChange = (categoryId: number) => {
@@ -91,55 +108,57 @@ const AddIncome: React.FC = () => {
     setForm({ ...form, attachments: Array.from(files) });
   };
 
-  {/*const handleExtraFieldChange = (key: string, value: string | number) => {
-    setForm({ ...form, extraFields: { ...form.extraFields, [key]: value } });
-  };*/}
-
-  // Submit Form
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!userId) {
-      alert("User not logged in");
-      return;
-    }
+  if (!userId) {
+    alert("User not logged in");
+    return;
+  }
 
-    const payload = {
-      user_id: userId,
-      category_id: form.category,
-      subcategory_id: form.subcategory,
-      date: form.date,
-      giver: form.source,
-      description: form.description,
-      amount: form.amount,
-      payment_method: form.paymentMethod,
-      extra_fields: form.extraFields,
-    };
+  const payload = {
+    user_id: userId,
+    category_id: form.category,
+    subcategory_id: form.subcategory,
+    date: form.date,
+    giver: form.source,
+    description: form.description,
+    amount: form.amount,
+    payment_method: form.paymentMethod,
+    extra_fields: form.extraFields,
+  };
 
-    try {
-      const res = await fetch(`${BACKEND_URL}/finance/incomes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+  try {
+    const res = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/incomes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-      if (!res.ok) {
-        const error = await res.json();
-        alert("Error: " + error.message);
-        return;
-      }
+    // Log the response to check its structure
+    console.log("Response Object:", res);
 
+    // Check if the response is what we expect
+    if (res && res.id) {
+      // If there's an ID, it's likely the created income object, meaning success
+      console.log("Income data submitted successfully:", res);
       alert("Income submitted successfully!");
       navigate("/finance/incometracker");
-    } catch (err) {
-      console.error("Failed to submit income:", err);
-      alert("Server error");
+    } else {
+      // Handle unexpected response or error
+      const errorMessage = res.message || "There was an issue submitting the income.";
+      console.error("Error response:", errorMessage);
+      alert(errorMessage);
     }
-  };
+
+  } catch (err) {
+    console.error("Fetch error:", err);
+    alert("Server error or network issue");
+  }
+};
 
   return (
     <div className="dashboard-wrapper">
-      
       {/* ---------------- SIDEBAR ---------------- */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
@@ -168,7 +187,7 @@ const AddIncome: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/");
+            navigate("/"); // Redirect to home page after logout
           }}
         >
           ➜ Logout
@@ -178,9 +197,9 @@ const AddIncome: React.FC = () => {
       {/* ---------------- MAIN CONTENT ---------------- */}
       <div className="dashboard-content">
         <FinanceHeader />
-                
+
         <br/>
-        
+
         <header className="page-header income-header">
           <h1>Add Income</h1>
           <button className="hamburger" onClick={toggleSidebar}>☰</button>
