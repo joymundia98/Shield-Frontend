@@ -96,16 +96,24 @@ const ExpenseTrackerPage: React.FC = () => {
   };
 
   // ------------------- FETCH DEPARTMENTS -------------------
-  const fetchDepartments = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/departments`);
-      if (!res.ok) throw new Error("Failed to fetch departments");
-      const data: Department[] = await res.json();
-      setDepartments(data);
-    } catch (err) {
-      console.error("Error fetching departments:", err);
-    }
-  };
+  // ------------------- FETCH DEPARTMENTS -------------------
+const fetchDepartments = async () => {
+  try {
+    const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/departments`);
+    setDepartments(data); // Update the departments state with the fetched data
+  } catch (err) {
+    console.error("Error fetching departments:", err);
+  }
+};
+
+// Load categories, subcategories, and departments first
+useEffect(() => {
+  (async () => {
+    await fetchExpenseCategories();
+    await fetchSubcategories();
+    await fetchDepartments(); // Make sure departments are fetched here
+  })();
+}, []);
 
   // ------------------- FETCH EXPENSE TABLE -------------------
   const fetchExpenseData = async () => {

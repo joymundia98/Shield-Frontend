@@ -12,6 +12,7 @@ import {
 import { Doughnut, Bar } from "react-chartjs-2";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -67,27 +68,39 @@ const BudgetsPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1); // Months are 0-based
 
+  // ---------------- Helper function to fetch data using authFetch and orgFetch ----------------
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      // Attempt to fetch using authFetch first
+      return await authFetch(url);  // Return the response directly if it's already structured
+    } catch (error) {
+      console.log("authFetch failed, falling back to orgFetch");
+      return await orgFetch(url);  // Fallback to orgFetch and return the response directly
+    }
+  };
+
   // ---------------- Fetch Budget, Expense, Category, and Subcategory Data ----------------
   useEffect(() => {
-    // Fetch budget data
-    fetch(`${baseURL}/api/finance/budgets`)
-      .then((response) => response.json())
-      .then((data) => setBudgetData(data));
+    const fetchData = async () => {
+      try {
+        // Fetch data using the helper function
+        const budgetData = await fetchDataWithAuthFallback(`${baseURL}/api/finance/budgets`);
+        setBudgetData(budgetData);
 
-    // Fetch expense data
-    fetch(`${baseURL}/api/finance/expenses`)
-      .then((response) => response.json())
-      .then((data) => setExpenseData(data));
+        const expenseData = await fetchDataWithAuthFallback(`${baseURL}/api/finance/expenses`);
+        setExpenseData(expenseData);
 
-    // Fetch category data
-    fetch(`${baseURL}/api/finance/expense_categories`)
-      .then((response) => response.json())
-      .then((data) => setCategoryData(data));
+        const categoryData = await fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_categories`);
+        setCategoryData(categoryData);
 
-    // Fetch subcategory data
-    fetch(`${baseURL}/api/finance/expense_subcategories`)
-      .then((response) => response.json())
-      .then((data) => setSubcategoryData(data));
+        const subcategoryData = await fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_subcategories`);
+        setSubcategoryData(subcategoryData);
+      } catch (error) {
+        console.error("Failed to fetch data", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // ---------------- Filter Data Based on Year and Month ----------------
@@ -114,69 +127,68 @@ const BudgetsPage: React.FC = () => {
 
   // ---------------- Budget Allocation by Category ----------------
   const budgetAllocationByCategory = useMemo(() => {
-  // Group budget data by category
-  const categoryBudgets: { [key: number]: number } = {}; // Ensuring it's a number
+    // Group budget data by category
+    const categoryBudgets: { [key: number]: number } = {}; // Ensuring it's a number
 
-  filteredBudgetData.forEach((budget) => {
-    const amount = parseFloat(budget.amount.toString()); // Ensure it's a number, in case it's a string
-    if (categoryBudgets[budget.category_id]) {
-      categoryBudgets[budget.category_id] += amount; // Add to the existing amount
-    } else {
-      categoryBudgets[budget.category_id] = amount; // Set initial amount
-    }
-  });
+    filteredBudgetData.forEach((budget) => {
+      const amount = parseFloat(budget.amount.toString()); // Ensure it's a number, in case it's a string
+      if (categoryBudgets[budget.category_id]) {
+        categoryBudgets[budget.category_id] += amount; // Add to the existing amount
+      } else {
+        categoryBudgets[budget.category_id] = amount; // Set initial amount
+      }
+    });
 
-  // Create data for the Pie Chart
-  const categoryChartData = categoryData.map((category) => {
-    const budget = categoryBudgets[category.id] || 0;
-    return {
-      name: category.name,
-      budget,
-    };
-  });
+    // Create data for the Pie Chart
+    const categoryChartData = categoryData.map((category) => {
+      const budget = categoryBudgets[category.id] || 0;
+      return {
+        name: category.name,
+        budget,
+      };
+    });
 
-  return categoryChartData;
-}, [filteredBudgetData, categoryData]);
-
+    return categoryChartData;
+  }, [filteredBudgetData, categoryData]);
 
   // ---------------- Top 5 Expense Subcategories ----------------
   const top5ExpenseData = useMemo(() => {
-  // Group expenses by subcategory
-  const subcategoryExpenses: { [key: number]: number } = {};
+    // Group expenses by subcategory
+    const subcategoryExpenses: { [key: number]: number } = {};
 
-  filteredExpenseData.forEach((expense) => {
-    const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount; // Ensure amount is a number
+    filteredExpenseData.forEach((expense) => {
+      const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount; // Ensure amount is a number
     
-    if (subcategoryExpenses[expense.subcategory_id]) {
-      subcategoryExpenses[expense.subcategory_id] += amount; // Add to existing value
-    } else {
-      subcategoryExpenses[expense.subcategory_id] = amount; // Initialize if not present
-    }
-  });
+      if (subcategoryExpenses[expense.subcategory_id]) {
+        subcategoryExpenses[expense.subcategory_id] += amount; // Add to existing value
+      } else {
+        subcategoryExpenses[expense.subcategory_id] = amount; // Initialize if not present
+      }
+    });
 
-  // Get the top 5 subcategories with the highest expense
-  const top5Subcategories = Object.entries(subcategoryExpenses)
-    .map(([subcategory_id, amount]) => ({
-      subcategory_id: parseInt(subcategory_id),
-      amount,
-    }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
+    // Get the top 5 subcategories with the highest expense
+    const top5Subcategories = Object.entries(subcategoryExpenses)
+      .map(([subcategory_id, amount]) => ({
+        subcategory_id: parseInt(subcategory_id),
+        amount,
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
 
-  // Fetch names and budgets for the top 5 subcategories
-  return top5Subcategories.map((item) => {
-    const subcategory = subcategoryData.find((sub) => sub.id === item.subcategory_id);
-    const category = categoryMap[subcategory?.category_id || 0];
-    const budget = filteredBudgetData.find((b) => b.category_id === subcategory?.category_id)?.amount;
+    // Fetch names and budgets for the top 5 subcategories
+    return top5Subcategories.map((item) => {
+      const subcategory = subcategoryData.find((sub) => sub.id === item.subcategory_id);
+      const category = categoryMap[subcategory?.category_id || 0];
+      const budget = filteredBudgetData.find((b) => b.category_id === subcategory?.category_id)?.amount;
 
-    return {
-      subcategory_name: subcategory?.name || "",
-      category_name: category || "",
-      expense: item.amount,
-      budget: budget || 0,
-    };
-  });
-}, [filteredExpenseData, subcategoryData, categoryMap, filteredBudgetData]);
+      return {
+        subcategory_name: subcategory?.name || "",
+        category_name: category || "",
+        expense: item.amount,
+        budget: budget || 0,
+      };
+    });
+  }, [filteredExpenseData, subcategoryData, categoryMap, filteredBudgetData]);
 
   // ---------------- KPIs ----------------
   const totalBudget = filteredBudgetData.reduce((sum, b) => sum + (typeof b.amount === 'string' ? parseFloat(b.amount) : b.amount), 0);
@@ -189,7 +201,6 @@ const BudgetsPage: React.FC = () => {
       (typeof e.amount === 'string' ? parseFloat(e.amount) : e.amount) > (typeof b.amount === 'string' ? parseFloat(b.amount) : b.amount)
     )
   ).length;
-
 
   // ---------------- Chart Data ----------------
   const categoryChartData = useMemo(() => ({
@@ -275,7 +286,7 @@ const BudgetsPage: React.FC = () => {
 
         <FinanceHeader />
                         
-        <br/>
+        <br />
 
         {/* Header */}
         <header className="page-header">
