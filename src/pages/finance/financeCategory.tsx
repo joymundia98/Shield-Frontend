@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
-// Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface Category {
@@ -26,10 +25,26 @@ const FinanceCategoriesPage: React.FC = () => {
   /* -------------------- Finance States -------------------- */
   const [incomeCategories, setIncomeCategories] = useState<Category[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<Category[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([ 
     { name: "Cash" },
     { name: "Credit Card" },
     { name: "Bank Transfer" },
+    { name: "POS" },
+    { name: "Mobile Money" },
+    { name: "Cheque" },
+    { name: "Online Giving Platform" },
+    { name: "Debit Card" },
+    { name: "Apple Pay" },
+    { name: "Google Pay" },
+    { name: "Samsung Pay" },
+    { name: "PayPal" },
+    { name: "Cryptocurrency" },
+    { name: "Buy Now, Pay Later" },
+    { name: "Gift Card" },
+    { name: "Prepaid Card" },
+    { name: "Direct Debit" },
+    { name: "Standing Order" },
+    { name: "Money Order" },
   ]);
 
   /* -------------------- Popup States -------------------- */
@@ -48,22 +63,32 @@ const FinanceCategoriesPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  /* -------------------- Helper Fetch Logic -------------------- */
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url); // Try fetching with authFetch
+    } catch (error) {
+      console.log("authFetch failed, falling back to orgFetch", error);
+      return await orgFetch(url); // Fallback to orgFetch
+    }
+  };
+
   /* -------------------- Fetch Income Categories -------------------- */
   useEffect(() => {
     const fetchIncomeData = async () => {
       try {
         const [categoriesRes, subcategoriesRes] = await Promise.all([
-          axios.get(`${baseURL}/api/finance/income_categories`),
-          axios.get(`${baseURL}/api/finance/income_subcategories`),
+          fetchDataWithAuthFallback(`${baseURL}/api/finance/income_categories`),
+          fetchDataWithAuthFallback(`${baseURL}/api/finance/income_subcategories`),
         ]);
 
-        const categories: Category[] = categoriesRes.data.map((cat: any) => ({
+        const categories: Category[] = categoriesRes.map((cat: any) => ({
           id: cat.id,
           name: cat.name,
           subcategories: [],
         }));
 
-        const subcategoriesData: any[] = subcategoriesRes.data;
+        const subcategoriesData: any[] = subcategoriesRes;
 
         categories.forEach(cat => {
           cat.subcategories = subcategoriesData
@@ -86,17 +111,17 @@ const FinanceCategoriesPage: React.FC = () => {
     const fetchExpenseData = async () => {
       try {
         const [categoriesRes, subcategoriesRes] = await Promise.all([
-          axios.get(`${baseURL}/api/finance/expense_categories`),
-          axios.get(`${baseURL}/api/finance/expense_subcategories`),
+          fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_categories`),
+          fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_subcategories`),
         ]);
 
-        const categories: Category[] = categoriesRes.data.map((cat: any) => ({
+        const categories: Category[] = categoriesRes.map((cat: any) => ({
           id: cat.id,
           name: cat.name,
           subcategories: [],
         }));
 
-        const subcategoriesData: any[] = subcategoriesRes.data;
+        const subcategoriesData: any[] = subcategoriesRes;
 
         categories.forEach(cat => {
           cat.subcategories = subcategoriesData
@@ -147,7 +172,7 @@ const FinanceCategoriesPage: React.FC = () => {
   };
 
   /* -------------------- Add/Edit/Delete Handlers -------------------- */
-  const saveItem = () => {
+  const saveItem = async () => {
     if (!itemName.trim()) {
       alert("Name is required");
       return;
@@ -158,33 +183,112 @@ const FinanceCategoriesPage: React.FC = () => {
       return;
     }
 
-    if (editingGroup === "income") {
-      const updated = [...incomeCategories];
-      if (editIndex !== null) updated[editIndex] = { ...updated[editIndex], name: itemName, subcategories };
-      else updated.push({ name: itemName, subcategories });
-      setIncomeCategories(updated);
-    } else if (editingGroup === "expense") {
-      const updated = [...expenseCategories];
-      if (editIndex !== null) updated[editIndex] = { ...updated[editIndex], name: itemName, subcategories };
-      else updated.push({ name: itemName, subcategories });
-      setExpenseCategories(updated);
-    } else if (editingGroup === "payment") {
-      const updated = [...paymentMethods];
-      if (editIndex !== null) updated[editIndex] = { name: itemName };
-      else updated.push({ name: itemName });
-      setPaymentMethods(updated);
-    }
+    try {
+      const headers = authFetch();  // Get the token headers
 
-    closePopup();
+      if (editingGroup === "income") {
+        const updated = [...incomeCategories];
+        if (editIndex !== null) {
+          // Update existing category
+          const updatedCategory = { ...updated[editIndex], name: itemName, subcategories };
+          await fetch(`${baseURL}/api/finance/income_categories/${updated[editIndex].id}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(updatedCategory),
+          });
+          updated[editIndex] = updatedCategory;
+        } else {
+          // Add new category
+          const newCategory = { name: itemName, subcategories };
+          const response = await fetch(`${baseURL}/api/finance/income_categories`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(newCategory),
+          });
+          const data = await response.json();
+          updated.push(data); // Assuming the backend responds with the newly created category
+        }
+        setIncomeCategories(updated);
+      } else if (editingGroup === "expense") {
+        const updated = [...expenseCategories];
+        if (editIndex !== null) {
+          const updatedCategory = { ...updated[editIndex], name: itemName, subcategories };
+          await fetch(`${baseURL}/api/finance/expense_categories/${updated[editIndex].id}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(updatedCategory),
+          });
+          updated[editIndex] = updatedCategory;
+        } else {
+          const newCategory = { name: itemName, subcategories };
+          const response = await fetch(`${baseURL}/api/finance/expense_categories`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(newCategory),
+          });
+          const data = await response.json();
+          updated.push(data);
+        }
+        setExpenseCategories(updated);
+      } else if (editingGroup === "payment") {
+        const updated = [...paymentMethods];
+        if (editIndex !== null) {
+          const updatedPayment = { name: itemName };
+          await fetch(`${baseURL}/api/finance/payment_methods/${updated[editIndex].id}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(updatedPayment),
+          });
+          updated[editIndex] = updatedPayment;
+        } else {
+          const newPayment = { name: itemName };
+          const response = await fetch(`${baseURL}/api/finance/payment_methods`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(newPayment),
+          });
+          const data = await response.json();
+          updated.push(data);
+        }
+        setPaymentMethods(updated);
+      }
+
+      closePopup();
+    } catch (error) {
+      console.error("Failed to save item", error);
+    }
   };
 
-  const deleteItem = (group: GroupType, index: number) => {
+  const deleteItem = async (group: GroupType, index: number) => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
 
-    if (group === "income") setIncomeCategories(prev => prev.filter((_, i) => i !== index));
-    if (group === "expense") setExpenseCategories(prev => prev.filter((_, i) => i !== index));
-    if (group === "payment") setPaymentMethods(prev => prev.filter((_, i) => i !== index));
-    closePopup();
+    try {
+      const headers = authFetch();  // Get the token headers
+
+      if (group === "income") {
+        await fetch(`${baseURL}/api/finance/income_categories/${incomeCategories[index].id}`, {
+          method: 'DELETE',
+          headers,
+        });
+        setIncomeCategories(prev => prev.filter((_, i) => i !== index)); // Update state after deletion
+      } else if (group === "expense") {
+        await fetch(`${baseURL}/api/finance/expense_categories/${expenseCategories[index].id}`, {
+          method: 'DELETE',
+          headers,
+        });
+        setExpenseCategories(prev => prev.filter((_, i) => i !== index)); // Update state after deletion
+      } else if (group === "payment") {
+        await fetch(`${baseURL}/api/finance/payment_methods/${paymentMethods[index].id}`, {
+          method: 'DELETE',
+          headers,
+        });
+        setPaymentMethods(prev => prev.filter((_, i) => i !== index)); // Update state after deletion
+      }
+
+      closePopup(); // Close the popup after deletion
+    } catch (error) {
+      console.error("Failed to delete item", error);
+    }
   };
 
   const addSubcategory = (name?: string) => setSubcategories([...subcategories, name || ""]);
@@ -202,11 +306,15 @@ const FinanceCategoriesPage: React.FC = () => {
       <tr key={idx}>
         <td>{idx + 1}</td>
         <td>{item.name}</td>
+        {/* Only show the subcategories column for "income" or "expense" */}
         {group !== "payment" && <td>{(item as Category).subcategories?.join(", ")}</td>}
-        <td className="actions">
-          <button className="edit-btn" onClick={() => openPopup(group, idx)}>Edit</button>
-          <button className="delete-btn" onClick={() => deleteItem(group, idx)}>Delete</button>
-        </td>
+        {/* Remove actions column for payment methods */}
+        {group !== "payment" && (
+          <td className="actions">
+            <button className="edit-btn" onClick={() => openPopup(group, idx)}>Edit</button>
+            <button className="delete-btn" onClick={() => deleteItem(group, idx)}>Delete</button>
+          </td>
+        )}
       </tr>
     ));
   };
@@ -241,7 +349,7 @@ const FinanceCategoriesPage: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/");
+            navigate("/"); // Redirect to login page
           }}
         >
           ➜ Logout
@@ -249,10 +357,9 @@ const FinanceCategoriesPage: React.FC = () => {
       </div>
 
       <div className="dashboard-content">
-
         <FinanceHeader />
-                        
-        <br/>
+
+        <br />
 
         {/* Income Categories */}
         <div className="table-section">
@@ -303,13 +410,11 @@ const FinanceCategoriesPage: React.FC = () => {
               <tr>
                 <th>#</th>
                 <th>Method Name</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>{renderCategoryRows("payment", paymentMethods)}</tbody>
           </table>
         </div>
-
       </div>
 
       {showPopup && <div className="overlay" onClick={closePopup}></div>}
@@ -339,7 +444,6 @@ const FinanceCategoriesPage: React.FC = () => {
           {editIndex !== null && <button className="delete-btn" onClick={() => deleteItem(editingGroup!, editIndex)}>Delete</button>}
         </div>
       </div>
-
     </div>
   );
 };

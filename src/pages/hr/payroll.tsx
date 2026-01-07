@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HRHeader from './HRHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -78,12 +79,21 @@ const HrPayrollPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  // ------------------- Helper Function to Fetch Data -------------------
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url); // Try fetching using authFetch
+    } catch (error) {
+      console.log("authFetch failed, falling back to orgFetch");
+      return await orgFetch(url); // Fallback to orgFetch
+    }
+  };
+
   // ------------------- Fetch Departments -------------------
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/departments`);
-        const data: Department[] = await response.json();
+        const data: Department[] = await fetchDataWithAuthFallback(`${baseURL}/api/departments`);
         setDepartments(data);
       } catch (error) {
         console.error("Error fetching departments:", error);
@@ -97,8 +107,7 @@ const HrPayrollPage: React.FC = () => {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/roles`);
-        const data: Role[] = await response.json();
+        const data: Role[] = await fetchDataWithAuthFallback(`${baseURL}/api/roles`);
         setRoles(data);
       } catch (error) {
         console.error("Error fetching roles:", error);
@@ -112,8 +121,7 @@ const HrPayrollPage: React.FC = () => {
   useEffect(() => {
     const fetchStaffNames = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/staff`);
-        const data = await response.json();
+        const data = await fetchDataWithAuthFallback(`${baseURL}/api/staff`);
         setStaffNames(data);
       } catch (error) {
         console.error("Error fetching staff names:", error);
@@ -129,9 +137,7 @@ const HrPayrollPage: React.FC = () => {
       if (departments.length === 0 || roles.length === 0 || staffNames.length === 0) return;
 
       try {
-        const response = await fetch(`${baseURL}/api/payroll`);
-        const data: PayrollRecord[] = await response.json();
-
+        const data: PayrollRecord[] = await fetchDataWithAuthFallback(`${baseURL}/api/payroll`);
         // Map payroll data to include department names, roles, and staff names
         const payrollWithDetails = data.map((payroll) => {
           const department = departments.find((dep) => dep.id === payroll.department_id);
@@ -218,26 +224,24 @@ const HrPayrollPage: React.FC = () => {
     return isValidMonth && isValidYear;
   });
 
-  const kpiTotalPaid = payrollThisMonth
-    .filter((p) => p.status === "Paid")
-    .reduce((sum, p) => sum + parseFloat(p.net_salary), 0);
+  const kpiTotalPaid = payrollThisMonth.reduce((total, p) => {
+    return p.status === "Paid" ? total + parseFloat(p.net_salary) : total;
+  }, 0);
 
-  const kpiTotalDue = payrollThisMonth
-    .filter((p) => p.status === "Pending" || p.status === "Overdue")
-    .reduce((sum, p) => sum + parseFloat(p.net_salary), 0);
+  const kpiTotalDue = payrollThisMonth.reduce((total, p) => {
+    return p.status === "Pending" || p.status === "Overdue" ? total + parseFloat(p.net_salary) : total;
+  }, 0);
 
   const kpiPaidCount = payrollThisMonth.filter((p) => p.status === "Paid").length;
   const kpiUnpaidCount = payrollThisMonth.filter((p) => p.status === "Pending" || p.status === "Overdue").length;
 
-
   return (
     <div className="dashboard-wrapper">
-      {/* Hamburger */}
+      {/* Sidebar */}
       <button className="hamburger" onClick={toggleSidebar}>
         &#9776;
       </button>
 
-      {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
         <div className="close-wrapper">
           <div className="toggle close-btn">
@@ -259,10 +263,8 @@ const HrPayrollPage: React.FC = () => {
         <a href="/hr/leave">Leave Management</a>
         <a href="/hr/leaveApplications">Leave Applications</a>
         <a href="/hr/departments">Departments</a>
-
         <hr className="sidebar-separator" />
         <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
-
         <a
           href="/"
           className="logout-link"
@@ -278,12 +280,10 @@ const HrPayrollPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
-        <HRHeader/><br/>
+        <HRHeader /><br />
 
         <h1>Payroll</h1>
 
-        {/* Search + Add */}
         <div className="table-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <input
             type="text"
@@ -344,6 +344,7 @@ const HrPayrollPage: React.FC = () => {
         </div>
         <br />
 
+        {/* KPI Container */}
         <div className="kpi-container">
           <div className="kpi-card">
             <h3>Total Paid (This Month)</h3>

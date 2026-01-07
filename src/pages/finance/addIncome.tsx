@@ -285,6 +285,19 @@ const AddIncome: React.FC = () => {
               <option>Mobile Money</option>
               <option>Cheque</option>
               <option>Online Giving Platform</option>
+              <option>Debit Card</option>
+              <option>Credit Card</option>
+              <option>Apple Pay</option>
+              <option>Google Pay</option>
+              <option>Samsung Pay</option>
+              <option>PayPal</option>
+              <option>Cryptocurrency</option>
+              <option>Buy Now, Pay Later</option>
+              <option>Gift Card</option>
+              <option>Prepaid Card</option>
+              <option>Direct Debit</option>
+              <option>Standing Order</option>
+              <option>Money Order</option>
             </select>
 
             {/* Attachments */}

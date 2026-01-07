@@ -55,8 +55,8 @@ const ExpenseTrackerPage: React.FC = () => {
   }, [sidebarOpen]);
 
   // Data from backend
-  const [_categories, _setCategories] = useState<ExpenseCategories>({});
-  const [_categoryList, setCategoryList] = useState<string[]>([]);
+  const [categories, setCategories] = useState<ExpenseCategories>({});
+  const [categoryList, setCategoryList] = useState<string[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -122,7 +122,7 @@ useEffect(() => {
 
       const mappedExpenses = data.map((item: any) => {
         const sub = subcategories.find((s) => s.id === item.subcategory_id);
-        const cat = ExpenseCategories.find((c) => c.id === sub?.category_id);
+        const cat = expenseCategories.find((c) => c.id === sub?.category_id);
 
         return {
           ...item,
