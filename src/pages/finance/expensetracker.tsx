@@ -309,6 +309,15 @@ const ExpenseTrackerPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Add Income */}
+        <button
+          className="add-btn"
+          onClick={() => navigate("/finance/addExpense")}
+          style={{ margin: "10px 0" }}
+        >
+          + Add Expense
+        </button>
+
         {/* Filter by Year and Month */}
         <div className="expense-filter-box">
           <h3>Filter by Date</h3>

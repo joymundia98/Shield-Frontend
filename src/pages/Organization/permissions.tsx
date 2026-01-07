@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { orgFetch } from "../../utils/api"; // Assuming you have an api helper to handle requests
-import { useNavigate } from "react-router-dom"; // Use useNavigate instead of useHistory
-import "./permissions.css"; // Ensure this CSS file is loaded properly
+import { orgFetch } from "../../utils/api";
+import { useNavigate } from "react-router-dom";
+import "./permissions.css";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -13,29 +13,36 @@ interface Permission {
   description: string;
 }
 
+interface Role {
+  id: number;
+  name: string;
+}
+
 const PermissionsPage: React.FC = () => {
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<Set<number>>(new Set());
+  const [selectedRole, setSelectedRole] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate(); // Initialize useNavigate hook for redirection
+  const navigate = useNavigate();
 
-  // Function to fetch permissions from the API
   const fetchPermissions = async () => {
     try {
-      const token = localStorage.getItem("authToken"); // Assuming the JWT is saved in localStorage
-
+      const token = localStorage.getItem("authToken");
+      console.log("Token:", token);
       if (!token) {
         setError("No authToken found, please log in.");
         setLoading(false);
         setTimeout(() => {
-          navigate("/home"); // Redirect to home after 1.5 seconds
+          navigate("/home");
         }, 1500);
         return;
       }
 
       const response = await orgFetch(`${baseURL}/api/permissions`, {
         headers: {
-          Authorization: `Bearer ${token}`, // Add the JWT token to the request header
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -43,7 +50,7 @@ const PermissionsPage: React.FC = () => {
         setError("Login Required");
         setLoading(false);
         setTimeout(() => {
-          navigate("/home"); // Redirect to home after 1.5 seconds
+          navigate("/home");
         }, 1500);
         return;
       }
@@ -62,11 +69,140 @@ const PermissionsPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchPermissions(); // Fetch permissions when the component mounts
-  }, []);
+  const fetchRoles = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
 
-  
+      if (!token) {
+        setError("No authToken found, please log in.");
+        setLoading(false);
+        return;
+      }
+
+      const response = await orgFetch(`${baseURL}/api/roles`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        setError("Login Required");
+        setLoading(false);
+        setTimeout(() => {
+          navigate("/home");
+        }, 1500);
+        return;
+      }
+
+      if (Array.isArray(response)) {
+        const sortedRoles = response.sort((a, b) => a.name.localeCompare(b.name));
+        setRoles(sortedRoles);
+      } else {
+        setError("Received invalid data structure for roles.");
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching roles:", err);
+      setError("There was an error fetching roles. Please try logging in again...");
+      setLoading(false);
+    }
+  };
+
+  // Fetch role permissions when a role is selected
+  const fetchRolePermissions = async (roleId: number) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setError("No authToken found, please log in.");
+        return;
+      }
+
+      const response = await orgFetch(`${baseURL}/api/role_permissions/role/${roleId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        setError("Login Required");
+        return;
+      }
+
+      if (Array.isArray(response)) {
+        const permissionSet = new Set(response.map((item) => item.permission_id));
+        setRolePermissions(permissionSet);
+      } else {
+        setError("Received invalid data structure for role permissions.");
+      }
+    } catch (err) {
+      console.error("Error fetching role permissions:", err);
+      setError("There was an error fetching role permissions.");
+    }
+  };
+
+  const handleRoleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const roleId = parseInt(event.target.value);
+    setSelectedRole(roleId);
+    fetchRolePermissions(roleId);
+  };
+
+  // Handle checkbox change to update permissions
+  const handleCheckboxChange = (permissionId: number) => {
+    setRolePermissions((prev) => {
+      const newPermissions = new Set(prev);
+      if (newPermissions.has(permissionId)) {
+        newPermissions.delete(permissionId); // Remove permission if already checked
+      } else {
+        newPermissions.add(permissionId); // Add permission if unchecked
+      }
+      return newPermissions;
+    });
+  };
+
+  // Save the permissions when the user clicks the "Save Permissions" button
+  const handleSavePermissions = async () => {
+    if (selectedRole === null) {
+      setError("Please select a role.");
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      setError("No authToken found, please log in.");
+      return;
+    }
+
+    const permissionIds = Array.from(rolePermissions);
+
+    try {
+      const response = await orgFetch(`${baseURL}/api/role_permissions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          role_id: selectedRole,
+          permissions: permissionIds,
+        }),
+      });
+
+      if (response.status === 200) {
+        alert("Permissions saved successfully!");
+      } else {
+        setError("Failed to save permissions.");
+      }
+    } catch (err) {
+      console.error("Error saving permissions:", err);
+      setError("There was an error saving permissions.");
+    }
+  };
+
+  useEffect(() => {
+    fetchPermissions();
+    fetchRoles();
+  }, []);
 
   // Group permissions by category
   const groupPermissionsByCategory = (permissions: Permission[]) => {
@@ -85,31 +221,29 @@ const PermissionsPage: React.FC = () => {
 
   const groupedPermissions = groupPermissionsByCategory(permissions);
 
-  // Temporary removal of specific categories (Pastors, Ministry, and Governance)
+  // Filter out unwanted categories
   const categoriesToRemove = ["pastoral", "ministry", "governance", "class"];
   const filteredPermissions: { [key: string]: Permission[] } = Object.keys(groupedPermissions)
-    .filter((category) => !categoriesToRemove.includes(category.toLowerCase())) // Remove unwanted categories
+    .filter((category) => !categoriesToRemove.includes(category.toLowerCase()))
     .reduce((obj, key) => {
       obj[key] = groupedPermissions[key];
       return obj;
-    }, {} as { [key: string]: Permission[] });  // Explicitly set the type
-  
+    }, {} as { [key: string]: Permission[] });
+
   // Sidebar state
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Sidebar toggle effect
-    useEffect(() => {
-      if (sidebarOpen) {
-        document.body.classList.add("sidebar-open");
-      } else {
-        document.body.classList.remove("sidebar-open");
-      }
-    }, [sidebarOpen]);
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add("sidebar-open");
+    } else {
+      document.body.classList.remove("sidebar-open");
+    }
+  }, [sidebarOpen]);
 
-    // Render a loading state or an error if there's an issue
-    if (loading) return <p>Loading permissions...</p>;
-    if (error) return <p>{error}</p>;
+  if (loading) return <p>Loading permissions and roles...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
     <div className="permissions-body">
@@ -117,7 +251,7 @@ const PermissionsPage: React.FC = () => {
       <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
         &#9776;
       </button>
-      
+
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
           <div className="toggle close-btn">
@@ -132,17 +266,47 @@ const PermissionsPage: React.FC = () => {
         <a href="/Organization/orgLobby">The Lobby</a>
         <a href="/Organization/ListedAccounts">Accounts Tracker</a>
         <a href="/Organization/roles">Roles</a>
-        <a href="/Organization/permissions" className="active">Permissions</a>
+        <a href="/Organization/permissions" className="active">
+          Permissions
+        </a>
         <hr className="sidebar-separator" />
         <a href="/dashboard" className="return-main">To SCI-ELD ERP</a>
-        <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}> ➜ Logout </a>
+        <a
+          href="/"
+          className="logout-link"
+          onClick={(e) => {
+            e.preventDefault();
+            localStorage.clear();
+            navigate("/");
+          }}
+        >
+          ➜ Logout
+        </a>
       </div>
 
       {/* Main Content */}
       <div className="permissions-page-content">
-        {/* Replacing the old header */}
         <h1>Permissions</h1>
+
+        {/* Roles Drop-down */}
+        <label htmlFor="role-select">Select a Role:</label>
+        <select id="role-select" value={selectedRole || ""} onChange={handleRoleChange}>
+          <option value="" disabled>
+            Please select a role
+          </option>
+          {roles.map((role) => (
+            <option key={role.id} value={role.id}>
+              {role.name}
+            </option>
+          ))}
+        </select>
+
         <p>Please select a category to assign permissions</p>
+
+        {/* Save Permissions Button */}
+        <button className="save-permissions-btn" onClick={handleSavePermissions}>
+          Save Permissions
+        </button>
 
         {/* Permissions Categories */}
         <div className="permissions-radio-inputs">
@@ -156,7 +320,6 @@ const PermissionsPage: React.FC = () => {
               </span>
               <div className="content">
                 <div>
-                  {/*<h2>{category.charAt(0).toUpperCase() + category.slice(1)} Permissions</h2>*/}
                   <div className="grid">
                     <form>
                       <fieldset>
@@ -168,6 +331,8 @@ const PermissionsPage: React.FC = () => {
                               type="checkbox"
                               id={permission.name}
                               name={`${category}_${permission.name}`}
+                              checked={rolePermissions.has(permission.id)}
+                              onChange={() => handleCheckboxChange(permission.id)}  // Added onChange
                             />
                             <label htmlFor={permission.name}>{permission.description}</label>
                           </div>

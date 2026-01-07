@@ -8,7 +8,7 @@
       accent-color: #AF907A;
       height: 100%; /* Change from min-height to height */
       margin: 0; /* Ensure no extra margin at the top */
-      margin-top: -10rem;
+      margin-top: -5rem;
       /*padding-top: 2rem; /* Added space above the content */
       display: grid;
       place-items: center;
@@ -19,11 +19,13 @@
       width: 100vw;
       display: grid;
       place-items: center;
+      position: relative; /* Required for absolute positioning */
     }
 
     .permissions-page-content p{
       font-size: 1.2rem;
     }
+    
 
 /* From Uiverse.io by german_7619 */
     .permissions-radio-inputs {
@@ -248,3 +250,140 @@
       height: 1.5em;
       margin-right: 0.65rem;
     }
+
+    /* Modern drop-down button styles */
+    #role-select {
+      width: 100%;
+      max-width: 350px; /* Limit the width */
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 1px solid #ccc; /* Light border */
+      background-color: #f9f9f9; /* Soft background */
+      font-size: 1rem;
+      color: #333; /* Dark text */
+      box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px; /* Subtle shadow */
+      transition: all 0.3s ease; /* Smooth transition for focus */
+      margin-bottom: 30px; /* Space below the drop-down */
+      outline: none; /* Remove default outline */
+    }
+
+    /* Focus styling for drop-down */
+    #role-select:focus {
+      border-color: #6c63ff; /* Highlight border on focus */
+      box-shadow: rgba(108, 99, 255, 0.6) 0px 1px 2px 0px, rgba(108, 99, 255, 0.3) 0px 1px 3px 1px; /* Subtle glow effect */
+      outline: none; /* Remove outline */
+    }
+
+    /* Option styles inside the drop-down */
+    #role-select option {
+      padding: 10px;
+      font-size: 1rem;
+      background-color: #fff; /* White background for options */
+      color: #333; /* Dark text for options */
+    }
+
+    /* Hover effect for options */
+    #role-select option:hover {
+      background-color: #f0f0f0; /* Light hover background */
+      color: #6c63ff; /* Change text color to blue on hover */
+    }
+
+    /* Label styling above the drop-down */
+    label[for="role-select"] {
+      font-size: 1.1rem;
+      color: #333;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    /* Animation for smooth appearance */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Apply fade-in animation to the drop-down */
+    #role-select {
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+
+    /* login-again-button CSS */
+    .login-again-button {
+      align-items: center;
+      appearance: none;
+      background-color: #FCFCFD;
+      border-radius: 4px;
+      border-width: 0;
+      box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,rgba(45, 35, 66, 0.3) 0 7px 13px -3px,#D6D6E7 0 -3px 0 inset;
+      box-sizing: border-box;
+      color: #36395A;
+      cursor: pointer;
+      display: inline-flex;
+      font-family: "JetBrains Mono",monospace;
+      height: 48px;
+      justify-content: center;
+      line-height: 1;
+      list-style: none;
+      overflow: hidden;
+      padding-left: 16px;
+      padding-right: 16px;
+      position: relative;
+      text-align: left;
+      text-decoration: none;
+      transition: box-shadow .15s,transform .15s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      white-space: nowrap;
+      will-change: box-shadow,transform;
+      font-size: 18px;
+    }
+
+    .login-again-button:focus {
+      box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+    }
+
+    .login-again-button:hover {
+      box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+      transform: translateY(-2px);
+    }
+
+    .login-again-button:active {
+      box-shadow: #D6D6E7 0 3px 7px inset;
+      transform: translateY(2px);
+    }
+
+    /* Permissions Section Styles */
+    .save-permissions-btn {
+      position: relative;
+      left: 35%;
+      align-self: flex-start; /* Align it to the top-left by default */
+      padding: 10px 20px;
+      background-color: #4CAF50; /* Green color */
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      margin-bottom: 1.5rem; /* Space between the button and the permissions inputs */
+    }
+
+    .save-permissions-btn:hover {
+      background-color: #45a049; /* Darker green on hover */
+      box-shadow: rgba(0, 0, 0, 0.2) 0 6px 10px;
+    }
+
+    .save-permissions-btn:focus {
+      outline: none;
+    }
+
