@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HRHeader from './HRHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
+import axios from 'axios';
 
-// Declare the base URL here
+
 const baseURL = import.meta.env.VITE_BASE_URL;
 
-// Define the interface for Payroll record
 interface PayrollRecord {
   payroll_id: number;
   staff_id: number;
@@ -41,7 +41,7 @@ interface PayrollRecord {
   created_at: string;
   updated_at: string;
   role?: string;
-  staff_name?: string; // Adding staff_name to the payroll data
+  staff_name?: string;
 }
 
 interface Department {
@@ -52,6 +52,7 @@ interface Department {
 interface Role {
   id: number;
   name: string;
+  department_id: number; // Link roles to department
 }
 
 const monthNames = [
@@ -60,18 +61,19 @@ const monthNames = [
 ];
 
 const HrPayrollPage: React.FC = () => {
+  console.log("HrPayrollPage Component Rendering");
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [payrollData, setPayrollData] = useState<PayrollRecord[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [staffNames, setStaffNames] = useState<any[]>([]); // State for staff names
+  const [staffNames, setStaffNames] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState<string | "all">("all");
   const [filterYear, setFilterYear] = useState<number | "all">("all");
   const [filterDepartment, setFilterDepartment] = useState<string | "all">("all");
 
-  // ------------------- Sidebar -------------------
+  // Sidebar toggle function
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
   useEffect(() => {
@@ -79,45 +81,64 @@ const HrPayrollPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // ------------------- Helper Function to Fetch Data -------------------
-  const fetchDataWithAuthFallback = async (url: string) => {
-    try {
-      return await authFetch(url); // Try fetching using authFetch
-    } catch (error) {
-      console.log("authFetch failed, falling back to orgFetch");
-      return await orgFetch(url); // Fallback to orgFetch
-    }
-  };
-
-  // ------------------- Fetch Departments -------------------
-  useEffect(() => {
-    const fetchDepartments = async () => {
+  // Helper function to fetch data with fallback
+  
+    const fetchDataWithAuthFallback = async (url: string) => {
       try {
-        const data: Department[] = await fetchDataWithAuthFallback(`${baseURL}/api/departments`);
-        setDepartments(data);
-      } catch (error) {
-        console.error("Error fetching departments:", error);
+        return await authFetch(url); // Try fetching using authFetch
+      } catch (error: unknown) {
+        console.log("authFetch failed, falling back to orgFetch", error);
+
+        // Narrow the error to AxiosError to safely access `response`
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          console.log("Unauthorized, redirecting to login");
+          navigate("/login"); // Redirect to login page
+        }
+
+        // Fallback to orgFetch if authFetch fails
+        return await orgFetch(url);
       }
     };
 
-    fetchDepartments();
-  }, []);
 
-  // ------------------- Fetch Roles -------------------
+  // Fetch departments and roles
   useEffect(() => {
-    const fetchRoles = async () => {
+    console.log("useEffect for fetching departments and roles is running!"); 
+    const fetchDepartmentsAndRoles = async () => {
       try {
-        const data: Role[] = await fetchDataWithAuthFallback(`${baseURL}/api/roles`);
-        setRoles(data);
+
+        // Log the token to see if it is available
+        const token = localStorage.getItem("token");
+        console.log("Token for request:", token);
+
+        // Log the request headers to see if token is being passed correctly
+        console.log("Request Headers:", {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        });
+
+        const [deptData, roleData]: [Department[], Role[]] = await Promise.all([
+          fetchDataWithAuthFallback(`${baseURL}/api/departments`), // Ensure authFetch is used here
+          fetchDataWithAuthFallback(`${baseURL}/api/roles`), // Ensure authFetch is used here
+        ]);
+
+        // Assign roles to corresponding departments
+        const departmentsWithRoles = deptData.map((dept) => {
+          const departmentRoles = roleData.filter((role) => role.department_id === dept.id);
+          return { ...dept, roles: departmentRoles };
+        });
+
+        setDepartments(departmentsWithRoles);
+        setRoles(roleData); // Save all roles (for payroll mapping)
       } catch (error) {
-        console.error("Error fetching roles:", error);
+        console.error("Error fetching departments and roles:", error);
       }
     };
 
-    fetchRoles();
+    fetchDepartmentsAndRoles();
   }, []);
 
-  // ------------------- Fetch Staff Names -------------------
+  // Fetch staff names
   useEffect(() => {
     const fetchStaffNames = async () => {
       try {
@@ -131,13 +152,21 @@ const HrPayrollPage: React.FC = () => {
     fetchStaffNames();
   }, []);
 
-  // ------------------- Fetch Payroll Data -------------------
+  // Fetch payroll data
   useEffect(() => {
     const fetchPayrollData = async () => {
       if (departments.length === 0 || roles.length === 0 || staffNames.length === 0) return;
 
       try {
+
+        // Log the Authorization header to check if the token is being sent
+      console.log("Request Headers:", {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json",
+      });
+
         const data: PayrollRecord[] = await fetchDataWithAuthFallback(`${baseURL}/api/payroll`);
+        
         // Map payroll data to include department names, roles, and staff names
         const payrollWithDetails = data.map((payroll) => {
           const department = departments.find((dep) => dep.id === payroll.department_id);
@@ -161,7 +190,7 @@ const HrPayrollPage: React.FC = () => {
     fetchPayrollData();
   }, [departments, roles, staffNames]);
 
-  // ------------------- Filtered Payroll -------------------
+  // Filter payroll data
   const filteredPayroll = useMemo(() => {
     return payrollData.filter((rec) => {
       const dateObj = new Date(rec.created_at);
@@ -173,7 +202,7 @@ const HrPayrollPage: React.FC = () => {
     });
   }, [payrollData, filterMonth, filterYear, filterDepartment, search]);
 
-  // ------------------- Group by Department -------------------
+  // Group payroll data by department
   const groupByDepartment = (data: PayrollRecord[]) => {
     return data.reduce((acc, payroll) => {
       if (!acc[payroll.department]) {
@@ -186,13 +215,13 @@ const HrPayrollPage: React.FC = () => {
 
   const groupedPayrollData = groupByDepartment(filteredPayroll);
 
-  // ------------------- Date Formatter -------------------
+  // Date formatter
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   };
 
-  // ------------------- Delete Payroll -------------------
+  // Delete payroll record
   const deletePayroll = async (index: number) => {
     if (window.confirm("Are you sure you want to delete this payroll record?")) {
       const payrollRecord = filteredPayroll[index];
@@ -210,7 +239,7 @@ const HrPayrollPage: React.FC = () => {
     }
   };
 
-  // ------------------- KPI Calculations -------------------
+  // KPI calculations
   const selectedMonthIndex = filterMonth === "all" ? new Date().getMonth() : monthNames.indexOf(filterMonth);
   const selectedYearValue = filterYear === "all" ? new Date().getFullYear() : filterYear;
 

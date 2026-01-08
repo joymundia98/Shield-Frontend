@@ -2,11 +2,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
+import axios from 'axios';
 
-// Declare the base URL here
+
 const baseURL = import.meta.env.VITE_BASE_URL;
 
-// Define the interface for Payroll record
 interface PayrollRecord {
   payroll_id: number;
   staff_id: number;
@@ -40,7 +41,7 @@ interface PayrollRecord {
   created_at: string;
   updated_at: string;
   role?: string;
-  staff_name?: string; // Adding staff_name to the payroll data
+  staff_name?: string;
 }
 
 interface Department {
@@ -83,12 +84,31 @@ const FinancePayrollPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  // ------------------- Helper function to fetch data with fallback -------------------
+
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url); // Try fetching using authFetch
+    } catch (error: unknown) {
+      console.log("authFetch failed, falling back to orgFetch", error);
+
+      // Narrow the error to AxiosError to safely access `response`
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log("Unauthorized, redirecting to login");
+        navigate("/login"); // Redirect to login page
+      }
+
+      // Fallback to orgFetch if authFetch fails
+      return await orgFetch(url);
+    }
+  };
+
+
   // ------------------- Fetch Departments -------------------
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/departments`);
-        const data: Department[] = await response.json();
+        const data: Department[] = await fetchDataWithAuthFallback(`${baseURL}/api/departments`);
         setDepartments(data);
       } catch (error) {
         console.error("Error fetching departments:", error);
@@ -102,8 +122,7 @@ const FinancePayrollPage: React.FC = () => {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/roles`);
-        const data: Role[] = await response.json();
+        const data: Role[] = await fetchDataWithAuthFallback(`${baseURL}/api/roles`);
         setRoles(data);
       } catch (error) {
         console.error("Error fetching roles:", error);
@@ -117,8 +136,7 @@ const FinancePayrollPage: React.FC = () => {
   useEffect(() => {
     const fetchStaffNames = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/staff`);
-        const data = await response.json();
+        const data = await fetchDataWithAuthFallback(`${baseURL}/api/staff`);
         setStaffNames(data);
       } catch (error) {
         console.error("Error fetching staff names:", error);
@@ -134,8 +152,7 @@ const FinancePayrollPage: React.FC = () => {
       if (departments.length === 0 || roles.length === 0 || staffNames.length === 0) return;
 
       try {
-        const response = await fetch(`${baseURL}/api/payroll`);
-        const data: PayrollRecord[] = await response.json();
+        const data: PayrollRecord[] = await fetchDataWithAuthFallback(`${baseURL}/api/payroll`);
 
         // Map payroll data to include department names, roles, and staff names
         const payrollWithDetails = data.map((payroll) => {
@@ -162,9 +179,35 @@ const FinancePayrollPage: React.FC = () => {
 
   // ------------------- Approve/Reject Handlers -------------------
   const updatePayrollStatus = async (payrollId: number, status: "Paid" | "Rejected") => {
+  try {
+    console.log(`Updating status for payroll ID ${payrollId} to ${status}`); // Log the request
+
+    // Use authFetch for the PATCH request
+    const response = await authFetch(`${baseURL}/api/payroll/${payrollId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    // If the request is successful, update the local state with the new status
+    if (response.ok) {
+      setPayrollData((prevData) =>
+        prevData.map((payroll) =>
+          payroll.payroll_id === payrollId ? { ...payroll, status } : payroll
+        )
+      );
+    } else {
+      // Handle error if the response is not successful
+      console.error("Failed to update payroll status");
+    }
+  } catch (error) {
+    console.error("Error updating payroll status:", error);
+
+    // Fallback to orgFetch if authFetch fails
     try {
-      console.log(`Updating status for payroll ID ${payrollId} to ${status}`); // Log the request
-      await fetch(`${baseURL}/api/payroll/${payrollId}`, {
+      const response = await orgFetch(`${baseURL}/api/payroll/${payrollId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -172,16 +215,21 @@ const FinancePayrollPage: React.FC = () => {
         body: JSON.stringify({ status }),
       });
 
-      // Update the local state after the status is changed
-      setPayrollData((prevData) =>
-        prevData.map((payroll) =>
-          payroll.payroll_id === payrollId ? { ...payroll, status } : payroll
-        )
-      );
-    } catch (error) {
-      console.error("Error updating payroll status:", error);
+      // If the fallback request is successful, update the local state with the new status
+      if (response.ok) {
+        setPayrollData((prevData) =>
+          prevData.map((payroll) =>
+            payroll.payroll_id === payrollId ? { ...payroll, status } : payroll
+          )
+        );
+      } else {
+        console.error("Failed to update payroll status via fallback");
+      }
+    } catch (fallbackError) {
+      console.error("Fallback error while updating payroll status:", fallbackError);
     }
-  };
+  }
+};
 
   const openconfirmationModal = (
     type: "approve" | "reject",
@@ -197,8 +245,6 @@ const FinancePayrollPage: React.FC = () => {
     setSelectedRecord(null);
   };
 
-  
-  // ------------------- Confirm Modal Action -------------------
   const confirmAction = () => {
     if (!selectedRecord || !confirmationType) return;
 
@@ -210,7 +256,6 @@ const FinancePayrollPage: React.FC = () => {
 
     closeconfirmationModal();
   };
-
 
   // ------------------- Filtered Payroll -------------------
   const filteredPayroll = useMemo(() => {
@@ -444,7 +489,6 @@ const FinancePayrollPage: React.FC = () => {
                             >
                               Reject
                             </button>
-
                           </>
                         )}
                       </td>
@@ -473,12 +517,10 @@ const FinancePayrollPage: React.FC = () => {
               >
                 Confirm
               </button>
-
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

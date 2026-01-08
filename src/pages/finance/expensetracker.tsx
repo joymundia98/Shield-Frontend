@@ -55,8 +55,8 @@ const ExpenseTrackerPage: React.FC = () => {
   }, [sidebarOpen]);
 
   // Data from backend
-  const [categories, setCategories] = useState<ExpenseCategories>({});
-  const [categoryList, setCategoryList] = useState<string[]>([]);
+  const [_categories, setCategories] = useState<ExpenseCategories>({});
+  const [_categoryList, setCategoryList] = useState<string[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -138,16 +138,21 @@ useEffect(() => {
       mappedExpenses.forEach((item: ExpenseItem) => {
         if (!grouped[item.category_name]) grouped[item.category_name] = [];
 
-        let group = grouped[item.category_name].find(
+        let group = grouped[item.category_name]?.find(
           (g) => g.name === item.subcategory_name
         );
 
         if (!group) {
           group = { name: item.subcategory_name, items: [] };
-          grouped[item.category_name].push(group);
+          if (grouped[item.category_name]) {
+            grouped[item.category_name]?.push(group);
+          } else {
+            grouped[item.category_name] = [group];
+          }
         }
 
         group.items.push(item);
+
       });
 
       setCategories(grouped);

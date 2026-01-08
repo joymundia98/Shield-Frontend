@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./roles.css";
+import { authFetch, orgFetch } from "../../utils/api";  // Importing authFetch and orgFetch
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -16,6 +17,7 @@ interface Role {
   id: number;
   name: string;
   description: string;
+  department_id: number;
 }
 
 const RolesPage: React.FC = () => {
@@ -24,62 +26,108 @@ const RolesPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Static roles data (for demonstration purposes)
-  const staticRoles: Role[] = [
-    { id: 1, name: "Role 1", description: "Role 1 description" },
-    { id: 2, name: "Role 2", description: "Role 2 description" },
-    { id: 3, name: "Role 3", description: "Role 3 description" },
-    { id: 4, name: "Role 4", description: "Role 4 description" },
-    { id: 5, name: "Role 5", description: "Role 5 description" },
-    { id: 6, name: "Role 6", description: "Role 6 description" },
-  ];
-
   // State for visible cards
   const [visibleChurchCount, setVisibleChurchCount] = useState(3); // Start with showing 3
   const [visibleCorporateCount, setVisibleCorporateCount] = useState(3); // Start with showing 3
 
-  // Function to fetch departments
+  // Function to fetch departments with auth logic
   const fetchDepartments = useCallback(async () => {
+  try {
+    const data = await authFetch(`${baseURL}/api/departments`); // Fetch departments
+
+    // Fetch roles for each department
+    const rolesData = await authFetch(`${baseURL}/api/roles`); // Assuming there's an endpoint for roles
+
+    // Organize roles by department_id for quick lookup
+    const rolesByDept: { [key: number]: Role[] } = {};
+    rolesData.forEach((role: Role) => {
+      if (!rolesByDept[role.department_id]) {
+        rolesByDept[role.department_id] = [];
+      }
+      rolesByDept[role.department_id].push(role);
+    });
+
+    // Categorize departments and assign roles
+    const churchDepts = data
+      .filter((dept: Department) => dept.category === "church")
+      .map((dept: Department) => {
+        const departmentRoles = rolesByDept[dept.id] || []; // Get roles or empty array if none
+        return {
+          ...dept,
+          roles: departmentRoles, // Use empty array if no roles
+          showMoreRoles: false,
+        };
+      })
+      .sort((a: Department, b: Department) => a.name.localeCompare(b.name)); // Sort church departments alphabetically
+
+    const corporateDepts = data
+      .filter((dept: Department) => dept.category === "corporate")
+      .map((dept: Department) => {
+        const departmentRoles = rolesByDept[dept.id] || []; // Get roles or empty array if none
+        return {
+          ...dept,
+          roles: departmentRoles, // Use empty array if no roles
+          showMoreRoles: false,
+        };
+      })
+      .sort((a: Department, b: Department) => a.name.localeCompare(b.name)); // Sort corporate departments alphabetically
+
+    setChurchDepartments(churchDepts);
+    setCorporateDepartments(corporateDepts);
+    setLoading(false);
+  } catch (err: any) {
+    // Fallback to orgFetch if authFetch fails
+    console.error("authFetch failed, falling back to orgFetch", err);
     try {
-      const response = await fetch(`${baseURL}/api/departments`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const fallbackData = await orgFetch(`${baseURL}/api/departments`);
+      const fallbackRolesData = await orgFetch(`${baseURL}/api/roles`);
+
+      const rolesByDept: { [key: number]: Role[] } = {};
+      fallbackRolesData.forEach((role: Role) => {
+        if (!rolesByDept[role.department_id]) {
+          rolesByDept[role.department_id] = [];
+        }
+        rolesByDept[role.department_id].push(role);
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch departments: ${response.statusText}`);
-      }
+      const churchDepts = fallbackData
+        .filter((dept: Department) => dept.category === "church")
+        .map((dept: Department) => {
+          const departmentRoles = rolesByDept[dept.id] || [];
+          return {
+            ...dept,
+            roles: departmentRoles,
+            showMoreRoles: false,
+          };
+        })
+        .sort((a: Department, b: Department) => a.name.localeCompare(b.name));
 
-      const data: Department[] = await response.json();
-
-      // Categorize departments
-      const churchDepts = data
-        .filter((dept) => dept.category === "church")
-        .map((dept) => ({
-          ...dept,
-          roles: staticRoles,
-          showMoreRoles: false, // Default state to hide extra roles
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name)); // Sort church departments alphabetically
-
-      const corporateDepts = data
-        .filter((dept) => dept.category === "corporate")
-        .map((dept) => ({
-          ...dept,
-          roles: staticRoles,
-          showMoreRoles: false, // Default state to hide extra roles
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name)); // Sort corporate departments alphabetically
+      const corporateDepts = fallbackData
+        .filter((dept: Department) => dept.category === "corporate")
+        .map((dept: Department) => {
+          const departmentRoles = rolesByDept[dept.id] || [];
+          return {
+            ...dept,
+            roles: departmentRoles,
+            showMoreRoles: false,
+          };
+        })
+        .sort((a: Department, b: Department) => a.name.localeCompare(b.name));
 
       setChurchDepartments(churchDepts);
       setCorporateDepartments(corporateDepts);
       setLoading(false);
-    } catch (err: any) {
-      setError(err?.message || "An error occurred while fetching departments.");
+    } catch (fallbackErr: unknown) {
+      if (fallbackErr instanceof Error) {
+        setError(fallbackErr.message || "An error occurred while fetching departments.");
+      } else {
+        setError("An error occurred while fetching departments.");
+      }
       setLoading(false);
     }
-  }, []);
+
+  }
+}, []);
 
   // Fetch departments on load
   useEffect(() => {
@@ -90,27 +138,6 @@ const RolesPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const navigate = useNavigate();  // Add this to your component
-
-  //const [authToken, setAuthToken] = useState<string | null>(null);
-  //const [organization, setOrganization] = useState<any | null>(null);
-
-  // Fetch token and organization data
-  {/*useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      setAuthToken(token);
-    } else {
-      console.log("No authToken found in localStorage");
-    }
-
-    const savedOrg = localStorage.getItem("organization");
-    if (savedOrg) {
-      const parsedOrg = JSON.parse(savedOrg);
-      setOrganization(parsedOrg);
-    } else {
-      console.log("No organization data found in localStorage.");
-    }
-  }, []);*/}
 
   // Sidebar toggle effect
   useEffect(() => {
@@ -210,6 +237,7 @@ const RolesPage: React.FC = () => {
               <div className="department-card-header">
                 <h3>{dept.name}</h3>
               </div>
+              
               <div className="department-card-body">
                 {dept.roles
                   .slice(0, 3) // Show the first 3 roles
@@ -255,7 +283,7 @@ const RolesPage: React.FC = () => {
             </div>
           ))}
         </div>
-        {/* View More and View Less buttons for Church Departments */}
+                {/* View More and View Less buttons for Church Departments */}
         <div className="view-more-buttons">
           {visibleChurchCount < churchDepartments.length && (
             <>
@@ -284,21 +312,12 @@ const RolesPage: React.FC = () => {
               <div className="department-card-header">
                 <h3>{dept.name}</h3>
               </div>
+
               <div className="department-card-body">
-                {dept.roles
-                  .slice(0, 3) // Show the first 3 roles
-                  .map((role) => (
-                    <div key={role.id} className="role-card">
-                      <div className="role-card-header">
-                        <h4>{role.name}</h4>
-                      </div>
-                      <div className="tooltip">{role.description}</div>
-                    </div>
-                  ))}
-                {/* Show more roles */}
-                {dept.roles.length > 3 && dept.showMoreRoles && (
+                {/* Check if dept.roles is not null and is an array */}
+                {Array.isArray(dept.roles) && dept.roles.length > 0 ? (
                   <>
-                    {dept.roles.slice(3).map((role) => (
+                    {dept.roles.slice(0, 3).map((role) => (
                       <div key={role.id} className="role-card">
                         <div className="role-card-header">
                           <h4>{role.name}</h4>
@@ -306,29 +325,47 @@ const RolesPage: React.FC = () => {
                         <div className="tooltip">{role.description}</div>
                       </div>
                     ))}
-                    <button
-                      className="button-30"
-                      role="button"
-                      onClick={() => toggleRolesVisibility(dept.id)}
-                    >
-                      View Less
-                    </button>
+
+                    {/* Show more roles if any */}
+                    {dept.roles.length > 3 && dept.showMoreRoles && (
+                      <>
+                        {dept.roles.slice(3).map((role) => (
+                          <div key={role.id} className="role-card">
+                            <div className="role-card-header">
+                              <h4>{role.name}</h4>
+                            </div>
+                            <div className="tooltip">{role.description}</div>
+                          </div>
+                        ))}
+                        <button
+                          className="button-30"
+                          role="button"
+                          onClick={() => toggleRolesVisibility(dept.id)}
+                        >
+                          View Less
+                        </button>
+                      </>
+                    )}
+
+                    {/* Show less roles */}
+                    {dept.roles.length > 3 && !dept.showMoreRoles && (
+                      <button
+                        className="button-30"
+                        role="button"
+                        onClick={() => toggleRolesVisibility(dept.id)}
+                      >
+                        View More
+                      </button>
+                    )}
                   </>
-                )}
-                {/* Show less roles */}
-                {dept.roles.length > 3 && !dept.showMoreRoles && (
-                  <button
-                    className="button-30"
-                    role="button"
-                    onClick={() => toggleRolesVisibility(dept.id)}
-                  >
-                    View More
-                  </button>
-                )}
+                ) : (
+                  <p>No roles available for this department.</p>)
+                }
               </div>
             </div>
           ))}
         </div>
+
         {/* View More and View Less buttons for Corporate Departments */}
         <div className="view-more-buttons">
           {visibleCorporateCount < corporateDepartments.length && (

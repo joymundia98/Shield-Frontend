@@ -13,6 +13,7 @@ interface Category {
 }
 
 interface PaymentMethod {
+  id: number;
   name: string;
 }
 
@@ -25,27 +26,27 @@ const FinanceCategoriesPage: React.FC = () => {
   /* -------------------- Finance States -------------------- */
   const [incomeCategories, setIncomeCategories] = useState<Category[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<Category[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([ 
-    { name: "Cash" },
-    { name: "Credit Card" },
-    { name: "Bank Transfer" },
-    { name: "POS" },
-    { name: "Mobile Money" },
-    { name: "Cheque" },
-    { name: "Online Giving Platform" },
-    { name: "Debit Card" },
-    { name: "Apple Pay" },
-    { name: "Google Pay" },
-    { name: "Samsung Pay" },
-    { name: "PayPal" },
-    { name: "Cryptocurrency" },
-    { name: "Buy Now, Pay Later" },
-    { name: "Gift Card" },
-    { name: "Prepaid Card" },
-    { name: "Direct Debit" },
-    { name: "Standing Order" },
-    { name: "Money Order" },
-  ]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
+  { id: 1, name: "Cash" },
+  { id: 2, name: "Credit Card" },
+  { id: 3, name: "Bank Transfer" },
+  { id: 4, name: "POS" },
+  { id: 5, name: "Mobile Money" },
+  { id: 6, name: "Cheque" },
+  { id: 7, name: "Online Giving Platform" },
+  { id: 8, name: "Debit Card" },
+  { id: 9, name: "Apple Pay" },
+  { id: 10, name: "Google Pay" },
+  { id: 11, name: "Samsung Pay" },
+  { id: 12, name: "PayPal" },
+  { id: 13, name: "Cryptocurrency" },
+  { id: 14, name: "Buy Now, Pay Later" },
+  { id: 15, name: "Gift Card" },
+  { id: 16, name: "Prepaid Card" },
+  { id: 17, name: "Direct Debit" },
+  { id: 18, name: "Standing Order" },
+  { id: 19, name: "Money Order" },
+]);
 
   /* -------------------- Popup States -------------------- */
   const [showPopup, setShowPopup] = useState(false);
@@ -113,6 +114,7 @@ const FinanceCategoriesPage: React.FC = () => {
         const [categoriesRes, subcategoriesRes] = await Promise.all([
           fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_categories`),
           fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_subcategories`),
+          
         ]);
 
         const categories: Category[] = categoriesRes.map((cat: any) => ({
@@ -173,123 +175,186 @@ const FinanceCategoriesPage: React.FC = () => {
 
   /* -------------------- Add/Edit/Delete Handlers -------------------- */
   const saveItem = async () => {
-    if (!itemName.trim()) {
-      alert("Name is required");
-      return;
-    }
+  if (!itemName.trim()) {
+    alert("Name is required");
+    return;
+  }
 
-    if ((editingGroup === "income" || editingGroup === "expense") && subcategories.length === 0) {
-      alert("Add at least one subcategory");
-      return;
-    }
+  if ((editingGroup === "income" || editingGroup === "expense") && subcategories.length === 0) {
+    alert("Add at least one subcategory");
+    return;
+  }
 
-    try {
-      const headers = authFetch();  // Get the token headers
+  try {
+    const headers = await authFetch(baseURL);  // Await to get headers
 
-      if (editingGroup === "income") {
-        const updated = [...incomeCategories];
-        if (editIndex !== null) {
-          // Update existing category
-          const updatedCategory = { ...updated[editIndex], name: itemName, subcategories };
-          await fetch(`${baseURL}/api/finance/income_categories/${updated[editIndex].id}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify(updatedCategory),
-          });
-          updated[editIndex] = updatedCategory;
-        } else {
-          // Add new category
-          const newCategory = { name: itemName, subcategories };
-          const response = await fetch(`${baseURL}/api/finance/income_categories`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(newCategory),
-          });
-          const data = await response.json();
-          updated.push(data); // Assuming the backend responds with the newly created category
+    // Handle "income" categories
+    if (editingGroup === "income") {
+      const updated = [...incomeCategories];
+      
+      if (editIndex !== null) {
+        // Update existing category (income_categories table)
+        const updatedCategory = { ...updated[editIndex], name: itemName };
+        await fetch(`${baseURL}/api/finance/income_categories/${updated[editIndex].id}`, {
+          method: 'PUT',
+          headers: headers,  // Use the awaited headers
+          body: JSON.stringify(updatedCategory),
+        });
+        updated[editIndex] = updatedCategory;
+
+        // Now, handle the subcategories update in income_subcategory table
+        for (let subcategory of subcategories) {
+          const existingSubcategory = updated[editIndex].subcategories?.find(sub => sub === subcategory);
+          if (!existingSubcategory) {
+            await fetch(`${baseURL}/api/finance/income_subcategories`, {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({
+                category_id: updated[editIndex].id,
+                name: subcategory,
+              }),
+            });
+          }
         }
-        setIncomeCategories(updated);
-      } else if (editingGroup === "expense") {
-        const updated = [...expenseCategories];
-        if (editIndex !== null) {
-          const updatedCategory = { ...updated[editIndex], name: itemName, subcategories };
-          await fetch(`${baseURL}/api/finance/expense_categories/${updated[editIndex].id}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify(updatedCategory),
-          });
-          updated[editIndex] = updatedCategory;
-        } else {
-          const newCategory = { name: itemName, subcategories };
-          const response = await fetch(`${baseURL}/api/finance/expense_categories`, {
+      } else {
+        // Add new category (income_categories table)
+        const newCategory = { name: itemName, subcategories };
+        const response = await fetch(`${baseURL}/api/finance/income_categories`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(newCategory),
+        });
+        const data = await response.json();
+        updated.push(data); // Assuming the backend responds with the newly created category
+
+        // Now handle subcategories addition to the income_subcategory table
+        for (let subcategory of subcategories) {
+          await fetch(`${baseURL}/api/finance/income_subcategories`, {
             method: 'POST',
-            headers,
-            body: JSON.stringify(newCategory),
+            headers: headers,
+            body: JSON.stringify({
+              category_id: data.id,
+              name: subcategory,
+            }),
           });
-          const data = await response.json();
-          updated.push(data);
         }
-        setExpenseCategories(updated);
-      } else if (editingGroup === "payment") {
-        const updated = [...paymentMethods];
-        if (editIndex !== null) {
-          const updatedPayment = { name: itemName };
-          await fetch(`${baseURL}/api/finance/payment_methods/${updated[editIndex].id}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify(updatedPayment),
-          });
-          updated[editIndex] = updatedPayment;
-        } else {
-          const newPayment = { name: itemName };
-          const response = await fetch(`${baseURL}/api/finance/payment_methods`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(newPayment),
-          });
-          const data = await response.json();
-          updated.push(data);
-        }
-        setPaymentMethods(updated);
       }
 
-      closePopup();
-    } catch (error) {
-      console.error("Failed to save item", error);
-    }
-  };
+      setIncomeCategories(updated);
 
-  const deleteItem = async (group: GroupType, index: number) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
+    } else if (editingGroup === "expense") {
+      const updated = [...expenseCategories];
+      
+      if (editIndex !== null) {
+        // Update existing category (expense_categories table)
+        const updatedCategory = { ...updated[editIndex], name: itemName };
+        await fetch(`${baseURL}/api/finance/expense_categories/${updated[editIndex].id}`, {
+          method: 'PUT',
+          headers: headers,
+          body: JSON.stringify(updatedCategory),
+        });
+        updated[editIndex] = updatedCategory;
 
-    try {
-      const headers = authFetch();  // Get the token headers
+        // Now, handle the subcategories update in expense_subcategory table
+        for (let subcategory of subcategories) {
+          const existingSubcategory = updated[editIndex].subcategories?.find(sub => sub === subcategory);
+          if (!existingSubcategory) {
+            await fetch(`${baseURL}/api/finance/expense_subcategories`, {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({
+                category_id: updated[editIndex].id,
+                name: subcategory,
+              }),
+            });
+          }
+        }
+      } else {
+        // Add new category (expense_categories table)
+        const newCategory = { name: itemName, subcategories };
+        const response = await fetch(`${baseURL}/api/finance/expense_categories`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(newCategory),
+        });
+        const data = await response.json();
+        updated.push(data);
 
-      if (group === "income") {
-        await fetch(`${baseURL}/api/finance/income_categories/${incomeCategories[index].id}`, {
-          method: 'DELETE',
-          headers,
-        });
-        setIncomeCategories(prev => prev.filter((_, i) => i !== index)); // Update state after deletion
-      } else if (group === "expense") {
-        await fetch(`${baseURL}/api/finance/expense_categories/${expenseCategories[index].id}`, {
-          method: 'DELETE',
-          headers,
-        });
-        setExpenseCategories(prev => prev.filter((_, i) => i !== index)); // Update state after deletion
-      } else if (group === "payment") {
-        await fetch(`${baseURL}/api/finance/payment_methods/${paymentMethods[index].id}`, {
-          method: 'DELETE',
-          headers,
-        });
-        setPaymentMethods(prev => prev.filter((_, i) => i !== index)); // Update state after deletion
+        // Now handle subcategories addition to the expense_subcategory table
+        for (let subcategory of subcategories) {
+          await fetch(`${baseURL}/api/finance/expense_subcategories`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+              category_id: data.id,
+              name: subcategory,
+            }),
+          });
+        }
       }
 
-      closePopup(); // Close the popup after deletion
-    } catch (error) {
-      console.error("Failed to delete item", error);
+      setExpenseCategories(updated);
+    } else if (editingGroup === "payment") {
+      const updated = [...paymentMethods];
+      if (editIndex !== null) {
+        const updatedPayment = { id: paymentMethods[editIndex].id, name: itemName };  // Ensure id is present
+        await fetch(`${baseURL}/api/finance/payment_methods/${paymentMethods[editIndex].id}`, {
+          method: 'PUT',
+          headers: headers,
+          body: JSON.stringify(updatedPayment),
+        });
+        updated[editIndex] = updatedPayment;
+      } else {
+        const newPayment = { name: itemName };
+        const response = await fetch(`${baseURL}/api/finance/payment_methods`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(newPayment),
+        });
+        const data = await response.json();
+        updated.push(data);
+      }
+      setPaymentMethods(updated);
     }
-  };
+
+    closePopup();
+  } catch (error) {
+    console.error("Failed to save item", error);
+  }
+};
+
+
+const deleteItem = async (group: GroupType, index: number) => {
+  if (group === "income") {
+    const updated = [...incomeCategories];
+    const categoryToDelete = updated[index];
+    await fetch(`${baseURL}/api/finance/income_categories/${categoryToDelete.id}`, {
+      method: 'DELETE',
+      headers: await authFetch(baseURL),  // Assuming you need headers here as well
+    });
+    updated.splice(index, 1);  // Remove the deleted category from the list
+    setIncomeCategories(updated);
+  } else if (group === "expense") {
+    const updated = [...expenseCategories];
+    const categoryToDelete = updated[index];
+    await fetch(`${baseURL}/api/finance/expense_categories/${categoryToDelete.id}`, {
+      method: 'DELETE',
+      headers: await authFetch(baseURL),
+    });
+    updated.splice(index, 1);
+    setExpenseCategories(updated);
+  } else if (group === "payment") {
+    const updated = [...paymentMethods];
+    const paymentToDelete = updated[index];
+    await fetch(`${baseURL}/api/finance/payment_methods/${paymentToDelete.id}`, {
+      method: 'DELETE',
+      headers: await authFetch(baseURL),
+    });
+    updated.splice(index, 1);
+    setPaymentMethods(updated);
+  }
+};
+
 
   const addSubcategory = (name?: string) => setSubcategories([...subcategories, name || ""]);
   const deleteSubcategory = (index: number) => setSubcategories(subcategories.filter((_, i) => i !== index));
