@@ -46,15 +46,39 @@ const VisitorsDashboard: React.FC = () => {
   }, [sidebarOpen]);
 
   // Fetch visitors from the backend API
+  const authFetch = async (url: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found.");
+
+    const res = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  };
+
+  const orgFetch = async (url: string) => {
+    const res = await axios.get(url);
+    return res.data;
+  };
+
   useEffect(() => {
     const fetchVisitors = async () => {
       try {
-        const res = await axios.get(`${baseURL}/api/visitor`);
-        setVisitors(res.data); // Set the visitors data from the API response
+        const res = await authFetch(`${baseURL}/api/visitor`);
+        setVisitors(res); // Set the visitors data from the API response
       } catch (err) {
-        console.error("Error fetching visitors:", err);
+        console.error("Error fetching visitors with authFetch:", err);
+        try {
+          const res = await orgFetch(`${baseURL}/api/visitor`);
+          setVisitors(res); // Fallback to orgFetch
+        } catch (fallbackErr) {
+          console.error("Error fetching visitors with orgFetch:", fallbackErr);
+        }
       }
     };
+
     fetchVisitors();
   }, []);
 
@@ -66,6 +90,19 @@ const VisitorsDashboard: React.FC = () => {
   };
 
   const currentMonthYear = getCurrentMonthYear();
+
+  // Calculate first-time visitors for the current month
+  const firstTimeVisitorsThisMonth = visitors.filter((visitor) => {
+    // Get the month and year from the visitor's visit_date
+    const visitDate = new Date(visitor.visit_date);
+    const visitorMonthYear = visitDate.toLocaleDateString("en-US", {
+      year: 'numeric',
+      month: 'long'
+    });
+
+    // Check if visitor is a first-time visitor and if their visit is in the current month/year
+    return visitor.first_time && visitorMonthYear === currentMonthYear;
+  });
 
   // Initialize charts with dynamic data
   useEffect(() => {
@@ -151,76 +188,72 @@ const VisitorsDashboard: React.FC = () => {
         },
       });
     }
+
     // ➤ Visitor Age Group Distribution - Dynamic Data (Single Donut with Tooltip)
+    const ageCtx = document.getElementById("visitorAgeChart") as HTMLCanvasElement;
+    if (ageCtx) {
+      const ageGroups = [0, 0, 0, 0, 0]; // 0-12, 13-18, 19-35, 36-60, 60+
+      const genderCounts = {
+        male: [0, 0, 0, 0, 0],
+        female: [0, 0, 0, 0, 0],
+      };
 
-  // ➤ Visitor Age Group Distribution - Dynamic Data (Single Donut Chart with Descriptive Tooltip)
-  const ageCtx = document.getElementById("visitorAgeChart") as HTMLCanvasElement;
-  if (ageCtx) {
-    const ageGroups = [0, 0, 0, 0, 0]; // 0-12, 13-18, 19-35, 36-60, 60+
-    const genderCounts = {
-      male: [0, 0, 0, 0, 0],
-      female: [0, 0, 0, 0, 0],
-    };
+      visitors.forEach(visitor => {
+        // Age Group Categorization
+        let ageGroupIndex = -1;
+        if (visitor.age <= 12) ageGroupIndex = 0;
+        else if (visitor.age <= 18) ageGroupIndex = 1;
+        else if (visitor.age <= 35) ageGroupIndex = 2;
+        else if (visitor.age <= 60) ageGroupIndex = 3;
+        else ageGroupIndex = 4;
 
-    visitors.forEach(visitor => {
-      // Age Group Categorization
-      let ageGroupIndex = -1;
-      if (visitor.age <= 12) ageGroupIndex = 0;
-      else if (visitor.age <= 18) ageGroupIndex = 1;
-      else if (visitor.age <= 35) ageGroupIndex = 2;
-      else if (visitor.age <= 60) ageGroupIndex = 3;
-      else ageGroupIndex = 4;
-
-      if (ageGroupIndex !== -1) {
-        ageGroups[ageGroupIndex]++; // Count for overall age group
-        if (visitor.gender === "Male") {
-          genderCounts.male[ageGroupIndex]++;
-        } else if (visitor.gender === "Female") {
-          genderCounts.female[ageGroupIndex]++;
+        if (ageGroupIndex !== -1) {
+          ageGroups[ageGroupIndex]++; // Count for overall age group
+          if (visitor.gender === "Male") {
+            genderCounts.male[ageGroupIndex]++;
+          } else if (visitor.gender === "Female") {
+            genderCounts.female[ageGroupIndex]++;
+          }
         }
-      }
-    });
+      });
 
-    ageChartRef.current = new Chart(ageCtx, {
-      type: "doughnut",
-      data: {
-        labels: ["0-12", "13-18", "19-35", "36-60", "60+"],
-        datasets: [
-          {
-            data: ageGroups,
-            backgroundColor: ["#1A3D7C", "#AF907A", "#5C4736", "#20262C", "#5C4736"],
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          tooltip: {
-            callbacks: {
-              title: (tooltipItems) => {
-                const ageGroupIndex = tooltipItems[0].dataIndex;
-                const ageGroup = tooltipItems[0].label;
-                const maleCount = genderCounts.male[ageGroupIndex];
-                const femaleCount = genderCounts.female[ageGroupIndex];
-                return `${ageGroup}: 
+      ageChartRef.current = new Chart(ageCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["0-12", "13-18", "19-35", "36-60", "60+"],
+          datasets: [
+            {
+              data: ageGroups,
+              backgroundColor: ["#1A3D7C", "#AF907A", "#5C4736", "#20262C", "#5C4736"],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                title: (tooltipItems) => {
+                  const ageGroupIndex = tooltipItems[0].dataIndex;
+                  const ageGroup = tooltipItems[0].label;
+                  const maleCount = genderCounts.male[ageGroupIndex];
+                  const femaleCount = genderCounts.female[ageGroupIndex];
+                  return `${ageGroup}: 
   Total ${ageGroups[ageGroupIndex]}, 
   Male ${maleCount}, 
   Female ${femaleCount}`;
-              },
-              label: (tooltipItem) => {
-                // Optional: Display percentage of total if needed
-                const total = ageGroups.reduce((acc, count) => acc + count, 0);
-                const percentage = ((ageGroups[tooltipItem.dataIndex] / total) * 100).toFixed(2);
-                return `${percentage}%`;
+                },
+                label: (tooltipItem) => {
+                  const total = ageGroups.reduce((acc, count) => acc + count, 0);
+                  const percentage = ((ageGroups[tooltipItem.dataIndex] / total) * 100).toFixed(2);
+                  return `${percentage}%`;
+                },
               },
             },
           },
         },
-      },
-    });
-  }
-
-
+      });
+    }
 
     // ➤ Service Attended Breakdown (Static Data)
     const serviceCtx = document.getElementById("serviceBreakdownChart") as HTMLCanvasElement;
@@ -303,8 +336,7 @@ const VisitorsDashboard: React.FC = () => {
         <br /><br />
         <div className="kpi-container">
           <div className="kpi-card"><h3>Total Visitors</h3><p>{visitors.length}</p></div>
-          <div className="kpi-card"><h3>First-Time Visitors</h3><p>{visitors.filter(visitor => visitor.first_time).length}</p>Current Month: {currentMonthYear}</div>
-          <div className="kpi-card"><h3>Follow-ups Completed</h3><p>60</p></div>
+          <div className="kpi-card"><h3>First-Time Visitors</h3><p>{firstTimeVisitorsThisMonth.length}</p>Current Month: {currentMonthYear}</div>
         </div>
 
         {/* Charts */}
@@ -315,7 +347,7 @@ const VisitorsDashboard: React.FC = () => {
           </div>
 
           <div className="chart-box">
-            <h3>Visitor Trend (12 Months)</h3>
+            <h3>Visitor Trend (Last 12 Months)</h3>
             <canvas id="visitorTrendChart"></canvas>
           </div>
 

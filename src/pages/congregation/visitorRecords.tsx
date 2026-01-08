@@ -6,6 +6,7 @@ import CongregationHeader from './CongregationHeader';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
+// Visitor interface for type-checking
 interface Visitor {
   id: number;
   photo: string | null;
@@ -37,7 +38,7 @@ const VisitorRecordsPage: React.FC = () => {
     return () => document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // Visitor data
+  // Visitor data state
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -46,7 +47,7 @@ const VisitorRecordsPage: React.FC = () => {
     gender: "",
     ageRange: { min: "", max: "" },
     visitDateRange: { from: "", to: "" },
-    needsFollowUp: null as boolean | null, // Filter by follow-up status
+    needsFollowUp: null as boolean | null,
   });
 
   const [tempFilter, setTempFilter] = useState(filter);
@@ -80,12 +81,30 @@ const VisitorRecordsPage: React.FC = () => {
     closeFilter();
   };
 
-  // Fetch visitors data
+  // Authenticated fetch logic
+  const authFetch = async (url: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found.");
+    const res = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  };
+
+  // Unauthenticated fetch logic
+  const orgFetch = async (url: string) => {
+    const res = await axios.get(url);
+    return res.data;
+  };
+
+  // Fetch visitors data with the authenticated request
   useEffect(() => {
     const fetchVisitors = async () => {
       try {
-        const res = await axios.get(`${baseURL}/api/visitor`);
-        const data: Visitor[] = res.data.map((v: any) => ({
+        const res = await authFetch(`${baseURL}/api/visitor`);
+        const data: Visitor[] = res.map((v: any) => ({
           id: v.id,
           photo: v.photo_url,
           name: v.name,
@@ -108,9 +127,9 @@ const VisitorRecordsPage: React.FC = () => {
       }
     };
     fetchVisitors();
-  }, []);
+  }, []); // Empty dependency array ensures this only runs once on component mount
 
-  // Filtering logic
+  // Filtering logic for visitors
   const filteredVisitors = useMemo(() => {
     return visitors.filter((v) => {
       const searchMatch = v.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -138,27 +157,36 @@ const VisitorRecordsPage: React.FC = () => {
     });
   }, [visitors, searchQuery, filter]); // Add filter as dependency
 
+  const getCategory = (age: number) => {
+    if (age >= 0 && age <= 12) return "Child";
+    if (age >= 13 && age <= 18) return "Youth";
+    if (age >= 19 && age <= 64) return "Adult";
+    return "Elderly"; // Age 65+
+  };
+
   // Group visitors by service attended
   const groupedVisitors = useMemo(() => {
     return filteredVisitors.reduce<Record<string, Visitor[]>>((groups, v) => {
-      if (!groups[v.serviceAttended]) groups[v.serviceAttended] = [];
-      groups[v.serviceAttended].push(v);
+      const category = getCategory(v.age); // Get the category based on age
+      if (!groups[category]) groups[category] = [];
+      groups[category].push(v);
       return groups;
     }, {} as Record<string, Visitor[]>);
   }, [filteredVisitors]);
 
-  // Logic for "View More / View Less"
+
+  // "View More / View Less" logic
   const [recordsToShow, setRecordsToShow] = useState<number>(5);
   const [showAll, setShowAll] = useState<boolean>(false);
 
   const handleViewMore = () => {
     setShowAll(true);
-    setRecordsToShow(filteredVisitors.length); 
+    setRecordsToShow(filteredVisitors.length);
   };
 
   const handleViewLess = () => {
     setShowAll(false);
-    setRecordsToShow(5); 
+    setRecordsToShow(5);
   };
 
   // Open the view visitor page in a new tab
@@ -217,9 +245,8 @@ const VisitorRecordsPage: React.FC = () => {
 
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
-
         <CongregationHeader /><br />
-        
+
         <header>
           <h1>Visitors Records</h1>
           <div className="header-buttons">
@@ -328,54 +355,57 @@ const VisitorRecordsPage: React.FC = () => {
         </div>
 
         {/* GROUPED VISITORS */}
-        {Object.entries(groupedVisitors).map(([service, list]) => (
-          <div className="category-block" key={service}>
-            <br />
-            <h2>{service}</h2>
+        {["Child", "Youth", "Adult", "Elderly"].map((category) => {
+          const visitorList = groupedVisitors[category];
+          if (!visitorList) return null;  // Skip if no visitors in this category
+          
+          let ageRange = '';
+          if (category === "Child") ageRange = "0-12";
+          if (category === "Youth") ageRange = "13-18";
+          if (category === "Adult") ageRange = "19-64";
+          if (category === "Elderly") ageRange = "65+";
 
-            <table className="responsive-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Age</th>
-                  <th>Gender</th>
-                  <th>Visit Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {list.slice(0, recordsToShow).map((v) => {
-                  return (
+          return (
+            <div className="category-block" key={category}>
+              <br/><br/>
+              <h2>{`${category} (${ageRange})`}</h2>
+              <table className="responsive-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Visit Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visitorList.slice(0, recordsToShow).map((v) => (
                     <tr key={v.id}>
                       <td>{v.name}</td>
                       <td>{v.age}</td>
                       <td>{v.gender}</td>
                       <td>{v.visitDate}</td>
-
                       <td className="actions">
                         <button className="view-btn" onClick={() => openViewVisitor(v.id)}>
                           View
                         </button>
-
-                        <button
-                          className="edit-btn"
-                          onClick={() => openEditVisitor(v.id)}
-                        >
+                        <button className="edit-btn" onClick={() => openEditVisitor(v.id)}>
                           Edit
                         </button>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+              <button onClick={showAll ? handleViewLess : handleViewMore} className="add-btn">
+                {showAll ? "View Less" : "View More"}
+              </button>
+              <br/><br/>
+            </div>
+          );
+        })}
 
-            <button onClick={showAll ? handleViewLess : handleViewMore} className="add-btn">
-              {showAll ? "View Less" : "View More"}
-            </button>
-          </div>
-        ))}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import CongregationHeader from './CongregationHeader';
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
+// Interface for Visitor Form data
 interface VisitorForm {
   photoFile?: File | null;
   photoUrl: string;
@@ -53,6 +54,24 @@ const AddVisitorPage: React.FC = () => {
     needsFollowUp: false,
   });
 
+  // Fetch logic with authentication
+  const authFetch = async (url: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found.");
+    const res = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  };
+
+  // Fetch logic without authentication (for non-secure data)
+  const orgFetch = async (url: string) => {
+    const res = await axios.get(url);
+    return res.data;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;
     const name = target.name;
@@ -75,9 +94,7 @@ const AddVisitorPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, photoFile: file }));
   };
 
-  // ---------------------------------------------------
-  // SUBMIT: Create visitor → then create visitor_service
-  // ---------------------------------------------------
+  // Handle form submission (Create visitor and link to service)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -99,13 +116,9 @@ const AddVisitorPage: React.FC = () => {
 
     try {
       // 1️⃣ CREATE VISITOR
-      const visitorRes = await axios.post(
-        `${baseURL}/api/visitor`,
-        payload
-      );
+      const visitorRes = await axios.post(`${baseURL}/api/visitor`, payload);
 
       const newVisitor = visitorRes.data;
-
       console.log("Visitor created:", newVisitor);
 
       // 2️⃣ ADD SERVICE RELATIONSHIP
@@ -176,7 +189,6 @@ const AddVisitorPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
         <CongregationHeader/><br/>
         
         <header>

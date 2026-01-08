@@ -12,7 +12,7 @@ const CongregationHeader: React.FC = () => {
     { name: "Dashboard", href: "/congregation/dashboard" },
     { name: "Members", href: "/congregation/members" },
     { name: "Attendance", href: "/congregation/attendance" },
-    { name: "Follow-ups", href: "/congregation/followups" },
+    //{ name: "Follow-ups", href: "/congregation/followups" },
     { name: "Visitors", href: "/congregation/visitors" },
     { name: "New Converts", href: "/congregation/converts" },
     // Add logout link with a special href
