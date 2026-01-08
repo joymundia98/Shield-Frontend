@@ -22,6 +22,21 @@ interface Member {
   orphan: boolean;
 }
 
+// Assuming authFetch and orgFetch are implemented elsewhere
+const authFetch = async (url: string) => {
+  // Placeholder for authFetch logic
+  const response = await axios.get(url, {
+    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+  });
+  return response.data;
+};
+
+const orgFetch = async (url: string) => {
+  // Placeholder for orgFetch logic
+  const response = await axios.get(url);
+  return response.data;
+};
+
 const ChurchMembersPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -93,77 +108,92 @@ const ChurchMembersPage: React.FC = () => {
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const res = await axios.get(`${baseURL}/api/members`);
-        const data: Member[] = res.data.map((m: any) => {
-          let category: Member["category"] = "Adult";
-          if (m.age < 18) category = "Child";
-          else if (m.age <= 30) category = "Youth";
-          else if (m.age > 60) category = "Elderly";
-
-          return {
-            member_id: m.member_id,
-            full_name: m.full_name,
-            category,
-            age: m.age,
-            gender: m.gender,
-            date_joined: m.date_joined?.split("T")[0] || "",
-            address: m.address || "",
-            phone: m.phone || "",
-            email: m.email || "",
-            photo: m.photo || "https://via.placeholder.com/120",
-            disabled: m.disabled,
-            widowed: m.widowed,
-            orphan: m.orphan
-          };
-        });
-        setMembers(data);
+        // Attempt to fetch with authFetch
+        const response = await authFetch(`${baseURL}/api/members`);
+        const data = response.data;  // Access the 'data' key here
+        
+        // Ensure the data is an array before setting it to the state
+        if (Array.isArray(data)) {
+          setMembers(data);
+        } else {
+          console.error("Received data is not an array:", data);
+          setMembers([]); // Fallback to an empty array if data isn't an array
+        }
       } catch (error) {
-        console.error("Error fetching members:", error);
+        console.error("Error with authFetch, attempting orgFetch:", error);
+        try {
+          // Fallback to orgFetch
+          const response = await orgFetch(`${baseURL}/api/members`);
+          const data = response.data; // Access the 'data' key here
+
+          // Ensure the data is an array before setting it to the state
+          if (Array.isArray(data)) {
+            setMembers(data);
+          } else {
+            console.error("Received data is not an array from orgFetch:", data);
+            setMembers([]); // Fallback to an empty array if data isn't an array
+          }
+        } catch (fallbackError) {
+          console.error("Error with orgFetch:", fallbackError);
+          setMembers([]); // Fallback to an empty array if both fetches fail
+        }
       }
     };
+
     fetchMembers();
-  }, []);
+  }, []); // Only fetch once on component mount
 
   const filteredMembers = useMemo(() => {
-  return members
-    .filter((m) => {
-      const genderMatch = filter.gender ? m.gender === filter.gender : true;
-      const ageMatch =
-        (filter.ageRange.min ? m.age >= parseInt(filter.ageRange.min) : true) &&
-        (filter.ageRange.max ? m.age <= parseInt(filter.ageRange.max) : true);
-      const dateMatch =
-        (filter.joinDate.from ? new Date(m.date_joined) >= new Date(filter.joinDate.from) : true) &&
-        (filter.joinDate.to ? new Date(m.date_joined) <= new Date(filter.joinDate.to) : true);
-      const disabledMatch = filter.disabled ? m.disabled : true;
-      const orphanedMatch = filter.orphaned ? m.orphan : true;
-      const widowedMatch = filter.widowed ? m.widowed : true;
+    // Ensure members is an array before applying .filter()
+    if (!Array.isArray(members)) return [];
 
-      // Apply search query filter only on full_name
-      const searchMatch = m.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+    return members
+      .filter((m) => {
+        const genderMatch = filter.gender ? m.gender === filter.gender : true;
+        const ageMatch =
+          (filter.ageRange.min ? m.age >= parseInt(filter.ageRange.min) : true) &&
+          (filter.ageRange.max ? m.age <= parseInt(filter.ageRange.max) : true);
+        const dateMatch =
+          (filter.joinDate.from ? new Date(m.date_joined) >= new Date(filter.joinDate.from) : true) &&
+          (filter.joinDate.to ? new Date(m.date_joined) <= new Date(filter.joinDate.to) : true);
+        const disabledMatch = filter.disabled ? m.disabled : true;
+        const orphanedMatch = filter.orphaned ? m.orphan : true;
+        const widowedMatch = filter.widowed ? m.widowed : true;
 
-      return (
-        genderMatch &&
-        ageMatch &&
-        dateMatch &&
-        disabledMatch &&
-        orphanedMatch &&
-        widowedMatch &&
-        searchMatch // Include search match for full_name only
-      );
-    });
-}, [members, filter, searchQuery]); // Add searchQuery as a dependency
+        // Apply search query filter only on full_name
+        const searchMatch = m.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+
+        return (
+          genderMatch &&
+          ageMatch &&
+          dateMatch &&
+          disabledMatch &&
+          orphanedMatch &&
+          widowedMatch &&
+          searchMatch // Include search match for full_name only
+        );
+      });
+  }, [members, filter, searchQuery]); // Add searchQuery as a dependency
+
+  const getCategory = (age: number) => {
+    if (age >= 0 && age <= 12) return "Child";
+    if (age >= 13 && age <= 18) return "Youth";
+    if (age >= 19 && age <= 64) return "Adult";
+    return "Elderly"; // Age 65+
+  };
 
   const groupedMembers = useMemo(() => {
     return filteredMembers.reduce<Record<string, Member[]>>((groups, m) => {
-      if (!groups[m.category]) groups[m.category] = [];
-      groups[m.category].push(m);
+      const category = getCategory(m.age); // Get the category based on age
+      if (!groups[category]) groups[category] = [];
+      groups[category].push(m);
       return groups;
     }, {} as Record<string, Member[]>);
   }, [filteredMembers]);
 
   const openEditPage = (member: Member) => {
     const url = `/congregation/editMember/${member.member_id}`;
-    window.open(url, "_blank"); 
+    window.open(url, "_blank");
   };
 
   const openViewModal = (member: Member) => {
@@ -172,12 +202,12 @@ const ChurchMembersPage: React.FC = () => {
 
   const handleViewMore = () => {
     setShowAll(true);
-    setRecordsToShow(filteredMembers.length); 
+    setRecordsToShow(filteredMembers.length);
   };
 
   const handleViewLess = () => {
     setShowAll(false);
-    setRecordsToShow(5); 
+    setRecordsToShow(5);
   };
 
   return (
@@ -228,11 +258,11 @@ const ChurchMembersPage: React.FC = () => {
         </header>
 
         {/* Search and Filter buttons */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
           <input
-            type="text"
-            placeholder="Search members..."
             className="search-input"
+            type="text"
+            placeholder="Search by name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -322,45 +352,56 @@ const ChurchMembersPage: React.FC = () => {
         </div>
 
         {/* Display Members Grouped by Category */}
-        {Object.entries(groupedMembers).map(([category, memberList]) => (
-          <div className="category-block" key={category}>
-            <br />
-            <h2>{category}</h2>
-            <table className="responsive-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Age</th>
-                  <th>Gender</th>
-                  <th>Join Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {memberList.slice(0, recordsToShow).map((m) => (
-                  <tr key={m.member_id}>
-                    <td>{m.full_name}</td>
-                    <td>{m.age}</td>
-                    <td>{m.gender}</td>
-                    <td>{m.date_joined}</td>
-                    <td className="actions">
-                      <button className="view-btn" onClick={() => openViewModal(m)}>
-                        View
-                      </button>
-                      <button className="edit-btn" onClick={() => openEditPage(m)}>
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {["Child", "Youth", "Adult", "Elderly"].map((category) => {
+          const memberList = groupedMembers[category];
+          if (!memberList) return null;  // Skip if no members in this category
+          
+          let ageRange = '';
+          if (category === "Child") ageRange = "0-12";
+          if (category === "Youth") ageRange = "13-18";
+          if (category === "Adult") ageRange = "19-64";
+          if (category === "Elderly") ageRange = "65+";
 
-            <button onClick={showAll ? handleViewLess : handleViewMore} className="add-btn">
-              {showAll ? "View Less" : "View More"}
-            </button>
-          </div>
-        ))}
+          return (
+            <div className="category-block" key={category}>
+              <br/><br/>
+              <h2>{`${category} (${ageRange})`}</h2>
+              <table className="responsive-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Join Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {memberList.slice(0, recordsToShow).map((m) => (
+                    <tr key={m.member_id}>
+                      <td>{m.full_name}</td>
+                      <td>{m.age}</td>
+                      <td>{m.gender}</td>
+                      <td>{m.date_joined}</td>
+                      <td className="actions">
+                        <button className="view-btn" onClick={() => openViewModal(m)}>
+                          View
+                        </button>
+                        <button className="edit-btn" onClick={() => openEditPage(m)}>
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button onClick={showAll ? handleViewLess : handleViewMore} className="add-btn">
+                {showAll ? "View Less" : "View More"}
+              </button>
+              <br/><br/>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

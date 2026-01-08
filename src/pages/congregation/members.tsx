@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+import { authFetch, orgFetch } from "../../utils/api";  // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -39,18 +39,44 @@ const ChurchMembersDashboard: React.FC = () => {
     return () => document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // Fetch members from backend
-  useEffect(() => {
-    const fetchMembers = async () => {
-      try {
-        const res = await axios.get(`${baseURL}/api/members`);
-        setMembers(res.data);
-      } catch (err) {
-        console.error("Error fetching members:", err);
+  // Fetch members from backend using authFetch and fallback to orgFetch if needed
+  // Fetch members from backend using authFetch and fallback to orgFetch if needed
+useEffect(() => {
+  const fetchMembers = async () => {
+    try {
+      // Fetch the data using authFetch
+      const response = await authFetch(`${baseURL}/api/members`);
+
+      // Check if 'data' exists and is an array, then set the state
+      if (response && Array.isArray(response.data)) {
+        setMembers(response.data);  // Set the actual array data
+      } else {
+        console.error("Expected an array in 'data', received:", response);
+        setMembers([]); // Fallback to empty array if data is not valid
       }
-    };
-    fetchMembers();
-  }, []);
+    } catch (err) {
+      console.error("Error fetching members with authFetch, falling back to orgFetch:", err);
+      try {
+        // Fetch the data using orgFetch as fallback
+        const response = await orgFetch(`${baseURL}/api/members`);
+        
+        // Check if 'data' exists and is an array, then set the state
+        if (response && Array.isArray(response.data)) {
+          setMembers(response.data);  // Set the actual array data
+        } else {
+          console.error("Expected an array in 'data', received:", response);
+          setMembers([]); // Fallback to empty array if data is not valid
+        }
+      } catch (error) {
+        console.error("Error fetching members with orgFetch:", error);
+        setMembers([]); // Ensure members is set to an empty array in case of error
+      }
+    }
+  };
+
+  fetchMembers();
+}, []);
+
 
   // Render charts dynamically based on fetched members
   useEffect(() => {
