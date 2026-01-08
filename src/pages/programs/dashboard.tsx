@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";  // Make sure the styles are correctly imported
 import Calendar from "./Calendar"; // Import the Calendar component
 import ProgramsHeader from './ProgramsHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import the authFetch and orgFetch utilities
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -31,6 +32,16 @@ export interface Program {
   notes: string;
 }
 
+// Helper function to fetch data with authFetch and fallback to orgFetch if needed
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    // Attempt to fetch using authFetch first
+    return await authFetch(url);  // Return the response directly if it's already structured
+  } catch (error) {
+    console.log("authFetch failed, falling back to orgFetch");
+    return await orgFetch(url);  // Fallback to orgFetch and return the response directly
+  }
+};
 
 const ProgramsDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -38,9 +49,12 @@ const ProgramsDashboard: React.FC = () => {
 
   // Fetch events from backend on component mount
   useEffect(() => {
-    fetch(`${baseURL}/api/programs`)
-      .then((response) => response.json())
-      .then((data) => {
+    const fetchEvents = async () => {
+      try {
+        // Fetch events using the helper function
+        const data = await fetchDataWithAuthFallback(`${baseURL}/api/programs`);
+        
+        // Process the response and format it accordingly
         const formattedEvents = data.map((program: Program) => ({
           id: program.id.toString(),
           name: program.name,
@@ -56,7 +70,12 @@ const ProgramsDashboard: React.FC = () => {
         }));
 
         setEvents(formattedEvents); // Save formatted events to state
-      });
+      } catch (error) {
+        console.error("Failed to fetch events", error);
+      }
+    };
+
+    fetchEvents();
   }, []);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -71,14 +90,6 @@ const ProgramsDashboard: React.FC = () => {
     }
     return () => body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
-
-  {/*const categories = [
-    { category_id: 1, name: "Life Events" },
-    { category_id: 2, name: "Church Business Events" },
-    { category_id: 3, name: "Community Events" },
-    { category_id: 4, name: "Spiritual Events" },
-    { category_id: 5, name: "Other" }
-  ];*/}
 
   // KPI Counts (grouped by category)
   const groupCounts = useMemo(() => {
@@ -144,7 +155,7 @@ const ProgramsDashboard: React.FC = () => {
           className="logout-link"
           onClick={() => {
             localStorage.clear();
-            navigate("/");
+            navigate("/"); // Redirect to the login page
           }}
         >
           ➜ Logout

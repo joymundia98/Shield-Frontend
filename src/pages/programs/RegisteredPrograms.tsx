@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios"; // If using axios
 import "../../styles/global.css";
 import ProgramsHeader from './ProgramsHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -45,18 +45,39 @@ const RegisteredProgramsPage: React.FC = () => {
 
   const [showVenueColumn, _setShowVenueColumn] = useState(true);
 
+  // ---------------- Helper function to fetch programs with authFetch or orgFetch ----------------
+  const fetchProgramsWithAuthFallback = async () => {
+    try {
+      // Attempt to fetch using authFetch first
+      const programsData = await authFetch(`${baseURL}/api/programs`);
+      return programsData; // Return the response directly if it's already structured
+    } catch (error) {
+      console.log("authFetch failed, falling back to orgFetch");
+      // If authFetch fails, fall back to orgFetch
+      const programsData = await orgFetch(`${baseURL}/api/programs`);
+      return programsData;
+    }
+  };
+
+  // Fetch programs from backend on component mount
   useEffect(() => {
-    // Fetch programs from backend
-    axios
-      .get(`${baseURL}/api/programs`) // backend API endpoint
-      .then((response) => {
-        console.log("Response data:", response.data);
-        setPrograms(response.data); // Set programs data from the response
-      })
-      .catch((error) => {
+    const fetchPrograms = async () => {
+      try {
+        const programsData = await fetchProgramsWithAuthFallback();
+        setPrograms(programsData); // Set programs data from the response
+      } catch (error) {
         console.error("Error fetching programs:", error);
-      });
+      }
+    };
+
+    fetchPrograms();
   }, []);
+
+  // Helper function to format the date (removes time part)
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(); // Formats the date to a more readable form, like "12/14/2025"
+  };
 
   const groupByCategory = (programs: Program[]) => {
     if (!Array.isArray(programs)) {
@@ -70,7 +91,6 @@ const RegisteredProgramsPage: React.FC = () => {
       return acc;
     }, {});
   };
-
 
   const groupedPrograms = useMemo(() => groupByCategory(programs), [programs]);
 
@@ -86,21 +106,20 @@ const RegisteredProgramsPage: React.FC = () => {
   const handleDeleteProgram = (id: string) => {
     const baseURL = import.meta.env.VITE_BASE_URL;
 
-      if (window.confirm("Are you sure you want to delete this program?")) {
-        // Make the API call to delete the program from the backend
-        axios
-          .delete(`${baseURL}/api/programs/${id}`)  // Assuming this is the API endpoint to delete the program
-          .then(() => {
-            // On success, filter out the deleted program from the local state
-            setPrograms((prev) => prev.filter((program) => program.id !== Number(id)));
-            alert("Program deleted successfully.");
-          })
-          .catch((error) => {
-            console.error("Error deleting program:", error);
-            alert("Failed to delete the program. Please try again later.");
-          });
-      }
-    };
+    if (window.confirm("Are you sure you want to delete this program?")) {
+      // Make the API call to delete the program from the backend
+      authFetch(`${baseURL}/api/programs/${id}`, { method: 'DELETE' })
+        .then(() => {
+          // On success, filter out the deleted program from the local state
+          setPrograms((prev) => prev.filter((program) => program.id !== Number(id)));
+          alert("Program deleted successfully.");
+        })
+        .catch((error) => {
+          console.error("Error deleting program:", error);
+          alert("Failed to delete the program. Please try again later.");
+        });
+    }
+  };
 
   const handleViewProgram = (id: string) => {
     const url = `/programs/viewProgram?id=${id}`;
@@ -208,7 +227,7 @@ const RegisteredProgramsPage: React.FC = () => {
                   {groupedPrograms[categoryId].map((program) => (
                     <tr key={program.id}>
                       <td data-title="Title">{program.name}</td>
-                      <td data-title="Date">{program.date}</td>
+                      <td data-title="Date">{formatDate(program.date)}</td> {/* Formatted date here */}
                       <td data-title="Time">{program.time}</td>
                       {showVenueColumn && <td data-title="Venue">{program.venue}</td>}
                       <td data-title="Agenda">{program.agenda}</td>

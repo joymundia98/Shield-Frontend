@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import ProgramsHeader from './ProgramsHeader';
+import { authFetch, orgFetch } from "../../utils/api";  // Import the functions
 
-// Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 type Gender = "Male" | "Female";
@@ -62,36 +62,45 @@ const AttendeeManagement: React.FC = () => {
     "Spiritual Event": 4,
   };
 
-  // Fetch Programs from Backend
+  // Fetch Programs with authFetch, falling back to orgFetch if needed
   useEffect(() => {
     const fetchPrograms = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/programs`);
-        const data = await response.json();
-        setPrograms(data);
-        console.log("Fetched Programs:", data);
+        const response = await authFetch(`${baseURL}/api/programs`);
+        setPrograms(response);  // No need for res.json(), already in required format
+        console.log("Fetched Programs:", response);
       } catch (error) {
-        console.error("Error fetching programs:", error);
+        console.error("Error fetching programs with authFetch, falling back to orgFetch:", error);
+        try {
+          const response = await orgFetch(`${baseURL}/api/programs`);
+          setPrograms(response);  // No need for res.json(), already in required format
+          console.log("Fetched Programs with orgFetch:", response);
+        } catch (err) {
+          console.error("Error fetching programs with orgFetch:", err);
+        }
       }
     };
     fetchPrograms();
   }, []);
 
-  // Fetch Attendees for Selected Program
+  // Fetch Attendees for Selected Program with authFetch, falling back to orgFetch
   useEffect(() => {
     if (selectedProgram === null) return; // Skip fetch if no program is selected
 
     const fetchAttendees = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/programs/attendees?program_id=${selectedProgram}`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch attendees. Status: ${response.status}`);
-        }
-        const data = await response.json();
-        setAttendees(data);
-        console.log("Fetched Attendees:", data);
+        const response = await authFetch(`${baseURL}/api/programs/attendees?program_id=${selectedProgram}`);
+        setAttendees(response);  // No need for res.json(), already in required format
+        console.log("Fetched Attendees:", response);
       } catch (error) {
-        console.error("Error fetching attendees:", error);
+        console.error("Error fetching attendees with authFetch, falling back to orgFetch:", error);
+        try {
+          const response = await orgFetch(`${baseURL}/api/programs/attendees?program_id=${selectedProgram}`);
+          setAttendees(response);  // No need for res.json(), already in required format
+          console.log("Fetched Attendees with orgFetch:", response);
+        } catch (err) {
+          console.error("Error fetching attendees with orgFetch:", err);
+        }
       }
     };
 
@@ -103,7 +112,7 @@ const AttendeeManagement: React.FC = () => {
     ? attendees.filter((attendee) => attendee.program_id === selectedProgram)
     : [];
 
-  // Handle Edit Attendee (Placeholder function)
+  // Handle Edit Attendee
   const handleEditAttendee = (attendeeId: number) => {
     console.log(`Editing attendee with ID: ${attendeeId}`);
     navigate(`/programs/editAttendee/${attendeeId}`);
@@ -116,12 +125,9 @@ const AttendeeManagement: React.FC = () => {
       // Call the API to delete the attendee from the database
       const deleteAttendee = async () => {
         try {
-          const response = await fetch(`${baseURL}/api/programs/attendees/${attendeeId}`, {
+          await authFetch(`${baseURL}/api/programs/attendees/${attendeeId}`, {
             method: "DELETE",
           });
-          if (!response.ok) {
-            throw new Error(`Failed to delete attendee. Status: ${response.status}`);
-          }
           // If successful, remove the attendee from the UI
           setAttendees((prevAttendees) =>
             prevAttendees.filter((attendee) => attendee.attendee_id !== attendeeId)
@@ -137,7 +143,6 @@ const AttendeeManagement: React.FC = () => {
             alert("An unknown error occurred while deleting attendee.");
           }
         }
-
       };
       deleteAttendee();
     }

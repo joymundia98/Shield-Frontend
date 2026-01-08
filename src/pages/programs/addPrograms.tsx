@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios"; // Import axios for making HTTP requests
 import "../../styles/global.css";
 import ProgramsHeader from './ProgramsHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -71,19 +71,32 @@ const AddProgram: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([]); // Departments state
   const [errors, setErrors] = useState<string[]>([]);
 
+  // Success card state
+  const [showSuccessCard, setShowSuccessCard] = useState(false);
+
   // Sidebar state and logic
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Fetch departments from the backend API
+  // Fetch departments from the backend API using authFetch and orgFetch logic
   useEffect(() => {
-    axios
-      .get(`${baseURL}/api/departments`)
-      .then((response) => {
-        setDepartments(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching departments:", error);
-      });
+    const fetchDepartments = async () => {
+      try {
+        // Attempt to fetch using authFetch first
+        const departmentsData = await authFetch(`${baseURL}/api/departments`);
+        // Sort the departments alphabetically by name
+        departmentsData.sort((a: Department, b: Department) => a.name.localeCompare(b.name));
+        setDepartments(departmentsData);
+      } catch (error) {
+        console.log("authFetch failed, falling back to orgFetch");
+        // If authFetch fails, fall back to orgFetch
+        const departmentsData = await orgFetch(`${baseURL}/api/departments`);
+        // Sort the departments alphabetically by name
+        departmentsData.sort((a: Department, b: Department) => a.name.localeCompare(b.name));
+        setDepartments(departmentsData);
+      }
+    };
+
+    fetchDepartments();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -106,17 +119,16 @@ const AddProgram: React.FC = () => {
 
   // Handle event type change
   const handleEventTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const selectedEventType = e.target.value;
-      setProgram((prevProgram) => ({
-        ...prevProgram,
-        event_type: selectedEventType,
-      }));
-    };
-  
-    // Access eventTypes safely with optional chaining
-    const getEventTypesForCategory = (categoryId: number) => {
-      return eventTypes[categoryId] || []; // Return an empty array if categoryId doesn't exist
-    };
+    const selectedEventType = e.target.value;
+    setProgram((prevProgram) => ({
+      ...prevProgram,
+      event_type: selectedEventType,
+    }));
+  };
+
+  const getEventTypesForCategory = (categoryId: number) => {
+    return eventTypes[categoryId] || []; // Return an empty array if categoryId doesn't exist
+  };
 
   // Handle department change and update department name
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -130,29 +142,28 @@ const AddProgram: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    // Validation
-    const validationErrors: string[] = [];
-    if (!program.title) validationErrors.push("Title is required.");
-    if (!program.date) validationErrors.push("Date is required.");
-    if (!program.time) validationErrors.push("Time is required.");
-    if (!program.venue) validationErrors.push("Venue is required.");
-    if (!program.agenda) validationErrors.push("Agenda is required.");
+  // Validation
+  const validationErrors: string[] = [];
+  if (!program.title) validationErrors.push("Title is required.");
+  if (!program.date) validationErrors.push("Date is required.");
+  if (!program.time) validationErrors.push("Time is required.");
+  if (!program.venue) validationErrors.push("Venue is required.");
+  if (!program.agenda) validationErrors.push("Agenda is required.");
+  if ((program.category_id === 4 || program.category_id === 5) && !program.event_type) {
+    validationErrors.push("Event type is required for Spiritual and Other events.");
+  }
+  if (!program.department_id) {
+    validationErrors.push("Department In Charge is required.");
+  }
 
-    // If the category is "Spiritual Events" or "Other", then event_type is required
-    if ((program.category_id === 4 || program.category_id === 5) && !program.event_type) {
-      validationErrors.push("Event type is required for Spiritual and Other events.");
-    }
-
-    if (!program.department_id) {
-      validationErrors.push("Department In Charge is required.");
-    }
-
-    if (validationErrors.length === 0) {
-      try {
-        // Send a POST request to the backend to add the program
-        const response = await axios.post("${baseURL}/api/programs", {
+  if (validationErrors.length === 0) {
+    try {
+      // Send a POST request to the backend to add the program using authFetch
+      const response = await authFetch(`${baseURL}/api/programs`, {
+        method: "POST",
+        body: JSON.stringify({
           name: program.title,
           description: program.agenda,
           category_id: program.category_id,
@@ -165,21 +176,38 @@ const AddProgram: React.FC = () => {
           notes: program.notes,
           department_id: program.department_id,
           department_name: program.department_name, // Include department name
-        });
+        }),
+      });
 
-        // Check for success and navigate
-        if (response.status === 201) {
-          alert("Program added successfully!");
+      // Log the full response object (which should already be a JSON object)
+      console.log("Full response object:", response);
+
+      // Check the HTTP status code directly
+      if (response.status === 201 || response.status === 204) {
+        console.log("Program added successfully!");
+        setShowSuccessCard(true);
+
+        setTimeout(() => {
+          setShowSuccessCard(false);
           navigate("/programs/RegisteredPrograms");
-        }
-      } catch (error) {
-        console.error("Error adding program:", error);
+        }, 2000);
+      } else {
+        // If not a 201 or 204, log the response body (which should already be an object)
+        console.log("Unexpected response status:", response.status);
+        console.log("Response body:", response); // Since it's already an object, no need to parse
         alert("There was an issue adding the program. Please try again.");
+        setShowSuccessCard(false);
       }
-    } else {
-      setErrors(validationErrors); // Show validation errors
+    } catch (error) {
+      console.error("Error adding program:", error);
+      alert("There was an issue adding the program. Please try again.");
+      setShowSuccessCard(false);
     }
-  };
+  } else {
+    setErrors(validationErrors); // Show validation errors
+  }
+};
+
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -241,7 +269,6 @@ const AddProgram: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
         <ProgramsHeader/><br/>
 
         <h1>Add New Program</h1><br/>
@@ -276,7 +303,6 @@ const AddProgram: React.FC = () => {
               className="form-input"
             >
               <option value="">Select Event Type</option>
-              {/* Use the helper function to get the event types for the selected category */}
               {getEventTypesForCategory(program.category_id).map((eventType) => (
                 <option key={eventType} value={eventType}>
                   {eventType}
@@ -404,6 +430,14 @@ const AddProgram: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* Success Card */}
+      {showSuccessCard && (
+        <div className="success-card">
+          <h3>✅ Program Added Successfully!</h3>
+          <p>Redirecting to Registered Programs...</p>
+        </div>
+      )}
     </div>
   );
 };
