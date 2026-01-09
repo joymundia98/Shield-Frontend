@@ -94,10 +94,10 @@ const VisitorRecordsPage: React.FC = () => {
   };
 
   // Unauthenticated fetch logic
-  const orgFetch = async (url: string) => {
+  {/*const orgFetch = async (url: string) => {
     const res = await axios.get(url);
     return res.data;
-  };
+  };*/}
 
   // Fetch visitors data with the authenticated request
   useEffect(() => {

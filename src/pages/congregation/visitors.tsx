@@ -21,12 +21,21 @@ interface Visitor {
   photo_url: string | null;
   first_time: boolean;
   needs_follow_up: boolean;
+  service_id: number,
+  church_find_out: string; // Added church_find_out to the interface
+}
+
+interface Service {
+  id: number;
+  name: string;
+  organization_id: number;
 }
 
 const VisitorsDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
 
   // Initialize chart refs
   const referralChartRef = useRef<Chart | null>(null);
@@ -45,7 +54,7 @@ const VisitorsDashboard: React.FC = () => {
     return () => document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // Fetch visitors from the backend API
+  // Fetch visitors and services from the backend API
   const authFetch = async (url: string) => {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No authentication token found.");
@@ -63,23 +72,30 @@ const VisitorsDashboard: React.FC = () => {
     return res.data;
   };
 
+  // Fetch data on component mount
   useEffect(() => {
-    const fetchVisitors = async () => {
+    const fetchVisitorsAndServices = async () => {
       try {
-        const res = await authFetch(`${baseURL}/api/visitor`);
-        setVisitors(res); // Set the visitors data from the API response
+        const visitorsRes = await authFetch(`${baseURL}/api/visitor`);
+        setVisitors(visitorsRes); // Set the visitors data
+
+        const servicesRes = await authFetch(`${baseURL}/api/services`);
+        setServices(servicesRes); // Set the services data
       } catch (err) {
-        console.error("Error fetching visitors with authFetch:", err);
+        console.error("Error fetching visitors or services with authFetch:", err);
         try {
-          const res = await orgFetch(`${baseURL}/api/visitor`);
-          setVisitors(res); // Fallback to orgFetch
+          const visitorsRes = await orgFetch(`${baseURL}/api/visitor`);
+          setVisitors(visitorsRes); // Fallback to orgFetch
+
+          const servicesRes = await orgFetch(`${baseURL}/api/services`);
+          setServices(servicesRes); // Fallback to orgFetch for services
         } catch (fallbackErr) {
-          console.error("Error fetching visitors with orgFetch:", fallbackErr);
+          console.error("Error fetching data with orgFetch:", fallbackErr);
         }
       }
     };
 
-    fetchVisitors();
+    fetchVisitorsAndServices();
   }, []);
 
   // Get the current month and year (e.g., "December 2025")
@@ -112,16 +128,37 @@ const VisitorsDashboard: React.FC = () => {
     ageChartRef.current?.destroy();
     followUpChartRef.current?.destroy();
 
-    // ➤ How Visitors Found the Church (Static Data)
+    // ➤ How Visitors Found the Church (Dynamic Data)
     const referralCtx = document.getElementById("referralChart") as HTMLCanvasElement;
     if (referralCtx) {
+      // Define the referralCounts keys as a union type
+      type ReferralMethod = "Friend/Family" | "Online Search" | "Social Media" | "Church Event" | "Walk-in";
+
+      const referralCounts: Record<ReferralMethod, number> = {
+        "Friend/Family": 0,
+        "Online Search": 0,
+        "Social Media": 0,
+        "Church Event": 0,
+        "Walk-in": 0,
+      };
+
+      visitors.forEach(visitor => {
+        const referralMethod = visitor.church_find_out as ReferralMethod; // Cast church_find_out to ReferralMethod type
+        if (referralCounts[referralMethod] !== undefined) {
+          referralCounts[referralMethod]++;
+        }
+      });
+
+      const referralData = Object.values(referralCounts);
+      const referralLabels = Object.keys(referralCounts);
+
       referralChartRef.current = new Chart(referralCtx, {
         type: "pie",
         data: {
-          labels: ["Friend/Family", "Online Search", "Social Media", "Church Event", "Walk-in"],
+          labels: referralLabels,
           datasets: [
             {
-              data: [40, 25, 20, 15, 20], // Static data
+              data: referralData,
               backgroundColor: ["#1A3D7C", "#AF907A", "#5C4736", "#817E7A", "#20262C"],
             },
           ],
@@ -199,7 +236,6 @@ const VisitorsDashboard: React.FC = () => {
       };
 
       visitors.forEach(visitor => {
-        // Age Group Categorization
         let ageGroupIndex = -1;
         if (visitor.age <= 12) ageGroupIndex = 0;
         else if (visitor.age <= 18) ageGroupIndex = 1;
@@ -208,7 +244,7 @@ const VisitorsDashboard: React.FC = () => {
         else ageGroupIndex = 4;
 
         if (ageGroupIndex !== -1) {
-          ageGroups[ageGroupIndex]++; // Count for overall age group
+          ageGroups[ageGroupIndex]++;
           if (visitor.gender === "Male") {
             genderCounts.male[ageGroupIndex]++;
           } else if (visitor.gender === "Female") {
@@ -239,9 +275,9 @@ const VisitorsDashboard: React.FC = () => {
                   const maleCount = genderCounts.male[ageGroupIndex];
                   const femaleCount = genderCounts.female[ageGroupIndex];
                   return `${ageGroup}: 
-  Total ${ageGroups[ageGroupIndex]}, 
-  Male ${maleCount}, 
-  Female ${femaleCount}`;
+                    Total ${ageGroups[ageGroupIndex]}, 
+                    Male ${maleCount}, 
+                    Female ${femaleCount}`;
                 },
                 label: (tooltipItem) => {
                   const total = ageGroups.reduce((acc, count) => acc + count, 0);
@@ -255,24 +291,33 @@ const VisitorsDashboard: React.FC = () => {
       });
     }
 
-    // ➤ Service Attended Breakdown (Static Data)
+    // ➤ Service Attended Breakdown (Dynamic Data)
     const serviceCtx = document.getElementById("serviceBreakdownChart") as HTMLCanvasElement;
-    if (serviceCtx) {
+    if (serviceCtx && services.length > 0) {
+      const serviceCounts = new Array(services.length).fill(0);
+
+      visitors.forEach(visitor => {
+        const serviceIndex = services.findIndex(service => service.id === visitor.service_id);
+        if (serviceIndex !== -1) {
+          serviceCounts[serviceIndex]++;
+        }
+      });
+
       followUpChartRef.current = new Chart(serviceCtx, {
         type: "doughnut",
         data: {
-          labels: ["Sunday Service", "Midweek Service", "Youth Service", "Special Program"],
+          labels: services.map(service => service.name),
           datasets: [
             {
-              data: [50, 25, 15, 10], // Static data
-              backgroundColor: ["#1A3D7C", "#AF907A", "#5C4736", "#817E7A"],
+              data: serviceCounts,
+              backgroundColor: services.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`), // Random color for each service
             },
           ],
         },
         options: { responsive: true },
       });
     }
-  }, [visitors]); // Re-run when visitors data changes
+  }, [visitors, services]); // Re-run when visitors or services data changes
 
   return (
     <div className="dashboard-wrapper visitors-wrapper">

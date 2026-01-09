@@ -55,7 +55,7 @@ const AddVisitorPage: React.FC = () => {
   });
 
   // Fetch logic with authentication
-  const authFetch = async (url: string) => {
+  {/*const authFetch = async (url: string) => {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("No authentication token found.");
     const res = await axios.get(url, {
@@ -70,7 +70,7 @@ const AddVisitorPage: React.FC = () => {
   const orgFetch = async (url: string) => {
     const res = await axios.get(url);
     return res.data;
-  };
+  };*/}
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;

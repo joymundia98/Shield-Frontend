@@ -34,22 +34,41 @@ const ConvertsPage: React.FC = () => {
   const [converts, setConverts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Authenticated fetch function
+  const authFetch = async (url: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found.");
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Error fetching data from ${url}: ${res.statusText}`);
+    }
+
+    return res.json();
+  };
+
   // Fetch Converts Data
   const fetchConverts = async () => {
     try {
       const [convertsResponse, visitorsResponse, membersResponse] =
         await Promise.all([
-          fetch(`${baseURL}/api/converts`).then((res) => res.json()),
-          fetch(`${baseURL}/api/visitor`).then((res) => res.json()),
-          fetch(`${baseURL}/api/members`).then((res) => res.json()),
+          authFetch(`${baseURL}/api/converts`),
+          authFetch(`${baseURL}/api/visitor`),
+          authFetch(`${baseURL}/api/members`),
         ]);
+
 
       const visitors = visitorsResponse.reduce((acc: any, visitor: any) => {
         acc[visitor.id] = visitor;
         return acc;
       }, {});
 
-      const members = membersResponse.reduce((acc: any, member: any) => {
+      const members = membersResponse.data.reduce((acc: any, member: any) => {
         acc[member.member_id] = member;
         return acc;
       }, {});
@@ -255,7 +274,7 @@ const ConvertsPage: React.FC = () => {
         <a href="/congregation/members">Members</a>
         <a href="/congregation/attendance">Attendance</a>
         <a href="/congregation/followups">Follow-ups</a>
-        <a href="/congregation/visitors">Visitors</a>
+                <a href="/congregation/visitors">Visitors</a>
         <a href="/congregation/converts" className="active">New Converts</a>
 
         <hr className="sidebar-separator" />

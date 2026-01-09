@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -73,25 +72,50 @@ const AttendancePage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<"All" | "Youth" | "Adults">("All");
   const [selectedMonth, setSelectedMonth] = useState<string>("All");
   const [selectedYear, setSelectedYear] = useState<string>("All");
-  const [selectedService, setSelectedService] = useState<string>("All"); // Added service filter state
-  //const [kpiMode, setKpiMode] = useState<"sum" | "average">("sum");
+  const [selectedService, setSelectedService] = useState<string>("All");
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [services, setServices] = useState<Service[]>([]); // Added services state
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
   // Pagination state
-  const [recordsToShow, setRecordsToShow] = useState<number>(5); // Default 5 records shown
-  const [showAll, setShowAll] = useState<boolean>(false); // Flag to toggle between "View More" and "View Less"
+  const [recordsToShow, setRecordsToShow] = useState<number>(5);
+  const [showAll, setShowAll] = useState<boolean>(false);
 
-  // Fetching services data
+  /* ---------------- SIDEBAR LOGIC ---------------- */
+    useEffect(() => {
+      if (sidebarOpen) document.body.classList.add("sidebar-open");
+      else document.body.classList.remove("sidebar-open");
+  
+      return () => document.body.classList.remove("sidebar-open");
+    }, [sidebarOpen]);
+
+  /* ---------------- AUTH FETCH FUNCTION ---------------- */
+  const authFetch = async (url: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found.");
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Error fetching data from ${url}: ${res.statusText}`);
+    }
+
+    return res.json();
+  };
+
+  /* ---------------- FETCHING SERVICES DATA ---------------- */
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const servicesRes = await axios.get(`${baseURL}/api/services`);
-        setServices(servicesRes.data);
+        const servicesRes = await authFetch(`${baseURL}/api/services`);
+        setServices(servicesRes);
       } catch (err) {
         setError("Error fetching services data: " + (err as Error).message);
       }
@@ -100,26 +124,19 @@ const AttendancePage: React.FC = () => {
     fetchServices();
   }, []);
 
-  /* ---------------- SIDEBAR LOGIC ---------------- */
-  useEffect(() => {
-    if (sidebarOpen) document.body.classList.add("sidebar-open");
-    else document.body.classList.remove("sidebar-open");
-
-    return () => document.body.classList.remove("sidebar-open");
-  }, [sidebarOpen]);
-
+  /* ---------------- FETCH DATA ---------------- */
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [attendanceRes, membersRes, visitorsRes] = await Promise.all([
-          axios.get(`${baseURL}/api/congregation/attendance`),
-          axios.get(`${baseURL}/api/members`),
-          axios.get(`${baseURL}/api/visitor`),
+          authFetch(`${baseURL}/api/congregation/attendance`),
+          authFetch(`${baseURL}/api/members`),
+          authFetch(`${baseURL}/api/visitor`),
         ]);
 
-        setAttendanceRecords(attendanceRes.data);
+        setAttendanceRecords(attendanceRes);
         setMembers(membersRes.data);
-        setVisitors(visitorsRes.data);
+        setVisitors(visitorsRes);
       } catch (err) {
         setError("Error fetching data: " + (err as Error).message);
       } finally {
@@ -215,17 +232,17 @@ const AttendancePage: React.FC = () => {
   // Handle "View More" logic
   const handleViewMore = () => {
     setShowAll(true);
-    setRecordsToShow(filteredAttendance.length); // Show all records
+    setRecordsToShow(filteredAttendance.length);
   };
 
   const handleViewLess = () => {
     setShowAll(false);
-    setRecordsToShow(5); // Show only the first 5 records
+    setRecordsToShow(5);
   };
 
   return (
     <div className="dashboard-wrapper">
-      {/* Sidebar & hamburger */}
+      {/* HAMBURGER */}
       <button className="hamburger" onClick={toggleSidebar}>
         &#9776;
       </button>
@@ -272,9 +289,6 @@ const AttendancePage: React.FC = () => {
           </button>
         </header>
 
-        <br />
-        <br />
-
         {/* KPI Cards */}
         <div className="kpi-container">
           <div className="kpi-card">
@@ -298,9 +312,7 @@ const AttendancePage: React.FC = () => {
             <option value="All">All Categories</option>
             <option value="Youth">Youth (≤30)</option>
             <option value="Adults">Adults (&gt;30)</option>
-          </select>
-
-          &nbsp; &nbsp;
+          </select>&emsp;
 
           <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
             <option value="All">All Months</option>
@@ -309,18 +321,14 @@ const AttendancePage: React.FC = () => {
                 {new Date(0, i).toLocaleString("default", { month: "long" })}
               </option>
             ))}
-          </select>
-
-          &nbsp; &nbsp;
+          </select>&emsp;
 
           <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
             <option value="All">All Years</option>
             <option value="2025">2025</option>
             <option value="2026">2026</option>
             <option value="2027">2027</option>
-          </select>
-
-          &nbsp; &nbsp;
+          </select>&emsp;
 
           {/* Service Filter */}
           <select value={selectedService} onChange={(e) => setSelectedService(e.target.value)}>
@@ -440,7 +448,7 @@ const AttendancePage: React.FC = () => {
                   <th>Name</th>
                   <th>Gender</th>
                   <th>Category</th>
-                  <th>Congregant Type</th> {/* Added the Congregant Type column */}
+                  <th>Congregant Type</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -452,7 +460,7 @@ const AttendancePage: React.FC = () => {
                     <td>{record.person ? record.person.gender : "Unknown"}</td>
                     <td>{record.person ? (record.person.age <= 30 ? "Youth" : "Adult") : "Unknown"}</td>
                     <td>
-                      {record.member_id ? "Member" : "Visitor"} {/* Logic to determine Member or Visitor */}
+                      {record.member_id ? "Member" : "Visitor"}
                     </td>
                     <td>
                       {record.status === "Present" ? "🟢 Present" : "🔴 Absent"}

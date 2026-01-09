@@ -48,21 +48,37 @@ const ConvertsDashboard: React.FC = () => {
     return () => document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  /* ---------------- AUTH FETCH FUNCTION ---------------- */
+  const authFetch = async (url: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found.");
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Error fetching data from ${url}: ${res.statusText}`);
+    }
+
+    return res.json();
+  };
+
   /* ---------------- FETCH DATA FROM BACKEND ---------------- */
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch members data
-        const membersResponse = await fetch(`${baseURL}/api/members`);
-        const membersData = await membersResponse.json();
+        // Fetch members data using authFetch
+        const membersResponse = await authFetch(`${baseURL}/api/members`);
+        const membersData = membersResponse.data; // Access the data array
 
-        // Fetch visitors data
-        const visitorsResponse = await fetch(`${baseURL}/api/visitor`);
-        const visitorsData = await visitorsResponse.json();
+        // Fetch visitors data using authFetch
+        const visitorsData = await authFetch(`${baseURL}/api/visitor`);
 
-        // Fetch converts data
-        const convertsResponse = await fetch(`${baseURL}/api/converts`);
-        const convertsData = await convertsResponse.json();
+        // Fetch converts data using authFetch
+        const convertsData = await authFetch(`${baseURL}/api/converts`);
 
         // Initialize gender count
         const genderCount = { maleMember: 0, femaleMember: 0, maleVisitor: 0, femaleVisitor: 0 };
@@ -92,12 +108,7 @@ const ConvertsDashboard: React.FC = () => {
           }
         });
 
-        setGenderData([
-          genderCount.maleMember,
-          genderCount.femaleMember,
-          genderCount.maleVisitor,
-          genderCount.femaleVisitor,
-        ]);
+        setGenderData([genderCount.maleMember, genderCount.femaleMember, genderCount.maleVisitor, genderCount.femaleVisitor]);
 
         // Process age distribution and age details
         const ageGroups = [0, 0, 0, 0, 0]; // 0-12, 13-18, 19-35, 36-60, 60+
@@ -319,8 +330,7 @@ const ConvertsDashboard: React.FC = () => {
 
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
-
-        <CongregationHeader/><br/>
+        <CongregationHeader/><br />
 
         {/* HEADER */}
         <header>
@@ -362,7 +372,6 @@ const ConvertsDashboard: React.FC = () => {
             <canvas id="convertAgeChart"></canvas>
           </div>
         </div>
-
       </div>
     </div>
   );

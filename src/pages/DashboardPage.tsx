@@ -7,6 +7,8 @@ import Calendar from "../pages/programs/Calendar"; // Import the Calendar compon
 
 import type { Program } from "../pages/programs/dashboard";  // Using type-only import
 
+import { authFetch, orgFetch } from "../utils/api"; // Import the authFetch function
+
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface KPI {
@@ -14,6 +16,27 @@ interface KPI {
   weeklyAttendance: number;
   monthlyGiving: number;
   activeVolunteers: number;
+}
+
+interface Member {
+  member_id: number;
+  full_name: string;
+  age: number;
+  gender: "Male" | "Female";
+  date_joined: string;
+  widowed: boolean;
+  orphan: boolean;
+  disabled: boolean;
+  status: "Active" | "Visitor" | "New Convert" | "Inactive" | "Transferred";
+}
+
+interface AttendanceRecord {
+  record_id: number;
+  status: "Present" | "Absent";
+  attendance_date: string;
+  service_id: number;
+  member_id: number | null;
+  visitor_id: number | null;
 }
 
 interface ChartData {
@@ -101,74 +124,109 @@ const dropdowns: Dropdown[] = [
       { name: "Certificates for Members", href: "/governance/certificates" },
     ],
   },
-  //{
-    //label: "Class Management",
-    //links: [
-      //{ name: "Dashboard", href: "/class/dashboard" },
-      //{ name: "Classes", href: "/class/classes" },
-      //{ name: "Add Class", href: "/class/add-class" },
-      //{ name: "Teachers", href: "/class/teachers" },
-      //{ name: "Enrollments", href: "/class/enrollments" },
-      //{ name: "Attendance", href: "/class/attendance" },
-      //{ name: "Reports", href: "/class/reports" },
-    //],
-  //},
-  //{
-    //label: "Ministry Teams Management",
-    //links: [
-      //{ name: "Dashboard", href: "/ministry/dashboard" },
-      //{ name: "Donors", href: "/ministry/donors" },
-      //{ name: "Add Donor", href: "/ministry/add-donor" },
-      //{ name: "Donations", href: "/ministry/donations" },
-      //{ name: "Reports", href: "/ministry/reports" },
-    //],
-  //},
-  //{
-    //label: "Pastoral Care Counselling",
-    //links: [
-      //{ name: "Dashboard", href: "/pastoral/dashboard" },
-      //{ name: "Donors", href: "/pastoral/donors" },
-      //{ name: "Add Donor", href: "/pastoral/add-donor" },
-      //{ name: "Donations", href: "/pastoral/donations" },
-      //{ name: "Reports", href: "/pastoral/reports" },
-    //],
-  //},
 ];
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const [kpi, _setKpi] = useState<KPI>({
+  const [members, setMembers] = useState<Member[]>([]);
+
+  const [kpi, setKpi] = useState<KPI>({
     totalMembers: 1248,
-    weeklyAttendance: 560,
+    weeklyAttendance: 0,
     monthlyGiving: 34000,
     activeVolunteers: 75,
   });
 
   const [chartData, _setChartData] = useState<ChartData>({
-    attendance: [520, 560, 580, 600],
+    attendance: [0, 0, 0, 0],
     donations: [15000, 8000, 5000, 6000],
   });
+
+  const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropdownStates, setDropdownStates] = useState<Record<string, boolean>>({});
 
+  const growthChartRef = useRef<Chart | null>(null);
   const attendanceChartRef = useRef<Chart | null>(null);
   const givingChartRef = useRef<Chart | null>(null);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   // Add/remove sidebar-open class on body for proper animation
-      useEffect(() => {
-        const body = document.body;
-        if (sidebarOpen) {
-          body.classList.add("sidebar-open");
+  useEffect(() => {
+    const body = document.body;
+    if (sidebarOpen) {
+      body.classList.add("sidebar-open");
+    } else {
+      body.classList.remove("sidebar-open");
+    }
+    // Clean up on unmount
+    return () => body.classList.remove("sidebar-open");
+  }, [sidebarOpen]);
+
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url);
+    } catch (error) {
+      console.log("authFetch failed, falling back to orgFetch");
+      return await orgFetch(url);
+    }
+  };
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await authFetch(`${baseURL}/api/members`);
+        if (response && Array.isArray(response.data)) {
+          setMembers(response.data);
         } else {
-          body.classList.remove("sidebar-open");
+          console.error("Expected an array in 'data', received:", response);
+          setMembers([]);
         }
-        // Clean up on unmount
-        return () => body.classList.remove("sidebar-open");
-      }, [sidebarOpen]);
+      } catch (err) {
+        console.error("Error fetching members with authFetch, falling back to orgFetch:", err);
+        try {
+          const response = await orgFetch(`${baseURL}/api/members`);
+          if (response && Array.isArray(response.data)) {
+            setMembers(response.data);
+          } else {
+            console.error("Expected an array in 'data', received:", response);
+            setMembers([]);
+          }
+        } catch (error) {
+          console.error("Error fetching members with orgFetch:", error);
+          setMembers([]);
+        }
+      }
+    };
+    fetchMembers();
+  }, []);
+
+  // Fetch attendance data
+    useEffect(() => {
+      const fetchAttendanceData = async () => {
+        try {
+          const data = await authFetch(`${baseURL}/api/congregation/attendance`);
+          setAttendanceData(data);
+        } catch (error) {
+          console.error("Error fetching attendance data:", error);
+        }
+      };
+      fetchAttendanceData();
+    }, []);
+  
+
+  // Update total members KPI dynamically
+  useEffect(() => {
+    if (members.length) {
+      setKpi(prevKpi => ({
+        ...prevKpi,
+        totalMembers: members.length,  // Set total members to the length of the array
+      }));
+    }
+  }, [members]);
 
   useEffect(() => {
     const initialState: Record<string, boolean> = {};
@@ -202,50 +260,137 @@ const DashboardPage: React.FC = () => {
         options: { responsive: true },
       });
     }
+  }, [chartData]);
 
-    // Replaced it with calendar
-    //const givingCtx = document.getElementById("givingChart") as HTMLCanvasElement;
-    {/*if (givingCtx) {
-      givingChartRef.current = new Chart(givingCtx, {
-        type: "pie",
+  useEffect(() => {
+    if (!members.length) return;
+
+    growthChartRef.current?.destroy();
+
+    const growthCtx = document.getElementById("growthChart") as HTMLCanvasElement;
+    if (growthCtx) {
+      const months = Array.from({ length: 12 }, (_, i) => {
+        const d = new Date();
+        d.setMonth(i);
+        return d.toLocaleString("default", { month: "short" });
+      });
+
+      const monthlyCounts = Array(12).fill(0);
+      members.forEach(m => {
+        const joinDate = new Date(m.date_joined);
+        if (!isNaN(joinDate.getTime())) {
+          monthlyCounts[joinDate.getMonth()] += 1;
+        }
+      });
+
+      growthChartRef.current = new Chart(growthCtx, {
+        type: "line",
         data: {
-          labels: ["General Fund", "Missions", "Building Fund", "Outreach"],
+          labels: months,
+          datasets: [{
+            label: "New Members",
+            data: monthlyCounts,
+            borderColor: "#1A3D7C",
+            backgroundColor: "rgba(26,61,124,0.25)",
+            fill: true,
+            borderWidth: 3,
+            tension: 0.3
+          }]
+        },
+        options: { responsive: true }
+      });
+    }
+  }, [members]);
+
+  const [events, setEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const data = await fetchDataWithAuthFallback(`${baseURL}/api/programs`);
+        const formattedEvents = data.map((program: Program) => ({
+          id: program.id.toString(),
+          name: program.name,
+          description: program.description,
+          date: program.date.slice(0, 10),
+          start: program.time,
+          end: "17:00",
+          venue: program.venue,
+          event_type: program.event_type,
+          notes: program.notes,
+          category_id: program.category_id,
+          status: program.status || "Upcoming"
+        }));
+
+        setEvents(formattedEvents);
+      } catch (error) {
+        console.error("Failed to fetch events", error);
+      }
+    };
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    const processAttendanceData = () => {
+      // Get the last 4 weeks
+      const weeks = [0, 1, 2, 3]; // Last 4 weeks
+      const weeklyAttendance = weeks.map((weekOffset) => {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - weekOffset * 7); // Set start date of the week
+
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6); // Set end date of the week
+
+        const startOfWeek = startDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        const endOfWeek = endDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+
+        // Filter the attendance records for the current week
+        const weekAttendance = attendanceData.filter((record) => {
+          const attendanceDate = record.attendance_date.slice(0, 10); // Format: YYYY-MM-DD
+          return attendanceDate >= startOfWeek && attendanceDate <= endOfWeek;
+        });
+
+        // Count the number of "Present" statuses for this week
+        return weekAttendance.filter((record) => record.status === "Present").length;
+      });
+
+      // Set the chart data
+      _setChartData((prevData) => ({
+        ...prevData,
+        attendance: weeklyAttendance,
+      }));
+    };
+
+    if (attendanceData.length > 0) {
+      processAttendanceData(); // Process attendance data after fetching
+    }
+  }, [attendanceData]);
+
+  // Create the attendance chart
+  useEffect(() => {
+    attendanceChartRef.current?.destroy();
+
+    const attendanceCtx = document.getElementById("attendanceChart") as HTMLCanvasElement;
+    if (attendanceCtx) {
+      attendanceChartRef.current = new Chart(attendanceCtx, {
+        type: "line",
+        data: {
+          labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
           datasets: [
             {
-              data: chartData.donations,
-              backgroundColor: ["#5C4736", "#817E7A", "#AF907A", "#20262C"],
+              label: "Weekly Attendance",
+              data: chartData.attendance,
+              borderColor: "#1A3D7C",
+              backgroundColor: "rgba(26,61,124,0.2)",
+              fill: true,
+              tension: 0.3,
             },
           ],
         },
         options: { responsive: true },
       });
-    }*/}
+    }
   }, [chartData]);
-
-  const [events, setEvents] = useState<Event[]>([]);
-
-useEffect(() => {
-  fetch(`${baseURL}/api/programs`)
-    .then((response) => response.json())
-    .then((data) => {
-      const formattedEvents = data.map((program: Program) => ({
-        id: program.id.toString(),
-        name: program.name,
-        description: program.description,
-        date: program.date.slice(0, 10),
-        start: program.time,
-        end: "17:00",  // You can adjust this as needed
-        venue: program.venue,
-        event_type: program.event_type,
-        notes: program.notes,
-        category_id: program.category_id,
-        status: program.status || "Upcoming",
-      }));
-
-      setEvents(formattedEvents);
-    });
-}, []);
-
 
   const toggleDropdown = (label: string) => {
     setDropdownStates((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -253,7 +398,6 @@ useEffect(() => {
 
   return (
     <div className="dashboard-wrapper">
-      
       {/* Hamburger */}
       <button className="hamburger" onClick={toggleSidebar}>
         &#9776;
@@ -261,7 +405,7 @@ useEffect(() => {
 
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
-        {/* Close Button (Styled like ClassDashboard) */}
+        {/* Close Button */}
         <div className="close-wrapper">
           <div className="toggle close-btn">
             <input
@@ -301,9 +445,8 @@ useEffect(() => {
           </div>
         ))}
 
-         {/* Two break lines before logout */}
-            <br />
-            <br />
+        <br />
+        <br />
 
         <a
           href="#"
@@ -320,14 +463,11 @@ useEffect(() => {
 
       {/* Main Dashboard */}
       <div className="dashboard-content">
-
         <HeaderNav />
 
         <br/>
 
         <h1>Church Overview</h1>
-
-        <br/><br/>
 
         <div className="kpi-container">
           <div className="kpi-card">
@@ -337,10 +477,12 @@ useEffect(() => {
           <div className="kpi-card">
             <h3>Weekly Attendance</h3>
             <p>{kpi.weeklyAttendance}</p>
+            <h4>(Average)</h4>
           </div>
           <div className="kpi-card">
             <h3>Monthly Giving</h3>
             <p>${kpi.monthlyGiving.toLocaleString()}</p>
+            <h4>(Average)</h4>
           </div>
           <div className="kpi-card">
             <h3>Active Volunteers</h3>
@@ -355,11 +497,14 @@ useEffect(() => {
           </div>
 
           <div className="chart-box">
-            <h3>Event Calendar</h3>
-            <Calendar events={events} />  {/* Pass events as prop */}
+            <h3>Church Growth (12 Months)</h3>
+            <canvas id="growthChart"></canvas>
           </div>
+        </div>
 
-
+        <div className="chart-box">
+          <h3>Event Calendar</h3>
+          <Calendar events={events} />
         </div>
       </div>
     </div>

@@ -40,7 +40,7 @@ const ChurchMembersDashboard: React.FC = () => {
   }, [sidebarOpen]);
 
   // Fetch members from backend using authFetch and fallback to orgFetch if needed
-  // Fetch members from backend using authFetch and fallback to orgFetch if needed
+  
 useEffect(() => {
   const fetchMembers = async () => {
     try {
