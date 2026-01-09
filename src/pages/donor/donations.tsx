@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -15,6 +16,17 @@ interface Donation {
   type: string;
   method: string;
 }
+
+// Helper function to fetch data with authFetch and fallback to orgFetch if needed
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    // Attempt to fetch using authFetch first
+    return await authFetch(url);  // Return the response directly if it's already structured
+  } catch (error) {
+    console.log("authFetch failed, falling back to orgFetch");
+    return await orgFetch(url);  // Fallback to orgFetch and return the response directly
+  }
+};
 
 const DonationsManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,9 +45,10 @@ const DonationsManagementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${baseURL}/api/donations`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchDonations = async () => {
+      try {
+        const data = await fetchDataWithAuthFallback(`${baseURL}/api/donations`);
+        
         const mapped: Donation[] = data.map((d: any) => ({
           id: d.id,
           donor:
@@ -52,11 +65,13 @@ const DonationsManagementPage: React.FC = () => {
         }));
         setDonationData(mapped);
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err: any) {
         console.error("Failed to load donations", err);
         setLoading(false);
-      });
+      }
+    };
+
+    fetchDonations();
   }, []);
 
   // ---------------- SEARCH ----------------
@@ -143,8 +158,8 @@ const DonationsManagementPage: React.FC = () => {
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
 
-        <DonorsHeader/><br/>
-        
+        <DonorsHeader /><br />
+
         <h1>Donations</h1>
         <br />
 

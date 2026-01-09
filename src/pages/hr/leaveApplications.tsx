@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HRHeader from './HRHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -63,13 +64,15 @@ const LeaveApplicationsPage: React.FC = () => {
   useEffect(() => {
     const fetchLeaveRequests = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/leave_requests/staff/${user.id}`);
-        if (!response.ok) throw new Error("Failed to fetch leave requests");
-        const data = await response.json();
-        setLeaves(data);
+        const response = await authFetch(`${baseURL}/api/leave_requests/staff/${user.id}`);
+        setLeaves(response); // Directly set the response as it's already structured
       } catch (err: any) {
         console.error(err);
-        alert("Error fetching leave requests.");
+        alert("Error fetching leave requests. Falling back to public fetch.");
+        
+        // Fallback to orgFetch if authFetch fails
+        const response = await orgFetch(`${baseURL}/api/leave_requests/staff/${user.id}`);
+        setLeaves(response); // Directly set the response as it's already structured
       }
     };
     fetchLeaveRequests();
@@ -79,16 +82,21 @@ const LeaveApplicationsPage: React.FC = () => {
   useEffect(() => {
     const fetchStaffAndDepartments = async () => {
       try {
-        const staffResponse = await fetch(`${baseURL}/api/staff`);
-        const staffData = await staffResponse.json();
-        setStaffMembers(staffData);
+        const staffResponse = await authFetch(`${baseURL}/api/staff`);
+        setStaffMembers(staffResponse); // Directly set the response as it's already structured
 
-        const deptResponse = await fetch(`${baseURL}/api/departments`);
-        const deptData = await deptResponse.json();
-        setDepartments(deptData);
+        const deptResponse = await authFetch(`${baseURL}/api/departments`);
+        setDepartments(deptResponse); // Directly set the response as it's already structured
       } catch (err: any) {
         console.error(err);
-        alert("Error fetching staff or departments.");
+        alert("Error fetching staff or departments. Falling back to public fetch.");
+        
+        // Fallback to orgFetch if authFetch fails
+        const staffResponse = await orgFetch(`${baseURL}/api/staff`);
+        setStaffMembers(staffResponse); // Directly set the response as it's already structured
+
+        const deptResponse = await orgFetch(`${baseURL}/api/departments`);
+        setDepartments(deptResponse); // Directly set the response as it's already structured
       }
     };
 
@@ -161,7 +169,6 @@ const LeaveApplicationsPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
         <HRHeader/><br/>
 
         <h1>Your Leave Applications</h1>

@@ -3,9 +3,21 @@ import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
+
+// Helper function to fetch data with authFetch and fallback to orgFetch if needed
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    // Attempt to fetch using authFetch first
+    return await authFetch(url);  // Return the response directly if it's already structured
+  } catch (error) {
+    console.log("authFetch failed, falling back to orgFetch");
+    return await orgFetch(url);  // Fallback to orgFetch and return the response directly
+  }
+};
 
 const DonorDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -38,12 +50,9 @@ const DonorDashboard: React.FC = () => {
       try {
         setLoading(true);
 
-        // Fetch donors and donations data
-        const donorsRes = await fetch(`${baseURL}/api/donors`);
-        const donationsRes = await fetch(`${baseURL}/api/donations`);
-
-        const donorsData = await donorsRes.json();
-        const donationsData = await donationsRes.json();
+        // Fetch donors and donations data using the new helper function
+        const donorsData = await fetchDataWithAuthFallback(`${baseURL}/api/donors`);
+        const donationsData = await fetchDataWithAuthFallback(`${baseURL}/api/donations`);
         
         setDonors(donorsData);
         setDonations(donationsData);
@@ -207,8 +216,8 @@ const DonorDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="dashboard-content">
 
-        <DonorsHeader/><br/>
-        
+        <DonorsHeader /><br />
+
         <h1>Donor Dashboard Overview</h1>
 
         <br /><br />

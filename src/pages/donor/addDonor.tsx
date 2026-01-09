@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -38,6 +39,19 @@ const ALLOWED_SUBCATEGORIES: Record<number, string[]> = {
   1: ["regular", "one-time", "occasional"], // Individual
   2: ["gold", "platinum", "silver"],        // Corporate
 };
+
+// Helper function to fetch data with fallback from authFetch to orgFetch
+
+const fetchDataWithAuthFallback = async (url: string, options?: RequestInit) => {
+  try {
+    // Attempt to fetch using authFetch first
+    return await authFetch(url, options);
+  } catch (error) {
+    console.log("authFetch failed, falling back to orgFetch");
+    return await orgFetch(url, options);
+  }
+};
+
 
 const AddDonor: React.FC = () => {
   const navigate = useNavigate();
@@ -76,8 +90,7 @@ const AddDonor: React.FC = () => {
 
   // ---------------- Fetch Donor Types ----------------
   useEffect(() => {
-    fetch(`${baseURL}/api/donors/donor_types`)
-      .then((res) => res.json())
+    fetchDataWithAuthFallback(`${baseURL}/api/donors/donor_types`)
       .then((data) => setDonorTypes(data))
       .catch((err) => console.error("Failed to load donor types", err));
   }, []);
@@ -89,10 +102,9 @@ const AddDonor: React.FC = () => {
       return;
     }
 
-    fetch(
+    fetchDataWithAuthFallback(
       `${baseURL}/api/donors/donor_sub_category?donor_type_id=${form.donorTypeId}`
     )
-      .then((res) => res.json())
       .then((data: DonorSubcategory[]) => {
         const allowed = form.donorTypeId ? ALLOWED_SUBCATEGORIES[form.donorTypeId] : undefined;
         let filtered = data;
@@ -136,15 +148,15 @@ const AddDonor: React.FC = () => {
         payload.organization_id = 1; // adjust if needed
       }
 
-      const res = await fetch(`${baseURL}/api/donors`, {
+      const res = await fetchDataWithAuthFallback(`${baseURL}/api/donors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
+      // Assuming the response is already in the required format, no need for res.json().
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to add donor");
+        throw new Error(res.message || "Failed to add donor");
       }
 
       // Show success card for 2 seconds before resetting and redirecting
@@ -185,7 +197,7 @@ const AddDonor: React.FC = () => {
       </button>
 
       {/* Sidebar */}
-      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
         <div className="close-wrapper">
           <div className="toggle close-btn">
             <input
@@ -199,7 +211,6 @@ const AddDonor: React.FC = () => {
         </div>
 
         <h2>DONOR MGMT</h2>
-
         <a href="#" onClick={() => navigate("/donor/dashboard")}>
           Dashboard
         </a>
@@ -233,9 +244,8 @@ const AddDonor: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
+        <DonorsHeader /><br />
 
-        <DonorsHeader/><br/>
-        
         <header className="page-header">
           <h1>Add Donor</h1>
           <button className="add-btn" onClick={() => navigate("/donor/donors")}>
@@ -246,7 +256,7 @@ const AddDonor: React.FC = () => {
         <div className="container">
           <form className="add-form-styling" onSubmit={handleSubmit}>
             {error && <p style={{ color: "red" }}>{error}</p>}
-            
+
             {/* Success Message Card */}
             {showSuccessCard && (
               <div className="success-card">

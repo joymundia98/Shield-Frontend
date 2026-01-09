@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HRHeader from './HRHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -100,7 +101,7 @@ const AddLeave: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${baseURL}/api/leave_requests`, {
+      const response = await authFetch(`${baseURL}/api/leave_requests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -116,6 +117,26 @@ const AddLeave: React.FC = () => {
       navigate("/hr/leaveApplications");  // Redirect to leave management page
     } catch (err: any) {
       alert("Error: " + err.message);
+
+      // Fallback to orgFetch if authFetch fails
+      try {
+        const fallbackResponse = await orgFetch(`${baseURL}/api/leave_requests`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(form),
+        });
+
+        if (!fallbackResponse.ok) {
+          throw new Error("Failed to submit leave request (fallback).");
+        }
+
+        alert("Leave request submitted successfully (via fallback)!");
+        navigate("/hr/leaveApplications");
+      } catch (fallbackErr: any) {
+        alert("Error with fallback submission: " + fallbackErr.message);
+      }
     }
   };
 

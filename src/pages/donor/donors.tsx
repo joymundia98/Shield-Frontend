@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import the authFetch and orgFetch utilities
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -14,6 +15,17 @@ interface Donor {
   donor_type_id: number | null;
   donor_type?: string; // optional, fetched from backend
 }
+
+// Helper function to fetch data with authFetch and fallback to orgFetch if needed
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    // Attempt to fetch using authFetch first
+    return await authFetch(url);  // Return the response directly if it's already structured
+  } catch (error) {
+    console.log("authFetch failed, falling back to orgFetch");
+    return await orgFetch(url);  // Fallback to orgFetch and return the response directly
+  }
+};
 
 const DonorManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -35,10 +47,8 @@ const DonorManagementPage: React.FC = () => {
   useEffect(() => {
     const fetchDonors = async () => {
       try {
-        const res = await fetch(`${baseURL}/api/donors`);
-        if (!res.ok) throw new Error("Failed to fetch donors");
-        const data = await res.json();
-
+        const data = await fetchDataWithAuthFallback(`${baseURL}/api/donors`);
+        
         // Optional: Map donor_type_id to donor_type name if your backend provides it
         const donorsWithType = data.map((d: any) => ({
           ...d,
@@ -73,9 +83,8 @@ const DonorManagementPage: React.FC = () => {
       if (!groups[donor.donor_type!]) groups[donor.donor_type!] = [];
       groups[donor.donor_type!].push(donor);
       return groups;
-    }, {});
+    }, {}); // Group donors by donor type
   }, [filteredDonors]);
-
 
   const handleAddDonor = () => navigate("/donor/addDonor");
 
@@ -137,8 +146,7 @@ const DonorManagementPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
-        <DonorsHeader/><br/>
+        <DonorsHeader /><br />
 
         <h1>Donors</h1>
         <br />
@@ -177,32 +185,30 @@ const DonorManagementPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {donors.map((d) => {
-                  return (
-                    <tr key={d.id}>
-                      <td data-title="ID">{d.id}</td>
-                      <td data-title="Name">{d.name}</td>
-                      <td data-title="Email">{d.email}</td>
-                      <td data-title="Phone">{d.phone}</td>
-                      <td className="actions">
-                        {/* View Button that opens the view page in a new tab */}
-                        <button
-                          className="add-btn"
-                          onClick={() => handleView(d.id.toString())} // Open in new tab
-                        >
-                          View
-                        </button>
-                        {/* Edit Button that redirects to the EditDonorPage */}
-                        <button
-                          className="edit-btn"
-                          onClick={() => handleEdit(d.id.toString())} // Edit the donor
-                        >
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {donors.map((d) => (
+                  <tr key={d.id}>
+                    <td data-title="ID">{d.id}</td>
+                    <td data-title="Name">{d.name}</td>
+                    <td data-title="Email">{d.email}</td>
+                    <td data-title="Phone">{d.phone}</td>
+                    <td className="actions">
+                      {/* View Button that opens the view page in a new tab */}
+                      <button
+                        className="add-btn"
+                        onClick={() => handleView(d.id.toString())} // Open in new tab
+                      >
+                        View
+                      </button>
+                      {/* Edit Button that redirects to the EditDonorPage */}
+                      <button
+                        className="edit-btn"
+                        onClick={() => handleEdit(d.id.toString())} // Edit the donor
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

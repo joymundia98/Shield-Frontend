@@ -4,6 +4,7 @@ import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios'; // Import axios for API calls
 import HRHeader from './HRHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -31,7 +32,6 @@ const HRDashboard: React.FC = () => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
 
-  
   // Chart refs
   const deptChartRef = useRef<Chart | null>(null);
   const leaveChartRef = useRef<Chart | null>(null);
@@ -39,9 +39,7 @@ const HRDashboard: React.FC = () => {
 
   const blue = "#1A3D7C";
   const brown1 = "#5C4736";
-  //const _brown2 = "#AF907A";
   const gray = "#817E7A";
-  //const _dark = "#20262C";
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -55,13 +53,31 @@ const HRDashboard: React.FC = () => {
     return () => body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  // Helper function to fetch data with fallback
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url); // Try fetching using authFetch
+    } catch (error: unknown) {
+      console.log("authFetch failed, falling back to orgFetch", error);
+
+      // Narrow the error to AxiosError to safely access `response`
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log("Unauthorized, redirecting to login");
+        navigate("/login"); // Redirect to login page
+      }
+
+      // Fallback to orgFetch if authFetch fails
+      return await orgFetch(url);
+    }
+  };
+
   // Fetching staff, departments, and leave requests
   useEffect(() => {
     // Fetch staff data
     const fetchStaffData = async () => {
       try {
-        const response = await axios.get(`${baseURL}/api/staff`);
-        setStaffData(response.data);
+        const response = await fetchDataWithAuthFallback(`${baseURL}/api/staff`);
+        setStaffData(response);
       } catch (error) {
         console.error("Error fetching staff data:", error);
       }
@@ -70,8 +86,8 @@ const HRDashboard: React.FC = () => {
     // Fetch department data
     const fetchDepartments = async () => {
       try {
-        const response = await axios.get(`${baseURL}/api/departments`);
-        setDepartments(response.data);
+        const response = await fetchDataWithAuthFallback(`${baseURL}/api/departments`);
+        setDepartments(response);
       } catch (error) {
         console.error("Error fetching departments:", error);
       }
@@ -80,8 +96,8 @@ const HRDashboard: React.FC = () => {
     // Fetch leave requests data
     const fetchLeaveRequests = async () => {
       try {
-        const response = await axios.get(`${baseURL}/api/leave_requests`);
-        setLeaveRequests(response.data);
+        const response = await fetchDataWithAuthFallback(`${baseURL}/api/leave_requests`);
+        setLeaveRequests(response);
       } catch (error) {
         console.error("Error fetching leave requests:", error);
       }
@@ -94,71 +110,70 @@ const HRDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-  deptChartRef.current?.destroy();
-  leaveChartRef.current?.destroy();
-  joinLeaveChartRef.current?.destroy();
+    deptChartRef.current?.destroy();
+    leaveChartRef.current?.destroy();
+    joinLeaveChartRef.current?.destroy();
 
-  // Calculate staff counts per department and sort in descending order
-  const deptStaffCounts = departments.map((dept: { id: number; name: string }) => ({
-    name: dept.name,
-    staffCount: staffData.filter(staff => staff.department_id === dept.id).length,
-  }));
+    // Calculate staff counts per department and sort in descending order
+    const deptStaffCounts = departments.map((dept: { id: number; name: string }) => ({
+      name: dept.name,
+      staffCount: staffData.filter(staff => staff.department_id === dept.id).length,
+    }));
 
-  // Sort departments by staff count in descending order
-  const sortedDeptStaffCounts = deptStaffCounts.sort((a, b) => b.staffCount - a.staffCount);
+    // Sort departments by staff count in descending order
+    const sortedDeptStaffCounts = deptStaffCounts.sort((a, b) => b.staffCount - a.staffCount);
 
-  // Department Breakdown Chart (Upright Bar Chart)
-  const deptCtx = document.getElementById("deptChart") as HTMLCanvasElement;
-  if (deptCtx) {
-    deptChartRef.current = new Chart(deptCtx, {
-      type: "bar", // Keep the chart type as 'bar'
-      data: {
-        labels: sortedDeptStaffCounts.map(dept => dept.name), // Sorted department names
-        datasets: [
-          {
-            label: "Staff Count",
-            data: sortedDeptStaffCounts.map(dept => dept.staffCount), // Sorted staff counts
-            backgroundColor: blue,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            beginAtZero: true,
-          },
-          y: {
-            beginAtZero: true,
+    // Department Breakdown Chart (Upright Bar Chart)
+    const deptCtx = document.getElementById("deptChart") as HTMLCanvasElement;
+    if (deptCtx) {
+      deptChartRef.current = new Chart(deptCtx, {
+        type: "bar", // Keep the chart type as 'bar'
+        data: {
+          labels: sortedDeptStaffCounts.map(dept => dept.name), // Sorted department names
+          datasets: [
+            {
+              label: "Staff Count",
+              data: sortedDeptStaffCounts.map(dept => dept.staffCount), // Sorted staff counts
+              backgroundColor: blue,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              beginAtZero: true,
+            },
+            y: {
+              beginAtZero: true,
+            },
           },
         },
-      },
-    });
-  }
+      });
+    }
 
-  // Leave Overview Chart remains unchanged
-  const leaveCtx = document.getElementById("leaveChart") as HTMLCanvasElement;
-  if (leaveCtx) {
-    leaveChartRef.current = new Chart(leaveCtx, {
-      type: "doughnut",
-      data: {
-        labels: ["On Leave Today", "Pending Approvals", "Next 30 Days"],
-        datasets: [
-          {
-            data: [
-              leaveRequests.filter(leave => leave.status === "approved" && new Date(leave.start_date) <= new Date()).length,
-              leaveRequests.filter(leave => leave.status === "pending").length,
-              leaveRequests.filter(leave => new Date(leave.start_date) > new Date()).length,
-            ],
-            backgroundColor: [blue, brown1, gray],
-          },
-        ],
-      },
-      options: { responsive: true },
-    });
-  }
-}, [staffData, departments, leaveRequests]);
-
+    // Leave Overview Chart remains unchanged
+    const leaveCtx = document.getElementById("leaveChart") as HTMLCanvasElement;
+    if (leaveCtx) {
+      leaveChartRef.current = new Chart(leaveCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["On Leave Today", "Pending Approvals", "Next 30 Days"],
+          datasets: [
+            {
+              data: [
+                leaveRequests.filter(leave => leave.status === "approved" && new Date(leave.start_date) <= new Date()).length,
+                leaveRequests.filter(leave => leave.status === "pending").length,
+                leaveRequests.filter(leave => new Date(leave.start_date) > new Date()).length,
+              ],
+              backgroundColor: [blue, brown1, gray],
+            },
+          ],
+        },
+        options: { responsive: true },
+      });
+    }
+  }, [staffData, departments, leaveRequests]);
 
   return (
     <div className="dashboard-wrapper">
@@ -169,7 +184,6 @@ const HRDashboard: React.FC = () => {
 
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
-        {/* Close Button (Styled like ClassDashboard) */}
         <div className="close-wrapper">
           <div className="toggle close-btn">
             <input
@@ -190,11 +204,6 @@ const HRDashboard: React.FC = () => {
         <a href="/hr/leave">Leave Management</a>
         <a href="/hr/leaveApplications">Leave Applications</a>
         <a href="/hr/departments">Departments</a>
-        {/*<a href="#">Volunteers</a>
-        <a href="/hr/attendance">Attendance</a>
-        <a href="#">Training</a>
-        <a href="#">HR Documents</a>*/}
-
         <hr className="sidebar-separator" />
         <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
         <a

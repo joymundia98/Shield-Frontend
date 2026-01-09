@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HRHeader from './HRHeader';
+import axios from "axios";
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -31,60 +33,72 @@ const DepartmentsPage: React.FC = () => {
   const [deptDesc, setDeptDesc] = useState("");
 
   /* -------------------- Sidebar -------------------- */
- const toggleSidebar = () => setSidebarOpen((prev) => !prev);
- 
-   useEffect(() => {
-     if (sidebarOpen) document.body.classList.add("sidebar-open");
-     else document.body.classList.remove("sidebar-open");
-   }, [sidebarOpen]);
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+
+  useEffect(() => {
+    if (sidebarOpen) document.body.classList.add("sidebar-open");
+    else document.body.classList.remove("sidebar-open");
+  }, [sidebarOpen]);
 
   /* -------------------- Fetch Departments from Backend -------------------- */
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const res = await fetch(`${baseURL}/api/departments`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-        const data = await res.json();
-
-        const churchDepts = data
-          .filter((d: any) => d.category === "church")
-          .map((d: any) => ({
-            id: d.id,
-            name: d.name,
-            desc: d.description,
-            total: d.total || 0, // Default to 0 if no total is provided
-            category: d.category,
-          }));
-
-        const corporateDepts = data
-          .filter((d: any) => d.category === "corporate")
-          .map((d: any) => ({
-            id: d.id,
-            name: d.name,
-            desc: d.description,
-            total: d.total || 0, // Default to 0 if no total is provided
-            category: d.category,
-          }));
-
-        const staffRes = await fetch(`${baseURL}/api/staff`);
-        if (!staffRes.ok) throw new Error(`HTTP error! status: ${staffRes.status}`);
-        const staffData = await staffRes.json();
-
-        const countStaffForDepartment = (departments: Department[], staff: any[]) => {
-          return departments.map((dept) => ({
-            ...dept,
-            total: staff.filter((staffMember: any) => staffMember.department_id === dept.id).length,
-          }));
-        };
-
-        setChurchDepartments(countStaffForDepartment(churchDepts, staffData));
-        setCorporateDepartments(countStaffForDepartment(corporateDepts, staffData));
-      } catch (err) {
-        console.error("Error fetching departments:", err);
+  const fetchDataWithAuthFallback = async (url: string, options?: RequestInit) => {
+    try {
+      return await authFetch(url, options); // Pass the options here
+    } catch (error: unknown) {
+      console.log("authFetch failed, falling back to orgFetch", error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log("Unauthorized, redirecting to login");
+        navigate("/login");
       }
-    };
+      return await orgFetch(url, options); // Ensure orgFetch also handles options
+    }
+  };
 
+  // Define the fetchDepartments function outside useEffect
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetchDataWithAuthFallback(`${baseURL}/api/departments`);
+      const data = res; // Assuming the response is an array of departments
+
+      const churchDepts = data
+        .filter((d: any) => d.category === "church")
+        .map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          desc: d.description,
+          total: d.total || 0, // Default to 0 if no total is provided
+          category: d.category,
+        }));
+
+      const corporateDepts = data
+        .filter((d: any) => d.category === "corporate")
+        .map((d: any) => ({
+          id: d.id,
+          name: d.name,
+          desc: d.description,
+          total: d.total || 0, // Default to 0 if no total is provided
+          category: d.category,
+        }));
+
+      const staffRes = await fetchDataWithAuthFallback(`${baseURL}/api/staff`);
+      const staffData = staffRes;
+
+      const countStaffForDepartment = (departments: Department[], staff: any[]) => {
+        return departments.map((dept) => ({
+          ...dept,
+          total: staff.filter((staffMember: any) => staffMember.department_id === dept.id).length,
+        }));
+      };
+
+      setChurchDepartments(countStaffForDepartment(churchDepts, staffData));
+      setCorporateDepartments(countStaffForDepartment(corporateDepts, staffData));
+    } catch (err) {
+      console.error("Error fetching departments:", err);
+    }
+  };
+
+  // Fetch departments on mount
+  useEffect(() => {
     fetchDepartments();
   }, []);
 
@@ -112,53 +126,6 @@ const DepartmentsPage: React.FC = () => {
     setEditingGroup(null);
   };
 
-  /* --------------------FETCH FUNCTION --------------------*/
-  const fetchDepartments = async () => {
-    try {
-      const res = await fetch(`${baseURL}/api/departments`);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-      const data = await res.json();
-
-      const churchDepts = data
-        .filter((d: any) => d.category === "church")
-        .map((d: any) => ({
-          id: d.id,
-          name: d.name,
-          desc: d.description,
-          total: d.total || 0, // Default to 0 if no total is provided
-          category: d.category,
-        }));
-
-      const corporateDepts = data
-        .filter((d: any) => d.category === "corporate")
-        .map((d: any) => ({
-          id: d.id,
-          name: d.name,
-          desc: d.description,
-          total: d.total || 0, // Default to 0 if no total is provided
-          category: d.category,
-        }));
-
-      const staffRes = await fetch(`${baseURL}/api/staff`);
-      if (!staffRes.ok) throw new Error(`HTTP error! status: ${staffRes.status}`);
-      const staffData = await staffRes.json();
-
-      const countStaffForDepartment = (departments: Department[], staff: any[]) => {
-        return departments.map((dept) => ({
-          ...dept,
-          total: staff.filter((staffMember: any) => staffMember.department_id === dept.id).length,
-        }));
-      };
-
-      setChurchDepartments(countStaffForDepartment(churchDepts, staffData));
-      setCorporateDepartments(countStaffForDepartment(corporateDepts, staffData));
-    } catch (err) {
-      console.error("Error fetching departments:", err);
-    }
-  };
-
-
   /* -------------------- Save Handler -------------------- */
   const saveDepartment = async () => {
     if (!deptName.trim()) {
@@ -183,14 +150,13 @@ const DepartmentsPage: React.FC = () => {
           : corporateDepartments[editIndex].id;
 
       try {
-        const res = await fetch(`${baseURL}/api/departments/${deptId}`, {
+        const res = await fetchDataWithAuthFallback(`${baseURL}/api/departments/${deptId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(departmentData),
         });
-        if (!res.ok) throw new Error("Failed to update department");
 
         await res.json(); // Make sure to await the response
 
@@ -205,14 +171,13 @@ const DepartmentsPage: React.FC = () => {
     } else {
       // Creating new department
       try {
-        const res = await fetch(`${baseURL}/api/departments`, {
+        const res = await fetchDataWithAuthFallback(`${baseURL}/api/departments`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(departmentData),
         });
-        if (!res.ok) throw new Error("Failed to add new department");
 
         await res.json();
 
@@ -229,8 +194,6 @@ const DepartmentsPage: React.FC = () => {
     closePopup();
   };
 
-
-
   /* -------------------- Delete Handler -------------------- */
   const deleteDepartment = async (group: "church" | "corporate", index: number) => {
     if (!window.confirm("Are you sure you want to delete this department?")) return;
@@ -239,9 +202,10 @@ const DepartmentsPage: React.FC = () => {
       group === "church" ? churchDepartments[index].id : corporateDepartments[index].id;
 
     try {
-      const res = await fetch(`${baseURL}/api/departments/${deptId}`, {
+      const res = await fetchDataWithAuthFallback(`${baseURL}/api/departments/${deptId}`, {
         method: "DELETE",
       });
+
       if (!res.ok) throw new Error("Failed to delete department");
 
       // Remove department locally
@@ -280,7 +244,7 @@ const DepartmentsPage: React.FC = () => {
             <span className="label">X</span>
           </div>
         </div>
-         
+
         <h2>HR MANAGER</h2>
         <a href="/hr/dashboard">Dashboard</a>
         <a href="/hr/staffDirectory">Staff Directory</a>
@@ -300,7 +264,7 @@ const DepartmentsPage: React.FC = () => {
           className="logout-btn"
           onClick={(e) => {
             e.preventDefault();
-            navigate("/");
+            navigate("/"); // Logout logic
           }}
         >
           ➜ Logout
@@ -309,9 +273,8 @@ const DepartmentsPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
-        <HRHeader/><br/>
-
+        <HRHeader /><br />
+        
         {/* Church Departments */}
         <div className="table-section">
           <div className="table-header">
@@ -411,7 +374,7 @@ const DepartmentsPage: React.FC = () => {
           placeholder="Department Name"
         />
 
-        <br/>
+        <br />
         <label>Description</label>
         <textarea
           value={deptDesc}
