@@ -134,7 +134,7 @@ const DashboardPage: React.FC = () => {
   const [kpi, setKpi] = useState<KPI>({
     totalMembers: 1248,
     weeklyAttendance: 0,
-    monthlyGiving: 34000,
+    monthlyGiving: 0,
     activeVolunteers: 75,
   });
 
@@ -174,6 +174,54 @@ const DashboardPage: React.FC = () => {
       return await orgFetch(url);
     }
   };
+
+  // Fetch income data for Tithes (Monthly and Special) and Donations (Online, Cash)
+  useEffect(() => {
+    const fetchIncomeData = async () => {
+      try {
+        const data = await authFetch(`${baseURL}/api/finance/incomes`);
+
+        // Filter for Tithes (Monthly Tithes - id: 3, Special Tithes - id: 4)
+        // and Donations (Online Donations - id: 1, Cash Donations - id: 2)
+        const relevantData = data.filter((income: any) =>
+          [3, 4, 1, 2].includes(income.subcategory_id)
+        );
+
+        // Group the donations by month (YYYY-MM)
+        const monthlyTotals: Record<string, number[]> = {}; // Store donations by month (year-month)
+
+        relevantData.forEach((donation: any) => {
+          const date = new Date(donation.date);
+          const monthYear = `${date.getFullYear()}-${date.getMonth() + 1}`; // Format: YYYY-MM
+          
+          if (!monthlyTotals[monthYear]) {
+            monthlyTotals[monthYear] = [];
+          }
+
+          monthlyTotals[monthYear].push(parseFloat(donation.amount));
+        });
+
+        // Calculate the monthly average giving over the last 12 months
+        const last12Months = Object.keys(monthlyTotals).slice(-12); // Get the last 12 months
+        const averageGiving = last12Months.reduce((sum, month) => {
+          const monthlySum = monthlyTotals[month].reduce((monthSum, amount) => monthSum + amount, 0);
+          return sum + (monthlySum / monthlyTotals[month].length); // Average per month
+        }, 0);
+
+        const avgMonthlyGiving = averageGiving / last12Months.length;
+
+        setKpi(prevKpi => ({
+          ...prevKpi,
+          monthlyGiving: avgMonthlyGiving, // Update the KPI with the average monthly giving
+        }));
+
+      } catch (error) {
+        console.error("Error fetching income data:", error);
+      }
+    };
+    fetchIncomeData();
+  }, []); // Run once when component mounts
+
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -481,8 +529,8 @@ const DashboardPage: React.FC = () => {
           </div>
           <div className="kpi-card">
             <h3>Monthly Giving</h3>
-            <h4>Tithes and Offerings</h4>
-            <p>${kpi.monthlyGiving.toLocaleString()}</p>
+            <h4>Tithes and Donations</h4>
+            <p>ZMW {kpi.monthlyGiving.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
             <h4>(Average)</h4>
           </div>
           <div className="kpi-card">
