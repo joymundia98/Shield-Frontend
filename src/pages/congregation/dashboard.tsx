@@ -1,12 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+import { authFetch, orgFetch } from "../../utils/api";  // Import authFetch and orgFetch
 
 // Base API URL
 const baseURL = import.meta.env.VITE_BASE_URL;
+
+// Helper function to fetch data with authFetch and fallback to orgFetch if needed
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    // Attempt to fetch using authFetch first
+    return await authFetch(url);  // Return the response directly if it's already structured
+  } catch (error) {
+    console.log("authFetch failed, falling back to orgFetch");
+    return await orgFetch(url);  // Fallback to orgFetch and return the response directly
+  }
+};
 
 const CongregationDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +30,7 @@ const CongregationDashboard: React.FC = () => {
   const [growthData, setGrowthData] = useState<number[]>([]);
   const [statusData, setStatusData] = useState<number[]>([]);
   const [attendanceData, setAttendanceData] = useState<{ week: string, members: number, visitors: number }[]>([]);
+
   const [ageGroupData, setAgeGroupData] = useState<{ [key: string]: { members: number; visitors: number } }>({
     "0-12": { members: 0, visitors: 0 },
     "13-18": { members: 0, visitors: 0 },
@@ -49,28 +61,24 @@ const CongregationDashboard: React.FC = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        // Fetch data using authFetch and orgFetch fallback
         const [membersRes, visitorsRes, convertsRes, _statisticsRes, attendanceRes] = await Promise.all([
-          axios.get(`${baseURL}/api/members`),
-          axios.get(`${baseURL}/api/visitor`),
-          axios.get(`${baseURL}/api/converts`),
-          axios.get(`${baseURL}/api/congregation/member_statistics`),
-          axios.get(`${baseURL}/api/congregation/attendance`),
+          fetchDataWithAuthFallback(`${baseURL}/api/members`),
+          fetchDataWithAuthFallback(`${baseURL}/api/visitor`),
+          fetchDataWithAuthFallback(`${baseURL}/api/converts`),
+          fetchDataWithAuthFallback(`${baseURL}/api/congregation/member_statistics`),
+          fetchDataWithAuthFallback(`${baseURL}/api/congregation/attendance`),
         ]);
 
         const members = membersRes.data;
-        const visitors = visitorsRes.data;
+        console.log(members);
+        const visitors = visitorsRes;
 
         // 1. Calculate Church Growth Data (Number of members joined in each of the last 12 months)
         const growthCounts = new Array(12).fill(0);  // Array to hold member counts for each month of the last 12 months
         
         const today = new Date();
-        
-        // Helper function to get the month index (0 = Jan, 11 = Dec)
-        //const _getMonthIndex = (date: string) => {
-          //const joinedDate = new Date(date);
-          //return joinedDate.getMonth(); // Returns month as 0-indexed (Jan = 0, Feb = 1, etc.)
-        //};
-        
+
         // Calculate how many members joined in each of the last 12 months
         members.forEach((member: any) => {
           const joinedDate = new Date(member.date_joined);
@@ -111,20 +119,20 @@ const CongregationDashboard: React.FC = () => {
         });
 
         // Set the counts for visitors and converts
-        setVisitors(visitorsRes.data.length);       // Count the number of visitors
-        setNewConverts(convertsRes.data.length);    // Count the number of new converts
+        setVisitors(visitorsRes.length);       // Count the number of visitors
+        setNewConverts(convertsRes.length);    // Count the number of new converts
 
         // Update statusData for the pie chart
         setStatusData([
           statusCounts.active,       // Active members
-          visitorsRes.data.length,   // Visitors
-          convertsRes.data.length,   // New Converts
+          visitorsRes.length,   // Visitors
+          convertsRes.length,   // New Converts
           statusCounts.inactive,     // Inactive members
           statusCounts.transferred,  // Transferred members
         ]);
 
         // Attendance Data (From /api/congregation/attendance)
-        const attendanceRecords = attendanceRes.data;
+        const attendanceRecords = attendanceRes;
         const getLast4Weeks = () => {
           const weeks = [];
           const today = new Date();
@@ -376,7 +384,7 @@ const CongregationDashboard: React.FC = () => {
             navigate("/"); 
           }}
         >
-          ➜] Logout
+          ➜ Logout
         </a>
       </div>
 
