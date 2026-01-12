@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+import { authFetch, orgFetch } from "../../utils/api";  // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -28,8 +29,40 @@ interface Member {
   category: string; // This will be calculated
 }
 
+// Helper function to fetch data with authFetch and fallback to orgFetch if needed
+// Helper function to fetch data with authFetch and fallback to orgFetch if needed
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    // Attempt to fetch using authFetch first
+    const data = await authFetch(url);
+
+    // If data is returned correctly, return it
+    if (data) {
+      return data;
+    } else {
+      throw new Error("No data returned from authFetch.");
+    }
+  } catch (error) {
+    console.log("authFetch failed, falling back to orgFetch");
+    try {
+      // Fallback to orgFetch if authFetch fails
+      const data = await orgFetch(url);
+
+      // If data is returned correctly, return it
+      if (data) {
+        return data;
+      } else {
+        throw new Error("No data returned from orgFetch.");
+      }
+    } catch (error) {
+      throw new Error('Both authFetch and orgFetch failed');
+    }
+  }
+};
+
 const ViewMemberPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();  // Get member ID from URL params
+  console.log('id', id)
   const navigate = useNavigate();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -45,6 +78,7 @@ const ViewMemberPage: React.FC = () => {
   }, [sidebarOpen]);
 
   // Fetch member data
+  // Fetch member data
   useEffect(() => {
     const fetchMember = async () => {
       if (!id) {
@@ -55,13 +89,17 @@ const ViewMemberPage: React.FC = () => {
 
       try {
         setLoading(true);
-        const res = await fetch(`${baseURL}/api/members/${id}`);
+        // Use fetchDataWithAuthFallback for fetching member data
+        const data = await fetchDataWithAuthFallback(`${baseURL}/api/members/${id}`);
 
-        if (!res.ok) {
-          throw new Error("Member not found.");
+        console.log('Fetched Data:', data);
+
+        // Check if the response has the 'data' field
+        if (!data || !data.data) {
+          throw new Error("Member data is missing.");
         }
 
-        const data: Member = await res.json();
+        const memberData: Member = data.data;
 
         // Calculate the category based on age
         const calculateCategory = (age: number): string => {
@@ -72,12 +110,13 @@ const ViewMemberPage: React.FC = () => {
         };
 
         // Calculate category based on the member's age
-        const category = calculateCategory(data.age);
+        const category = calculateCategory(memberData.age);
 
-        // Set the category in the member data
-        setMember({ ...data, category });
+        // Set the member data and category
+        setMember({ ...memberData, category });
 
       } catch (error: any) {
+        console.error("Error fetching data:", error);
         setError(error.message || "Failed to fetch member data.");
       } finally {
         setLoading(false);
@@ -86,6 +125,7 @@ const ViewMemberPage: React.FC = () => {
 
     fetchMember();
   }, [id]);
+
 
   if (loading) {
     return <div>Loading...</div>;
@@ -132,7 +172,7 @@ const ViewMemberPage: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/");
+            navigate("/"); 
           }}
         >
           ➜ Logout
