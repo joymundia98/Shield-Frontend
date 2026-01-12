@@ -45,6 +45,9 @@ const RegisteredProgramsPage: React.FC = () => {
 
   const [showVenueColumn, _setShowVenueColumn] = useState(true);
 
+  // State to control the visible programs count per category
+  const [visibleProgramsCount, setVisibleProgramsCount] = useState<Record<string, number>>({});
+
   // ---------------- Helper function to fetch programs with authFetch or orgFetch ----------------
   const fetchProgramsWithAuthFallback = async () => {
     try {
@@ -141,6 +144,38 @@ const RegisteredProgramsPage: React.FC = () => {
     return () => body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  // Update the visible count for each category
+  {/*const setVisibleCountForCategory = (categoryId: string, count: number) => {
+    setVisibleProgramsCount((prev) => ({
+      ...prev,
+      [categoryId]: count,
+    }));
+  };*/}
+
+  // Show 5 more programs in the category
+  const showMorePrograms = (categoryId: string) => {
+    setVisibleProgramsCount((prev) => ({
+      ...prev,
+      [categoryId]: (prev[categoryId] || 0) + 5, // Show 5 more programs
+    }));
+  };
+
+  // Show all programs in the category
+  const showAllPrograms = (categoryId: string) => {
+    setVisibleProgramsCount((prev) => ({
+      ...prev,
+      [categoryId]: groupedPrograms[categoryId].length, // Show all programs in the category
+    }));
+  };
+
+  // Show only 5 programs (default view)
+  const showLessPrograms = (categoryId: string) => {
+    setVisibleProgramsCount((prev) => ({
+      ...prev,
+      [categoryId]: 5, // Default to showing only 5 programs
+    }));
+  };
+
   return (
     <div className="dashboard-wrapper">
       {/* Hamburger */}
@@ -190,7 +225,6 @@ const RegisteredProgramsPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
         <ProgramsHeader/><br/>
 
         <h1>Registered Programs</h1>
@@ -208,6 +242,8 @@ const RegisteredProgramsPage: React.FC = () => {
           const categoryName = categories.find(
             (cat) => cat.category_id === Number(categoryId)
           )?.name;
+          const visibleCount = visibleProgramsCount[categoryId] || 5; // Default to 5 visible programs
+
           return (
             <div key={categoryId}>
               <h2>{categoryName}</h2>
@@ -224,38 +260,47 @@ const RegisteredProgramsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {groupedPrograms[categoryId].map((program) => (
-                    <tr key={program.id}>
-                      <td data-title="Title">{program.name}</td>
-                      <td data-title="Date">{formatDate(program.date)}</td> {/* Formatted date here */}
-                      <td data-title="Time">{program.time}</td>
-                      {showVenueColumn && <td data-title="Venue">{program.venue}</td>}
-                      <td data-title="Agenda">{program.agenda}</td>
-                      <td data-title="Status">{program.status}</td>
-                      <td className="actions" data-title="Actions">
-                        <button
-                          className="add-btn"
-                          onClick={() => handleViewProgram(program.id.toString())}
-                        >
-                          View
-                        </button>&nbsp;
-                        <button
-                          className="edit-btn"
-                          onClick={() => handleEditProgram(program.id.toString())}
-                        >
-                          Edit
-                        </button>&nbsp;
-                        <button
-                          className="delete-btn"
-                          onClick={() => handleDeleteProgram(program.id.toString())}
-                        >
-                          Delete
-                        </button>
+                  {groupedPrograms[categoryId]
+                    .slice(0, visibleCount) // Only show the visible programs
+                    .map((program) => (
+                      <tr key={program.id}>
+                        <td data-title="Title">{program.name}</td>
+                        <td data-title="Date">{formatDate(program.date)}</td> {/* Formatted date here */}
+                        <td data-title="Time">{program.time}</td>
+                        {showVenueColumn && <td data-title="Venue">{program.venue}</td>}
+                        <td data-title="Agenda">{program.agenda}</td>
+                        <td data-title="Status">{program.status}</td>
+                        <td className="actions" data-title="Actions">
+                          <button
+                            className="add-btn"
+                            onClick={() => handleViewProgram(program.id.toString())}
+                          >
+                            View
+                          </button>&nbsp;
+                          <button
+                            className="edit-btn"
+                            onClick={() => handleEditProgram(program.id.toString())}
+                          >
+                            Edit
+                          </button>&nbsp;
+                          <button className="delete-btn" onClick={() => handleDeleteProgram(program.id.toString())}>Delete</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
+              <div className="view-more-buttons">
+                {visibleCount < groupedPrograms[categoryId].length && (
+                  <>
+                    <button className="button-30" onClick={() => showMorePrograms(categoryId)}>View 5 More</button>&emsp;
+                    <button className="button-30" onClick={() => showAllPrograms(categoryId)}>View All</button>&emsp;
+                  </>
+                )}
+                {visibleCount > 5 && (
+                  <button className="button-30" onClick={() => showLessPrograms(categoryId)}>View Less</button>
+                )}
+              </div>
             </div>
           );
         })}

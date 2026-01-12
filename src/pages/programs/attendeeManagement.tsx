@@ -125,9 +125,9 @@ const AttendeeManagement: React.FC = () => {
       // Call the API to delete the attendee from the database
       const deleteAttendee = async () => {
         try {
-          await authFetch(`${baseURL}/api/programs/attendees/${attendeeId}`, {
+          {/*const response = await authFetch(`${baseURL}/api/programs/attendees/${attendeeId}`, {
             method: "DELETE",
-          });
+          })*/};
           // If successful, remove the attendee from the UI
           setAttendees((prevAttendees) =>
             prevAttendees.filter((attendee) => attendee.attendee_id !== attendeeId)

@@ -55,7 +55,7 @@ const ExpenseTrackerPage: React.FC = () => {
   }, [sidebarOpen]);
 
   // Data from backend
-  const [_categories, setCategories] = useState<ExpenseCategories>({});
+  const [_categories, _setCategories] = useState<ExpenseCategories>({});
   const [_categoryList, setCategoryList] = useState<string[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
@@ -63,22 +63,22 @@ const ExpenseTrackerPage: React.FC = () => {
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
 
   // Helper function to decide which fetch function to use
-    const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
-      try {
-        // Try to use authFetch first
-        return await authFetch(url, options);
-      } catch (error) {
-        console.log("authFetch failed, falling back to orgFetch");
-        return await orgFetch(url, options); // Fallback to orgFetch
-      }
-    };
-
+  const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
+    try {
+      // Try to use authFetch first
+      return await authFetch(url, options);
+    } catch (error) {
+      console.log("authFetch failed, falling back to orgFetch");
+      return await orgFetch(url, options); // Fallback to orgFetch
+    }
+  };
 
   // ------------------- FETCH CATEGORY TABLE -------------------
   const fetchExpenseCategories = async () => {
     try {
-      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/Expense_categories`);
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expense_categories`);
       setExpenseCategories(data);
+      console.log("Expense Categories:", data);
       setCategoryList(["All", ...data.map((c: any) => c.name)]);
     } catch (error) {
       console.error("Failed to fetch Expense categories", error);
@@ -88,78 +88,65 @@ const ExpenseTrackerPage: React.FC = () => {
   // ------------------- FETCH SUBCATEGORY TABLE -------------------
   const fetchSubcategories = async () => {
     try {
-      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/Expense_subcategories`);
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expense_subcategories`);
       setSubcategories(data);
+      console.log("Expense Sub Categories:", data);
     } catch (error) {
       console.error("Failed to fetch subcategories", error);
     }
   };
 
   // ------------------- FETCH DEPARTMENTS -------------------
-  // ------------------- FETCH DEPARTMENTS -------------------
-const fetchDepartments = async () => {
-  try {
-    const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/departments`);
-    setDepartments(data); // Update the departments state with the fetched data
-  } catch (err) {
-    console.error("Error fetching departments:", err);
-  }
-};
+  const fetchDepartments = async () => {
+    try {
+      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/departments`);
+      setDepartments(data); // Update the departments state with the fetched data
+    } catch (err) {
+      console.error("Error fetching departments:", err);
+    }
+  };
 
-// Load categories, subcategories, and departments first
-useEffect(() => {
-  (async () => {
-    await fetchExpenseCategories();
-    await fetchSubcategories();
-    await fetchDepartments(); // Make sure departments are fetched here
-  })();
-}, []);
+  // Load categories, subcategories, and departments first
+  useEffect(() => {
+    (async () => {
+      await fetchExpenseCategories();
+      await fetchSubcategories();
+      await fetchDepartments(); // Make sure departments are fetched here
+    })();
+  }, []);
 
   // ------------------- FETCH EXPENSE TABLE -------------------
   const fetchExpenseData = async () => {
-    try {
-      const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/Expenses`);
+  try {
+    const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expenses`);
+    console.log("Expenses:", data);
 
-      const mappedExpenses = data.map((item: any) => {
-        const sub = subcategories.find((s) => s.id === item.subcategory_id);
-        const cat = expenseCategories.find((c) => c.id === sub?.category_id);
+    const mappedExpenses = data.map((item: any) => {
+      // Find the subcategory and category for the expense
+      const sub = subcategories.find((s) => s.id === item.subcategory_id);
+      const cat = expenseCategories.find((c) => c.id === sub?.category_id);
 
-        return {
-          ...item,
-          amount: Number(item.amount),
-          subcategory_name: sub?.name || "Unknown",
-          category_name: cat?.name || "Uncategorized",
-          status: item.status || "Pending", // status fetched from backend
-        };
-      });
+      // Find the department name
+      const dept = departments.find((d) => d.id === item.department_id);
 
-      // Group Expenses
-      const grouped: ExpenseCategories = {};
-      mappedExpenses.forEach((item: ExpenseItem) => {
-        if (!grouped[item.category_name]) grouped[item.category_name] = [];
+      return {
+        ...item,
+        amount: Number(item.amount),
+        subcategory_name: sub?.name || "Unknown", // Default to "Unknown" if not found
+        category_name: cat?.name || "Uncategorized", // Default to "Uncategorized" if not found
+        status: item.status || "Pending", // Default status
+        department: dept?.name || "No Department", // Default to "No Department" if not found
+      };
+    });
 
-        let group = grouped[item.category_name]?.find(
-          (g) => g.name === item.subcategory_name
-        );
+    setExpenses(mappedExpenses); // Set expenses state directly
+    console.log("Mapped Expenses:", mappedExpenses);
 
-        if (!group) {
-          group = { name: item.subcategory_name, items: [] };
-          if (grouped[item.category_name]) {
-            grouped[item.category_name]?.push(group);
-          } else {
-            grouped[item.category_name] = [group];
-          }
-        }
+  } catch (error) {
+    console.error("Failed to fetch Expense data", error);
+  }
+};
 
-        group.items.push(item);
-
-      });
-
-      setCategories(grouped);
-    } catch (error) {
-      console.error("Failed to fetch Expense data", error);
-    }
-  };
 
   // Load categories, subcategories, and departments first
   useEffect(() => {
@@ -203,12 +190,14 @@ useEffect(() => {
   }, [expenses, selectedYear, selectedMonth]);
 
   // ------------------- GROUPING EXPENSES BY DEPARTMENT -------------------
-  const groupedExpenses = useMemo(() => {
+  const [groupedExpenses, setGroupedExpenses] = useState<{ [key: string]: ExpenseGroup[] }>({});
+
+  useEffect(() => {
   const grouped: { [key: string]: ExpenseGroup[] } = {};  // Initialize the type as an array, no 'undefined'
 
   filteredExpenses.forEach((expense) => {
     const deptName = expense.department;
-    
+
     // Ensure deptName exists, and initialize the array if not already
     if (deptName && !grouped[deptName]) {
       grouped[deptName] = [];  // Initialize an empty array for this department
@@ -222,7 +211,6 @@ useEffect(() => {
       // Create a new group if it doesn't exist
       group = { name: expense.subcategory_name, items: [] };
 
-      // Check if deptName is defined before using it to index `grouped`
       if (deptName !== undefined && grouped[deptName]) {
         grouped[deptName].push(group); // Add the group to the department's array
       } else if (deptName !== undefined) {
@@ -234,7 +222,8 @@ useEffect(() => {
     group.items.push(expense); // Add the expense to the group
   });
 
-  return grouped;
+  console.log('Grouped Expenses:', grouped); // Add this log to check if grouping is correct
+  setGroupedExpenses(grouped); // Set grouped expenses state
 }, [filteredExpenses]);
 
 
@@ -319,7 +308,7 @@ useEffect(() => {
 
         <hr className="sidebar-separator" />
         <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
-        <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}>
+        <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }} >
           ➜ Logout
         </a>
       </div>
@@ -329,11 +318,11 @@ useEffect(() => {
 
         <FinanceHeader />
 
-        <br/>
+        <br />
 
         <header className="page-header expense-header">
           <h1>Expense Tracker</h1>
-          <br/>
+          <br />
           <div>
             <button className="add-btn" onClick={() => navigate("/finance/expenseDashboard")}>
               View Summary
@@ -387,6 +376,8 @@ useEffect(() => {
             </select>
           </div>
         </div>
+
+        <p>Expenses Relating to Payroll handled separately</p>
 
         {/* GROUPED EXPENSES TABLE */}
         {Object.entries(groupedExpenses).map(([deptName, groups]) => (

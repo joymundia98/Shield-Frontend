@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../../styles/global.css"; // Import your styles
 import ProgramsHeader from './ProgramsHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -40,53 +41,61 @@ const NewAttendees: React.FC = () => {
   });
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const [errors, setErrors] = useState<string[]>([]);
 
   useEffect(() => {
-      const body = document.body;
-      if (sidebarOpen) {
-        body.classList.add("sidebar-open");
-      } else {
-        body.classList.remove("sidebar-open");
-      }
-      return () => body.classList.remove("sidebar-open");
-    }, [sidebarOpen]);
+    const body = document.body;
+    if (sidebarOpen) {
+      body.classList.add("sidebar-open");
+    } else {
+      body.classList.remove("sidebar-open");
+    }
+    return () => body.classList.remove("sidebar-open");
+  }, [sidebarOpen]);
 
-  // Fetch event details based on programId
-  useEffect(() => {
-    console.log("Program ID from URL:", programId);  // Debugging log
+  const fetchEventDetails = async () => {
+  try {
+    console.log(`Fetching event details for programId: ${programId}`);  // Debugging log
 
-    if (!programId) {
-      console.error("Program ID is missing or invalid.");
-      return;
+    // Use authFetch, fall back to orgFetch if authFetch fails
+    let eventResponse;
+    try {
+      eventResponse = await authFetch(`${baseURL}/api/programs/${programId}`);
+    } catch (error) {
+      console.log("authFetch failed, falling back to orgFetch");
+      eventResponse = await orgFetch(`${baseURL}/api/programs/${programId}`);
     }
 
-    const fetchEventDetails = async () => {
-      try {
-        console.log(`Fetching event details for programId: ${programId}`);  // Debugging log
-        const response = await fetch(`${baseURL}/api/programs/${programId}`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch event details. Status: ${response.status}`);
-        }
+    console.log("Received event response:", eventResponse);  // Debugging log
 
-        const fetchedEvent = await response.json();
-        console.log("Fetched event details:", fetchedEvent);  // Debugging log
+    if (!eventResponse || !eventResponse.status || eventResponse.status !== 200) {
+      // Handle error if response is not OK or status code is not 200
+      console.error("Failed to fetch event details:", eventResponse);
+      throw new Error(`Failed to fetch event details. Status: ${eventResponse?.status}`);
+    }
 
-        if (fetchedEvent) {
-          setEvent(fetchedEvent); // Set event state
-        } else {
-          console.error("No event data found.");
-        }
-      } catch (error) {
-        console.error("Error fetching event details:", error);
-      }
-    };
+    const fetchedEvent = eventResponse.data;  // Assuming data is nested in `data` property, adjust as needed
+
+    console.log("Fetched event details:", fetchedEvent);  // Debugging log
+
+    // Check event status (only proceed if it's 'Scheduled' or 'Upcoming')
+    if (fetchedEvent && (fetchedEvent.status === "Scheduled" || fetchedEvent.status === "Upcoming")) {
+      setEvent(fetchedEvent);  // Set event state
+    } else {
+      // If status is not "Scheduled" or "Upcoming", show a message and prevent further action
+      alert("This event is not currently available for registration.");
+      navigate("/programs/attendeeManagement");  // Navigate away from this page
+    }
+  } catch (error) {
+    console.error("Error fetching event details:", error);
+    alert("Error fetching event details. Please try again.");
+  }
+};
+
 
     fetchEventDetails();
-  }, [programId]);
 
   // Handling input changes for attendee registration form
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -113,37 +122,56 @@ const NewAttendees: React.FC = () => {
     // If there are no validation errors, send POST request
     if (validationErrors.length === 0) {
       try {
-        // If role is "Other", replace with customRole
         const roleToSend = attendee.role === "Other" ? attendee.customRole : attendee.role;
 
-        const response = await fetch(`${baseURL}/api/programs/attendees`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: attendee.name,
-            email: attendee.email,
-            phone: attendee.phone,
-            age: attendee.age,
-            gender: attendee.gender,
-            role: roleToSend, // Send customRole if role is "Other"
-            program_id: programId, // Pass the programId in the request body
-          }),
-        });
+        // Use authFetch to submit attendee, fall back to orgFetch if authFetch fails
+        let attendeeResponse;
+        try {
+          attendeeResponse = await authFetch(`${baseURL}/api/programs/attendees`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: attendee.name,
+              email: attendee.email,
+              phone: attendee.phone,
+              age: attendee.age,
+              gender: attendee.gender,
+              role: roleToSend,
+              program_id: programId,
+            }),
+          });
+        } catch (error) {
+          console.log("authFetch failed, falling back to orgFetch");
+          attendeeResponse = await orgFetch(`${baseURL}/api/programs/attendees`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: attendee.name,
+              email: attendee.email,
+              phone: attendee.phone,
+              age: attendee.age,
+              gender: attendee.gender,
+              role: roleToSend,
+              program_id: programId,
+            }),
+          });
+        }
 
-        if (response.ok) {
+        if (attendeeResponse.ok) {
           alert("Attendee registered successfully!");
           navigate(`/programs/attendeeManagement`); // Navigate to attendee management
         } else {
-          // Handle error if response is not OK
-          const errorData = await response.json();
+          // Handle error from backend response
+          const errorData = await attendeeResponse.json();
           console.error("Error registering attendee:", errorData);
           alert(`Error registering attendee: ${errorData.message || "Unknown error"}`);
         }
       } catch (error: unknown) {
         if (error instanceof Error) {
-          // Now TypeScript knows `error` is of type `Error`
           alert("Error registering attendee: " + error.message);
         } else {
           alert("An unknown error occurred.");
@@ -162,17 +190,22 @@ const NewAttendees: React.FC = () => {
 
   return (
     <div className="dashboard-wrapper">
-      {/* Hamburger */}
-      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {/* Hamburger */}
+      <button className="hamburger" onClick={toggleSidebar}>
         &#9776;
       </button>
 
       {/* Sidebar */}
-      <button className="hamburger" onClick={toggleSidebar}>&#9776;</button>
-      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
+        {/* Close Button */}
         <div className="close-wrapper">
           <div className="toggle close-btn">
-            <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
+            <input
+              type="checkbox"
+              id="closeSidebarButton"
+              checked={sidebarOpen}
+              onChange={toggleSidebar}
+            />
             <span className="button"></span>
             <span className="label">X</span>
           </div>
@@ -189,12 +222,11 @@ const NewAttendees: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
-        <ProgramsHeader/><br/>
+        <ProgramsHeader /><br />
 
         <h1>Register Attendee for {event.name}</h1>
 
-        <br/>
+        <br />
 
         <form className="add-form-styling" onSubmit={handleSubmit}>
           {/* Event Info Display */}

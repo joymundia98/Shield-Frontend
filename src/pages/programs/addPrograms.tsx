@@ -161,7 +161,7 @@ const AddProgram: React.FC = () => {
   if (validationErrors.length === 0) {
     try {
       // Send a POST request to the backend to add the program using authFetch
-      const response = await authFetch(`${baseURL}/api/programs`, {
+      const result = await authFetch(`${baseURL}/api/programs`, {
         method: "POST",
         body: JSON.stringify({
           name: program.title,
@@ -180,10 +180,10 @@ const AddProgram: React.FC = () => {
       });
 
       // Log the full response object (which should already be a JSON object)
-      console.log("Full response object:", response);
+      console.log("Program created:", result);
 
-      // Check the HTTP status code directly
-      if (response.status === 201 || response.status === 204) {
+      // If we got an object with an ID, creation succeeded
+      if (result?.id) {
         console.log("Program added successfully!");
         setShowSuccessCard(true);
 
@@ -193,8 +193,8 @@ const AddProgram: React.FC = () => {
         }, 2000);
       } else {
         // If not a 201 or 204, log the response body (which should already be an object)
-        console.log("Unexpected response status:", response.status);
-        console.log("Response body:", response); // Since it's already an object, no need to parse
+        console.log("Unexpected response status:", result.status);
+        console.log("Response body:", result); // Since it's already an object, no need to parse
         alert("There was an issue adding the program. Please try again.");
         setShowSuccessCard(false);
       }

@@ -481,6 +481,7 @@ const DashboardPage: React.FC = () => {
           </div>
           <div className="kpi-card">
             <h3>Monthly Giving</h3>
+            <h4>Tithes and Offerings</h4>
             <p>${kpi.monthlyGiving.toLocaleString()}</p>
             <h4>(Average)</h4>
           </div>

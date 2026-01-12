@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios"; // Import axios for making HTTP requests
+import { authFetch } from "../../utils/api"; // Importing authFetch from utils/api
 import "../../styles/global.css";
 import ProgramsHeader from './ProgramsHeader';
 
@@ -11,6 +11,7 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 interface Program {
   program_id: number;
   title: string;
+  name: string;
   date: string;
   time: string;
   venue: string;
@@ -46,19 +47,18 @@ const EditProgram: React.FC = () => {
     { category_id: 5, name: "Other" },
   ];
 
-  // The eventTypes object definition
   const eventTypes: { [key: number]: string[] } = {
-    1: ["Weddings", "Child Dedication", "Child Naming", "Funeral & Memorials", "Other"], // Life Events
-    2: ["Business Meetings", "Other"], // Church Business
-    3: ["Outreach & Evangelism", "Conferences", "Other"], // Community Events
-    4: ["Prayer & Fasting", "Overnights", "Communion", "Baptism", "Anointing", "Revival / Crusades", "Other"], // Spiritual Events
-    5: ["Workshop", "Training", "Conference", "Seminar", "Drill", "Other"], // Other
+    1: ["Weddings", "Child Dedication", "Child Naming", "Funeral & Memorials", "Other"],
+    2: ["Business Meetings", "Other"],
+    3: ["Outreach & Evangelism", "Conferences", "Other"],
+    4: ["Prayer & Fasting", "Overnights", "Communion", "Baptism", "Anointing", "Revival / Crusades", "Other"],
+    5: ["Workshop", "Training", "Conference", "Seminar", "Drill", "Other"],
   };
 
-  // State to hold the program data
   const [program, setProgram] = useState<Program>({
     program_id: 0,
     title: "",
+    name: "",
     date: "",
     time: "",
     venue: "",
@@ -67,40 +67,42 @@ const EditProgram: React.FC = () => {
     category_id: 1,
     event_type: "",
     notes: "",
-    department_id: 13, // Default department, e.g., IT Department
+    department_id: 13,
     department_name: "",
   });
 
-  const [departments, setDepartments] = useState<Department[]>([]); // Departments state
-  const [errors, setErrors] = useState<string[]>([]); // Validation errors
-
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   useEffect(() => {
+      const body = document.body;
+      if (sidebarOpen) {
+        body.classList.add("sidebar-open");
+      } else {
+        body.classList.remove("sidebar-open");
+      }
+      return () => body.classList.remove("sidebar-open");
+    }, [sidebarOpen]);
 
-    const baseURL = import.meta.env.VITE_BASE_URL;
-
-    // Fetch departments from the backend API
-    axios
-      .get(`${baseURL}/api/departments`)
-      .then((response) => {
-        setDepartments(response.data);
+  useEffect(() => {
+    authFetch(`${baseURL}/api/departments`)
+      .then((data) => {
+        setDepartments(data);
       })
       .catch((error) => {
         console.error("Error fetching departments:", error);
       });
 
-    // Fetch program data by ID if programId is present
     if (programId) {
-      axios
-        .get(`${baseURL}/api/programs/${programId}`)
-        .then((response) => {
-          const programData = response.data;
+      authFetch(`${baseURL}/api/programs/${programId}`)
+        .then((programData) => {
           setProgram({
             program_id: programData.program_id,
             title: programData.title,
-            date: programData.date,
+            name: programData.name,
+            date: programData.date.split("T")[0], // Format the date to 'YYYY-MM-DD'
             time: programData.time,
             venue: programData.venue,
             agenda: programData.agenda,
@@ -127,17 +129,15 @@ const EditProgram: React.FC = () => {
     }));
   };
 
-  // Handle category change and reset event type
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCategoryId = parseInt(e.target.value);
     setProgram((prevProgram) => ({
       ...prevProgram,
       category_id: selectedCategoryId,
-      event_type: "", // Reset event type when category changes
+      event_type: "",
     }));
   };
 
-  // Handle event type change
   const handleEventTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedEventType = e.target.value;
     setProgram((prevProgram) => ({
@@ -146,50 +146,49 @@ const EditProgram: React.FC = () => {
     }));
   };
 
-  // Access eventTypes safely with optional chaining
   const getEventTypesForCategory = (categoryId: number) => {
-    return eventTypes[categoryId] || []; // Return an empty array if categoryId doesn't exist
+    return eventTypes[categoryId] || [];
   };
 
-  // Handle department change and update department name
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedDepartmentId = parseInt(e.target.value);
     const selectedDepartment = departments.find(dep => dep.id === selectedDepartmentId);
     setProgram((prevProgram) => ({
       ...prevProgram,
       department_id: selectedDepartmentId,
-      department_name: selectedDepartment ? selectedDepartment.name : "", // Set department name
+      department_name: selectedDepartment ? selectedDepartment.name : "",
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     const validationErrors: string[] = [];
     if (!program.title) validationErrors.push("Title is required.");
     if (!program.date) validationErrors.push("Date is required.");
     if (!program.time) validationErrors.push("Time is required.");
     if (!program.venue) validationErrors.push("Venue is required.");
     if (!program.agenda) validationErrors.push("Agenda is required.");
-
-    // If the category is "Spiritual Events" or "Other", then event_type is required
     if ((program.category_id === 4 || program.category_id === 5) && !program.event_type) {
       validationErrors.push("Event type is required for Spiritual and Other events.");
     }
-
     if (!program.department_id) {
       validationErrors.push("Department In Charge is required.");
     }
 
-    if (validationErrors.length === 0) {
-      try {
-        // Send a PUT request to the backend to update the program
-        const response = await axios.put(`${baseURL}/api/programs/${programId}`, {
-          name: program.title,
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    try {
+      await authFetch(`${baseURL}/api/programs/${programId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: program.name,
           description: program.agenda,
           category_id: program.category_id,
-          date: program.date,
+          date: program.date.split("T")[0], // Format the date to 'YYYY-MM-DD',
           time: program.time,
           venue: program.venue,
           agenda: program.agenda,
@@ -197,43 +196,25 @@ const EditProgram: React.FC = () => {
           event_type: program.event_type,
           notes: program.notes,
           department_id: program.department_id,
-          department_name: program.department_name, // Include department name
-        });
+          department_name: program.department_name,
+        }),
+      });
 
-        // Check for success and navigate
-        if (response.status === 200) {
-          alert("Program updated successfully!");
-          navigate("/programs/RegisteredPrograms");
-        }
-      } catch (error) {
-        console.error("Error updating program:", error);
-        alert("There was an issue updating the program. Please try again.");
-      }
-    } else {
-      setErrors(validationErrors); // Show validation errors
+      alert("Program updated successfully!");
+      navigate("/programs/RegisteredPrograms");
+    } catch (error) {
+      console.error("Error updating program:", error);
+      alert("There was an issue updating the program. Please try again.");
     }
   };
 
-  useEffect(() => {
-    const body = document.body;
-    if (sidebarOpen) {
-      body.classList.add("sidebar-open");
-    } else {
-      body.classList.remove("sidebar-open");
-    }
-    return () => body.classList.remove("sidebar-open");
-  }, [sidebarOpen]);
-
   return (
     <div className="dashboard-wrapper">
-      {/* Hamburger */}
       <button className="hamburger" onClick={toggleSidebar}>
         &#9776;
       </button>
 
-      {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
-        {/* Close Button */}
         <div className="close-wrapper">
           <div className="toggle close-btn">
             <input
@@ -249,6 +230,7 @@ const EditProgram: React.FC = () => {
 
         <h2>PROGRAM MANAGER</h2>
         <a href="/programs/dashboard">Dashboard</a>
+
         <a href="/programs/RegisteredPrograms" className="active">
           Registered Programs
         </a>
@@ -341,7 +323,7 @@ const EditProgram: React.FC = () => {
               type="text"
               id="title"
               name="title"
-              value={program.title}
+              value={program.name}
               onChange={handleChange}
               placeholder="Enter program title"
               className="form-input"
