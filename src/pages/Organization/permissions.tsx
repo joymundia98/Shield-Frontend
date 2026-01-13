@@ -16,16 +16,67 @@ interface Permission {
 interface Role {
   id: number;
   name: string;
+  department_id: number;
+}
+
+interface Department {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
 }
 
 const PermissionsPage: React.FC = () => {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [rolePermissions, setRolePermissions] = useState<Set<number>>(new Set());
+  const [filteredRoles, setFilteredRoles] = useState<Role[]>([]); // To store filtered roles based on department
+  const [departments, setDepartments] = useState<Department[]>([]); // For departments
+  const [selectedDepartment, setSelectedDepartment] = useState<number | null>(null); // State for selected department
   const [selectedRole, setSelectedRole] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const fetchDepartments = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setError("No authToken found, please log in.");
+        setLoading(false);
+        return;
+      }
+
+      const response = await orgFetch(`${baseURL}/api/departments`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        setError("Login Required");
+        setLoading(false);
+        setTimeout(() => {
+          navigate("/home");
+        }, 1500);
+        return;
+      }
+
+      if (Array.isArray(response)) {
+        // Sort the departments alphabetically by name
+        const sortedDepartments = response.sort((a, b) => a.name.localeCompare(b.name));
+        setDepartments(sortedDepartments);
+      } else {
+        setError("Received invalid data structure for departments.");
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching departments:", err);
+      setError("There was an error fetching departments. Please try logging in again...");
+      setLoading(false);
+    }
+  };
 
   const fetchPermissions = async () => {
     try {
@@ -146,6 +197,13 @@ const PermissionsPage: React.FC = () => {
   }
 };
 
+  // Filter roles based on selected department
+  const handleDepartmentChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const departmentId = parseInt(event.target.value);
+    setSelectedDepartment(departmentId);
+    setFilteredRoles(roles.filter((role) => role.department_id === departmentId)); // Filter roles by department
+  };
+
   const handleRoleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const roleId = parseInt(event.target.value);
     setSelectedRole(roleId);
@@ -207,6 +265,7 @@ const PermissionsPage: React.FC = () => {
   useEffect(() => {
     fetchPermissions();
     fetchRoles();
+    fetchDepartments(); // Fetch departments on initial render
   }, []);
 
   // Group permissions by category
@@ -293,13 +352,26 @@ const PermissionsPage: React.FC = () => {
       <div className="permissions-page-content">
         <h1>Permissions</h1>
 
+        {/* Department Drop-down */}
+        <label htmlFor="department-select">Select a Department:</label>
+        <select id="department-select" value={selectedDepartment || ""} onChange={handleDepartmentChange}>
+          <option value="" disabled>
+            Please select a department
+          </option>
+          {departments.map((department) => (
+            <option key={department.id} value={department.id}>
+              {department.name}
+            </option>
+          ))}
+        </select>
+
         {/* Roles Drop-down */}
         <label htmlFor="role-select">Select a Role:</label>
         <select id="role-select" value={selectedRole || ""} onChange={handleRoleChange}>
           <option value="" disabled>
             Please select a role
           </option>
-          {roles.map((role) => (
+          {filteredRoles.map((role) => (
             <option key={role.id} value={role.id}>
               {role.name}
             </option>

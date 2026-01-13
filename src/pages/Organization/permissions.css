@@ -8,7 +8,7 @@
       accent-color: #AF907A;
       height: 100%; /* Change from min-height to height */
       margin: 0; /* Ensure no extra margin at the top */
-      margin-top: -5rem;
+      margin-top: 0;
       /*padding-top: 2rem; /* Added space above the content */
       display: grid;
       place-items: center;
@@ -252,7 +252,7 @@
     }
 
     /* Modern drop-down button styles */
-    #role-select {
+    #role-select, #department-select {
       width: 100%;
       max-width: 350px; /* Limit the width */
       padding: 12px 20px;
@@ -268,14 +268,14 @@
     }
 
     /* Focus styling for drop-down */
-    #role-select:focus {
+    #role-select:focus, #department-select:focus {
       border-color: #6c63ff; /* Highlight border on focus */
       box-shadow: rgba(108, 99, 255, 0.6) 0px 1px 2px 0px, rgba(108, 99, 255, 0.3) 0px 1px 3px 1px; /* Subtle glow effect */
       outline: none; /* Remove outline */
     }
 
     /* Option styles inside the drop-down */
-    #role-select option {
+    #role-select option, #department-select option {
       padding: 10px;
       font-size: 1rem;
       background-color: #fff; /* White background for options */
@@ -283,13 +283,13 @@
     }
 
     /* Hover effect for options */
-    #role-select option:hover {
+    #role-select option:hover, #department-select:hover {
       background-color: #f0f0f0; /* Light hover background */
       color: #6c63ff; /* Change text color to blue on hover */
     }
 
     /* Label styling above the drop-down */
-    label[for="role-select"] {
+    label[for="role-select"], label[for="department-select"] {
       font-size: 1.1rem;
       color: #333;
       font-weight: 500;
@@ -310,7 +310,7 @@
     }
 
     /* Apply fade-in animation to the drop-down */
-    #role-select {
+    #role-select, #department-select {
       animation: fadeIn 0.6s ease-out;
     }
     
