@@ -111,35 +111,40 @@ const PermissionsPage: React.FC = () => {
 
   // Fetch role permissions when a role is selected
   const fetchRolePermissions = async (roleId: number) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        setError("No authToken found, please log in.");
-        return;
-      }
-
-      const response = await orgFetch(`${baseURL}/api/role_permissions/role/${roleId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.status === 401) {
-        setError("Login Required");
-        return;
-      }
-
-      if (Array.isArray(response)) {
-        const permissionSet = new Set(response.map((item) => item.permission_id));
-        setRolePermissions(permissionSet);
-      } else {
-        setError("Received invalid data structure for role permissions.");
-      }
-    } catch (err) {
-      console.error("Error fetching role permissions:", err);
-      setError("There was an error fetching role permissions.");
+  try {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      setError("No authToken found, please log in.");
+      return;
     }
-  };
+
+    const response = await orgFetch(`${baseURL}/api/role_permissions/role/${roleId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 401) {
+      setError("Login Required");
+      return;
+    }
+
+    if (Array.isArray(response.data)) {
+      // Use the 'id' field of each permission to set the permission set
+      // Update the map function to explicitly type 'item' as 'Permission'
+      const permissionSet = new Set<number>(response.data.map((item: Permission) => item.id));
+
+      // Set the state with the correct type for the permission set
+      setRolePermissions(permissionSet);
+
+    } else {
+      setError("Received invalid data structure for role permissions.");
+    }
+  } catch (err) {
+    console.error("Error fetching role permissions:", err);
+    setError("There was an error fetching role permissions.");
+  }
+};
 
   const handleRoleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const roleId = parseInt(event.target.value);
