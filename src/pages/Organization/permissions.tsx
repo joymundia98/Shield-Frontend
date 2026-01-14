@@ -284,15 +284,24 @@ const PermissionsPage: React.FC = () => {
     const groupedPermissions: { [key: string]: Permission[] } = {};
 
     permissions.forEach((permission) => {
-      const category = permission.path.split("/")[1]; // Use the first part of the path (category)
+      let category = permission.path.split("/")[1]; // Default category from path
+
+      // If the path starts with 'org-', categorize it under 'Organization'
+      if (permission.path.startsWith("/org-")) {
+        category = "Organization";
+      }
+
+      // Ensure the category exists in the groupedPermissions object
       if (!groupedPermissions[category]) {
         groupedPermissions[category] = [];
       }
+
       groupedPermissions[category].push(permission);
     });
 
     return groupedPermissions;
   };
+
 
   const groupedPermissions = groupPermissionsByCategory(permissions);
 
@@ -432,7 +441,7 @@ const PermissionsPage: React.FC = () => {
                               checked={rolePermissions.has(permission.id)}
                               onChange={() => handleCheckboxChange(permission.id)}  // Added onChange
                             />
-                            <label htmlFor={permission.name}>{permission.description}</label>
+                            <label htmlFor={permission.name}>{permission.name}</label>
                           </div>
                         ))}
                       </fieldset>
