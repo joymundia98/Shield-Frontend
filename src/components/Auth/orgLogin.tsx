@@ -61,6 +61,7 @@ const onSubmit = async (data: OrgLoginFormData) => {
         org_id: organization.id, // ✅ Organization ID for EditableProfile
         org_type: organization.denomination, // Using denomination or type as org type
         roles: ['organization'],
+        role_id: 1,
       };
 
       // 🔥 Save JWT + org info via AuthContext

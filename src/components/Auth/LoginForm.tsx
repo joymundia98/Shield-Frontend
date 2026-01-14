@@ -6,6 +6,9 @@ import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import headerLogo from '../../assets/headerlogo.png';
+import { useAuth } from '../../hooks/useAuth'; // Access the Auth context
+import { fetchRoleId, fetchPermissionsForRole } from '../../context/AuthContext';  // Adjust the import path if necessary
+import { permissionsMap } from '../../context/permissionsMap'; // Import the permissions map
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -14,6 +17,13 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
+
+type Permission = {
+  name: string;
+  path: string;
+  method: string;
+};
+
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -27,48 +37,77 @@ export const LoginForm = () => {
   });
 
   const navigate = useNavigate();
-
-  // ✅ FIXED FULL LOGIN LOGIC
+  const { login } = useAuth(); // Access the login function from context
 
   const onSubmit = async (data: LoginFormData) => {
-  try {
-    const apiUrl = `${baseURL}/api/auth/login`;  // The full URL to the login endpoint
-    console.log('Making request to:', apiUrl);  // Log the final URL to ensure it's correct
+    try {
+      const apiUrl = `${baseURL}/api/auth/login`;
+      console.log('Making request to:', apiUrl);
 
-    const response = await axios.post(apiUrl, {
-      email: data.email,
-      password: data.password,
-    });
+      // Send login request
+      const response = await axios.post(apiUrl, {
+        email: data.email,
+        password: data.password,
+      });
 
-    console.log("Login response full:", response.data);
+      console.log("Login response full:", response.data);
 
-    // Save the access token
-    const token = response.data.accessToken;
-    if (!token) throw new Error("No accessToken returned from backend");
-    localStorage.setItem("token", token);
+      const token = response.data.accessToken;
+      if (!token) throw new Error("No accessToken returned from backend");
+      localStorage.setItem("token", token);
 
-    // Save the user object
-    const user = response.data.user;
-    if (!user) throw new Error("No user object returned from backend");
-    localStorage.setItem("user", JSON.stringify(user));
+      const user = response.data.user;
+      if (!user) throw new Error("No user object returned from backend");
+      localStorage.setItem("user", JSON.stringify(user));
 
-    console.log("Saved user:", user);
+      // Log user roles
+      console.log("User Roles:", user.role);
+      console.log("User role_id:", user.role_id);
 
-    setError('');
-    setShowSuccessCard(true);
+      // Fetch role_id based on the role name(s)
+      if (user.role && user.role[0]) {
+        const roleId = await fetchRoleId(user.role[0], token);
+        if (roleId) {
+          // Now that we have roleId, let's fetch permissions
+          const permissions = await fetchPermissionsForRole(roleId.toString(), token); // Pass role_id as string
+          
+          if (!permissions || permissions.length === 0) {
+            throw new Error("User has no permissions");
+          }
 
-    setTimeout(() => {
-      setShowSuccessCard(false);
-      navigate('/dashboard');
-    }, 2000);
+          // Attach permissions and role_id to the user object
+          user.permissions = permissions; 
+          user.role_id = roleId;
 
-  } catch (err: any) {
-    console.error('Login error:', err);
-    setError(err.response?.data?.message || 'Invalid email or password');
-    setShowSuccessCard(false);
-  }
-};
+          console.log("User permissions:", user.permissions);
+        }
+      }
 
+      // Use the login function from context to set user, token, and permissions
+      login(token, user, response.data.organization);
+
+      const firstAccessibleRoute = findFirstAccessibleRoute(user.permissions);
+
+      if (firstAccessibleRoute) {
+        setTimeout(() => {
+          setShowSuccessCard(false);
+          navigate(firstAccessibleRoute[0]); // Redirect to the first accessible route
+        }, 2000);
+      } else {
+        setTimeout(() => {
+          setShowSuccessCard(false);
+          navigate('/dashboard'); // Fallback route
+        }, 2000);
+      }
+
+      setError('');
+      setShowSuccessCard(true); // Show success card
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Invalid email or password');
+      setShowSuccessCard(false); // Hide success card on error
+    }
+  };
 
   const handleOrgLogin = () => {
     navigate('/org-login');
@@ -140,4 +179,21 @@ export const LoginForm = () => {
       )}
     </div>
   );
+};
+
+// Function to map permissions to routes
+const findFirstAccessibleRoute = (permissions: Permission[]) => {
+  // Ensure permissions are available before iterating over them
+  if (!permissions || permissions.length === 0) {
+    return null;  // No permissions, return null
+  }
+
+  // Iterate through permissions and return the first valid route from permissionsMap
+  for (let perm of permissions) {
+    if (permissionsMap[perm.name]) {
+      return permissionsMap[perm.name];  // Return the first accessible route from permissionsMap
+    }
+  }
+
+  return null;  // If no accessible route, return null
 };

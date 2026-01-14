@@ -9,6 +9,8 @@ import { AdminAccountPage } from "./pages/AdminAccountPage";
 
 import NotFoundPage from "./pages/NotFoundPage"; // Import the 404 page
 
+import ForbiddenPage from "./pages/ForbiddenPage";  // Import the custom 403 page
+
 import DashboardPage from "./pages/DashboardPage";
 
 // Department Dashboards
@@ -301,6 +303,9 @@ function App() {
           <Route path="/Organization/roles" element={<RolesPage />} />
           <Route path="/Organization/permissions" element={<PermissionsPage />} />
 
+          {/* ------------------------------ 403 PAGE ------------------------------ */}
+          <Route path="/403" element={<ForbiddenPage />} />
+          
           {/* Catch-all for undefined routes (404) */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

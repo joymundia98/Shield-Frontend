@@ -191,15 +191,22 @@ const EdittableChurchProfilePage: React.FC = () => {
 
   const checkChurchExists = async (organizationId: string | number) => {
     if (!organizationId) {
-      throw new Error("Organization ID is required");
+      console.warn("Organization ID is required");
+      return null;
     }
 
     try {
-      const response = await api.get(`${baseURL}/api/profiles/churches?organization_id=${organizationId}`);
-      console.log(response);
-      if (response.data && response.data.length > 0) {
-        return response.data[0]; // Assuming the response returns an array with one church
+      // The API endpoint automatically filters by organization_id via authentication middleware
+      const response = await api.get(`${baseURL}/api/profiles/churches`);
+      console.log('Churches API response:', response);
+      
+      // Check if there's at least one church entry for this organization
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        console.log('Church entry found:', response.data[0]);
+        return response.data[0]; // Return the first church entry
       }
+      
+      console.log('No church entry found in churches table for this organization');
       return null; // No church data found
     } catch (error) {
       console.error("Error checking if church exists:", error);
@@ -216,11 +223,15 @@ const EdittableChurchProfilePage: React.FC = () => {
       return;
     }
 
-    // First, check if a church profile exists for the organization
+    // FIRST: Check if there is an entry in the churches table for this organization
+    console.log("Checking for church entry in churches table...");
     const existingChurch = await checkChurchExists(orgId);
 
     if (existingChurch) {
-      // If church data exists, set the church data state and fetch related information
+      // Church entry exists - proceed to display info from the churches table
+      console.log("Church entry found! Loading data from churches table...");
+      
+      // Set the church data state with data from the churches table
       setChurchData((prev) => ({
         ...prev,
         name: existingChurch.name || prev.name,
@@ -237,54 +248,61 @@ const EdittableChurchProfilePage: React.FC = () => {
 
       // Fetch related data (leadership, ministries, etc.) using church_id
       const churchId = existingChurch.church_id;
-      console.log("Church id:", churchId)
+      console.log("Fetching related data for church_id:", churchId);
 
-      // Fetch leadership data for this church
-      const leadershipResponse = await api.get(`${baseURL}/api/profiles/leadership?church_id=${churchId}`);
-      const leadershipData = leadershipResponse.data;
+      try {
+        // Fetch leadership data for this church
+        const leadershipResponse = await api.get(`${baseURL}/api/profiles/leadership?church_id=${churchId}`);
+        const leadershipData = leadershipResponse.data || [];
 
-      // Fetch ministries data for this church
-      const ministriesResponse = await api.get(`${baseURL}/api/profiles/ministries?church_id=${churchId}`);
-      const ministriesData = ministriesResponse.data;
+        // Fetch ministries data for this church
+        const ministriesResponse = await api.get(`${baseURL}/api/profiles/ministries?church_id=${churchId}`);
+        const ministriesData = ministriesResponse.data || [];
 
-      // Fetch core values data for this church
-      const coreValuesResponse = await api.get(`${baseURL}/api/profiles/core_values?church_id=${churchId}`);
-      const coreValuesData = coreValuesResponse.data;
+        // Fetch core values data for this church
+        const coreValuesResponse = await api.get(`${baseURL}/api/profiles/core_values?church_id=${churchId}`);
+        const coreValuesData = coreValuesResponse.data || [];
 
-      // Fetch worship times data for this church
-      const worshipTimesResponse = await api.get(`${baseURL}/api/profiles/worship?church_id=${churchId}`);
-      const worshipTimesData = worshipTimesResponse.data;
+        // Fetch worship times data for this church
+        const worshipTimesResponse = await api.get(`${baseURL}/api/profiles/worship?church_id=${churchId}`);
+        const worshipTimesData = worshipTimesResponse.data || [];
 
-      // Fetch sacraments data for this church
-      const sacramentsResponse = await api.get(`${baseURL}/api/profiles/sacraments?church_id=${churchId}`);
-      const sacramentsData = sacramentsResponse.data;
+        // Fetch sacraments data for this church
+        const sacramentsResponse = await api.get(`${baseURL}/api/profiles/sacraments?church_id=${churchId}`);
+        const sacramentsData = sacramentsResponse.data || [];
 
-      // Fetch special services data for this church
-      const specialServicesResponse = await api.get(`${baseURL}/api/profiles/special_services?church_id=${churchId}`);
-      const specialServicesData = specialServicesResponse.data;
+        // Fetch special services data for this church
+        const specialServicesResponse = await api.get(`${baseURL}/api/profiles/special_services?church_id=${churchId}`);
+        const specialServicesData = specialServicesResponse.data || [];
 
-      // Update the state with all related data
-      setChurchData((prev) => ({
-        ...prev,
-        leadership: leadershipData || [],
-        ministries: ministriesData || [],
-        coreValues: coreValuesData || [],
-        worshipTimes: worshipTimesData.reduce((acc: { [key: string]: string }, item: { day: string, time: string }) => {
-          return { ...acc, [item.day]: item.time };
-        }, {}),
-        sacraments: sacramentsData || [],
-        specialServices: specialServicesData || [],
-      }));
+        // Update the state with all related data from the churches table
+        setChurchData((prev) => ({
+          ...prev,
+          leadership: leadershipData,
+          ministries: ministriesData,
+          coreValues: Array.isArray(coreValuesData) ? coreValuesData : [],
+          worshipTimes: Array.isArray(worshipTimesData) && worshipTimesData.length > 0
+            ? worshipTimesData.reduce((acc: { [key: string]: string }, item: { day: string, time: string }) => {
+                return { ...acc, [item.day]: item.time };
+              }, {})
+            : prev.worshipTimes,
+          sacraments: sacramentsData,
+          specialServices: specialServicesData,
+        }));
+
+        console.log("Successfully loaded all data from churches table");
+      } catch (error) {
+        console.error("Error fetching related church data:", error);
+      }
     } else {
-      // If no church profile exists, fetch organization data as fallback
-      api.get(`${baseURL}/api/organizations/${orgId}`)
-        .then((response) => {
-          const org = response.data;
-          if (!org) {
-            console.warn('No organization data returned');
-            return;
-          }
-
+      // No church entry exists in the churches table - fallback to organization data
+      console.log("No church entry found in churches table. Falling back to organization data...");
+      
+      try {
+        const orgResponse = await api.get(`${baseURL}/api/organizations/${orgId}`);
+        const org = orgResponse.data;
+        
+        if (org) {
           // Update the church data with the fetched organization data
           setChurchData((prev) => ({
             ...prev,
@@ -297,10 +315,13 @@ const EdittableChurchProfilePage: React.FC = () => {
             district: org.district || prev.district,
             province: org.region || prev.province,
           }));
-        })
-        .catch((error) => {
-          console.error('Error fetching organization data:', error);
-        });
+          console.log("Loaded organization data as fallback");
+        } else {
+          console.warn('No organization data returned');
+        }
+      } catch (error) {
+        console.error('Error fetching organization data:', error);
+      }
     }
   };
 
