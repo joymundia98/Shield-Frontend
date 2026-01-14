@@ -38,6 +38,8 @@ const PermissionsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const fetchDepartments = async () => {
     try {
       const token = localStorage.getItem("authToken");
@@ -225,42 +227,51 @@ const PermissionsPage: React.FC = () => {
 
   // Save the permissions when the user clicks the "Save Permissions" button
   const handleSavePermissions = async () => {
-    if (selectedRole === null) {
-      setError("Please select a role.");
-      return;
+  if (selectedRole === null) {
+    setError("Please select a role.");
+    return;
+  }
+
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    setError("No authToken found, please log in.");
+    return;
+  }
+
+  const permissionIds = Array.from(rolePermissions);
+
+  try {
+    const response = await orgFetch(`${baseURL}/api/role_permissions/assign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        role_id: selectedRole,
+        permission_ids: permissionIds,
+      }),
+    });
+
+    if (response.status === 200 || response.status === 201 || response.status === 204) {
+      // If the response is successful, show success card
+      setSuccessMessage("Permissions successfully assigned to role");  // Set success message
+
+      // Reset the error state and hide the success card after 2 seconds
+      setError(null);  // Clear any previous error messages
+      setTimeout(() => {
+        setSuccessMessage(null);  // Hide the success message after 2 seconds
+      }, 2000);
+    } else {
+      // If the response fails, set the error state
+      setError(response.message || "Failed to save permissions.");
     }
+  } catch (err) {
+    console.error("Error saving permissions:", err);
+    setError("There was an error saving permissions.");
+  }
+};
 
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      setError("No authToken found, please log in.");
-      return;
-    }
-
-    const permissionIds = Array.from(rolePermissions);
-
-    try {
-      const response = await orgFetch(`${baseURL}/api/role_permissions/assign`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          role_id: selectedRole,
-          permissions: permissionIds,
-        }),
-      });
-
-      if (response.status === 200) {
-        alert("Permissions saved successfully!");
-      } else {
-        setError("Failed to save permissions.");
-      }
-    } catch (err) {
-      console.error("Error saving permissions:", err);
-      setError("There was an error saving permissions.");
-    }
-  };
 
   useEffect(() => {
     fetchPermissions();
@@ -347,6 +358,16 @@ const PermissionsPage: React.FC = () => {
           ➜ Logout
         </a>
       </div>
+
+      {successMessage && (
+        <div className="success-card">
+          <h3>✅ {successMessage}</h3>
+          <p>Changes have been saved.</p>
+        </div>
+      )}
+
+      {error && !successMessage && <p className="error-message">{error}</p>}
+
 
       {/* Main Content */}
       <div className="permissions-page-content">
