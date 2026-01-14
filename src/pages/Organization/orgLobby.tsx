@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { orgFetch } from "../../utils/api"; // Import orgFetch
-import johnImage from '../../assets/Man.jpg';
+import profile_icon from '../../assets/profile_icon.png';
 import "./OrgLobby.css";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -79,7 +79,7 @@ const OrgLobby: React.FC = () => {
     const formattedUsers = filteredUsersByOrg.map((user: any) => ({
       id: user.id,
       name: `${user.first_name} ${user.last_name}`,
-      imageSrc: johnImage,
+      imageSrc: profile_icon,
       altText: `${user.first_name} ${user.last_name}`,
       status: user.status, // Ensure status is included in the response
     }));

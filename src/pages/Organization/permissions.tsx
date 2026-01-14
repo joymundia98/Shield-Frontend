@@ -239,7 +239,7 @@ const PermissionsPage: React.FC = () => {
     const permissionIds = Array.from(rolePermissions);
 
     try {
-      const response = await orgFetch(`${baseURL}/api/role_permissions`, {
+      const response = await orgFetch(`${baseURL}/api/role_permissions/assign`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

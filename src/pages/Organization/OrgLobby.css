@@ -43,8 +43,9 @@ header {
 }
 
 .lobbyCard-image {
-  width: 100%;
-  height: 200px;
+  padding: 0.5rem;
+  width: auto;
+  height: 120px;
   object-fit: cover;
   border-bottom: 2px solid #ddd;
 }

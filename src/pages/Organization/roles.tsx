@@ -29,6 +29,17 @@ const RolesPage: React.FC = () => {
   // State for success message
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+   // Declare departmentCategory state (this is the key fix)
+  const [departmentCategory, setDepartmentCategory] = useState<string>("church"); // Default to 'church'
+
+  // State for modal (Add Department)
+  const [departmentModalOpen, setDepartmentModalOpen] = useState<boolean>(false);
+
+  // State for department name and description
+  const [newDepartmentName, setNewDepartmentName] = useState<string>("");
+  const [newDepartmentDescription, setNewDepartmentDescription] = useState<string>("");
+
+
   // State for visible cards
   const [visibleChurchCount, setVisibleChurchCount] = useState(3); // Start with showing 3
   const [visibleCorporateCount, setVisibleCorporateCount] = useState(3); // Start with showing 3
@@ -136,6 +147,74 @@ const RolesPage: React.FC = () => {
       }
     }
   }, []);
+
+  // Open modal for adding department
+  const openDepartmentModal = (category: string) => {
+    setDepartmentCategory(category); // Set the category dynamically based on which button was clicked
+    setDepartmentModalOpen(true); // Open the modal
+  };
+
+
+  // Function to close the department modal
+  const closeDepartmentModal = () => {
+    setDepartmentModalOpen(false);
+    setNewDepartmentName(""); // Reset name
+    setNewDepartmentDescription(""); // Reset description
+  };
+
+
+  // Handle adding a new department
+const handleAddDepartment = async () => {
+  if (!newDepartmentName || !newDepartmentDescription) {
+    setError("Both department name and description are required.");
+    return;
+  }
+
+  const newDepartment = {
+    name: newDepartmentName,
+    description: newDepartmentDescription,
+    category: departmentCategory,
+  };
+
+  try {
+    const response = await fetch(`${baseURL}/api/departments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+      },
+      body: JSON.stringify(newDepartment),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to add department");
+    }
+
+    const addedDepartment = await response.json();
+
+    // Add the department to the appropriate list
+    if (departmentCategory === "church") {
+      setChurchDepartments((prev) => [...prev, addedDepartment]);
+    } else {
+      setCorporateDepartments((prev) => [...prev, addedDepartment]);
+    }
+
+    // Close the modal after adding the department
+    closeDepartmentModal();
+    setSuccessMessage("Department added successfully!");
+    setTimeout(() => setSuccessMessage(null), 2000); // Hide success message after 2 seconds
+  } catch (error: unknown) {
+      if (error instanceof Error) {
+        // Now TypeScript knows that `error` is an instance of `Error`
+        setError(error.message || "An error occurred while adding the department.");
+      } else {
+        // Handle the case where the error is not an instance of `Error`
+        setError("An unknown error occurred while adding the department.");
+      }
+    }
+
+};
+
 
   // Fetch departments on load
   useEffect(() => {
@@ -321,6 +400,7 @@ const RolesPage: React.FC = () => {
         {/* Church Departments */}
         <h1>Church Departments</h1>
         <div className="department-grid">
+
           {churchDepartments.slice(0, visibleChurchCount).map((dept) => (
             <div key={dept.id} className="department-card">
               <div className="department-card-header">
@@ -382,6 +462,16 @@ const RolesPage: React.FC = () => {
               </div>
             </div>
           ))}
+
+            {/* Conditionally show the "Add Department" card */}
+            {visibleChurchCount === churchDepartments.length && (
+              <div className="department-card add-department-card" onClick={() => openDepartmentModal("church")}>
+                <div className="add-department-content">
+                  <span className="add-icon">+</span>
+                  <p>Add Department</p>
+                </div>
+              </div>
+            )}
         </div>
 
         {/* View More and View Less buttons for Church Departments */}
@@ -406,6 +496,7 @@ const RolesPage: React.FC = () => {
         <br />
 
         {/* Corporate Departments */}
+
         <h1>Corporate Departments</h1>
         <div className="department-grid">
           {corporateDepartments.slice(0, visibleCorporateCount).map((dept) => (
@@ -473,6 +564,17 @@ const RolesPage: React.FC = () => {
               </div>
             </div>
           ))}
+
+          {/* Add Corporate Department Card */}
+          {/* Conditionally show the "Add Department" card */}
+          {visibleCorporateCount === corporateDepartments.length && (
+            <div className="department-card add-department-card" onClick={() => openDepartmentModal("corporate")}>
+              <div className="add-department-content">
+                <span className="add-icon">+</span>
+                <p>Add Department</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* View More and View Less buttons for Corporate Departments */}
@@ -516,6 +618,29 @@ const RolesPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal for Adding Department */}
+      {departmentModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Add New Department ({departmentCategory.charAt(0).toUpperCase() + departmentCategory.slice(1)})</h2>
+            <input
+              type="text"
+              placeholder="Department Name"
+              value={newDepartmentName}
+              onChange={(e) => setNewDepartmentName(e.target.value)}
+            />
+            <textarea
+              placeholder="Department Description"
+              value={newDepartmentDescription}
+              onChange={(e) => setNewDepartmentDescription(e.target.value)}
+            />
+            <button onClick={handleAddDepartment} className="add-role-btn">Add Department</button>
+            <button onClick={closeDepartmentModal}>Cancel</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

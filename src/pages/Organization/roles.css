@@ -301,3 +301,35 @@ h1 {
   box-shadow: #3c4fe0 0 3px 7px inset;
   transform: translateY(2px);
 }
+
+.add-department-card {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border: 2px dashed #ccc;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  padding: 50px;
+  transition: all 0.3s;
+}
+
+.add-department-card:hover {
+  background-color: #eaeaea;
+}
+
+.add-department-content {
+  text-align: center;
+}
+
+.add-icon {
+  font-size: 50px;
+  color: #007bff;
+  font-weight: bold;
+}
+
+.add-department-card p {
+  font-size: 16px;
+  margin-top: 10px;
+  color: #555;
+}
