@@ -118,6 +118,7 @@ import RolesPage from "./pages/Organization/roles";
 import PermissionsPage from "./pages/Organization/permissions";
 
 import { AuthProvider } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -135,7 +136,11 @@ function App() {
           {/* ------------------------------
                   PRIVATE AUTH PAGES
           --------------------------------*/}
-          <Route path="/admin/create-account" element={<AdminAccountPage />} />
+          <Route path="/admin/create-account" element={
+            <ProtectedRoute requiredPermission="Create Admin Account" fallback="/403">
+              <AdminAccountPage />
+            </ProtectedRoute>
+          } />
 
           {/* ------------------------------
                   ORGANIZATION PAGES
@@ -147,148 +152,554 @@ function App() {
           {/* ------------------------------
                   MAIN DASHBOARD
           --------------------------------*/}
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute requiredPermission="View Main Dashboard" fallback="/403">
+              <DashboardPage />
+            </ProtectedRoute>
+          } />
 
           {/* ------------------------------
                   DEPARTMENT DASHBOARDS
           --------------------------------*/}
-          <Route path="/pastoral/dashboard" element={<PastoralDashboard />} />
-          <Route path="/programs/dashboard" element={<ProgramsDashboard />} />
-          <Route path="/ministry/dashboard" element={<MinistryDashboard />} />
-          <Route path="/hr/dashboard" element={<HRDashboard />} />
-          <Route path="/governance/dashboard" element={<GovernanceDashboard />} />
-          <Route path="/finance/dashboard" element={<FinanceDashboard />} />
-          <Route path="/donor/dashboard" element={<DonorDashboard />} />
-          <Route path="/congregation/dashboard" element={<CongregationDashboard />} />
-          <Route path="/class/dashboard" element={<ClassDashboard />} />
-          <Route path="/assets/dashboard" element={<AssetDashboard />} />
+          <Route path="/pastoral/dashboard" element={
+            <ProtectedRoute requiredPermission="View Pastoral Dashboard" fallback="/403">
+              <PastoralDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/programs/dashboard" element={
+            <ProtectedRoute requiredPermission="View Programs Dashboard" fallback="/403">
+              <ProgramsDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/ministry/dashboard" element={
+            <ProtectedRoute requiredPermission="View Ministry Dashboard" fallback="/403">
+              <MinistryDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/dashboard" element={
+            <ProtectedRoute requiredPermission="View HR Dashboard" fallback="/403">
+              <HRDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/governance/dashboard" element={
+            <ProtectedRoute requiredPermission="View Governance Dashboard" fallback="/403">
+              <GovernanceDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/dashboard" element={
+            <ProtectedRoute requiredPermission="View Finance Dashboard" fallback="/403">
+              <FinanceDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/donor/dashboard" element={
+            <ProtectedRoute requiredPermission="View Donor Dashboard" fallback="/403">
+              <DonorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/dashboard" element={
+            <ProtectedRoute requiredPermission="View Congregation Dashboard" fallback="/403">
+              <CongregationDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/class/dashboard" element={
+            <ProtectedRoute requiredPermission="View Class Dashboard" fallback="/403">
+              <ClassDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/assets/dashboard" element={
+            <ProtectedRoute requiredPermission="View Asset Dashboard" fallback="/403">
+              <AssetDashboard />
+            </ProtectedRoute>
+          } />
+
 
           {/* ------------------------------
                   ASSETS MODULE
           --------------------------------*/}
-          <Route path="/assets/assets" element={<AssetsPage />} />
-          <Route path="/assets/addAsset" element={<AddAssetPage />} />
-          <Route path="/assets/viewAsset" element={<ViewAsset />} />
-          <Route path="/assets/depreciation" element={<DepreciationPage />} />
-          <Route path="/assets/maintenance" element={<MaintenancePage />} />
-          <Route path="/assets/categories" element={<CategoriesPage />} />
+          <Route path="/assets/assets" element={
+            <ProtectedRoute requiredPermission="View All Assets" fallback="/403">
+              <AssetsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/assets/addAsset" element={
+            <ProtectedRoute requiredPermission="Add Asset" fallback="/403">
+              <AddAssetPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/assets/viewAsset" element={
+            <ProtectedRoute requiredPermission="View Detailed Info about an Asset" fallback="/403">
+              <ViewAsset />
+            </ProtectedRoute>
+          } />
+          <Route path="/assets/depreciation" element={
+            <ProtectedRoute requiredPermission="View Asset Depreciation" fallback="/403">
+              <DepreciationPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/assets/maintenance" element={
+            <ProtectedRoute requiredPermission="Manage Asset Maintenance" fallback="/403">
+              <MaintenancePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/assets/categories" element={
+            <ProtectedRoute requiredPermission="View Categories" fallback="/403">
+              <CategoriesPage />
+            </ProtectedRoute>
+          } />
 
           {/* ------------------------------
                   DONOR MANAGEMENT
           --------------------------------*/}
-          <Route path="/donor/donors" element={<DonorsPage />} />
-          <Route path="/donor/addDonor" element={<AddDonorPage />} />
-          <Route path="/donor/donations" element={<DonationsManagementPage />} />
-          <Route path="/donor/addDonation" element={<AddDonationPage />} />
-          <Route path="/donor/donorCategories" element={<DonorCategoriesPage />} />
-          <Route path="/donor/donorView" element={<ViewDonorPage />} />
-          <Route path="/donor/editDonor/:donorId" element={<EditDonor />} />
-          <Route path="/donor/DonationViewPage/:id" element={<DonationViewPage />} />
-          <Route path="/donor/EditDonationPage/:id" element={<EditDonationPage />} />
+           
+        <Route path="/donor/donors" element={
+                <ProtectedRoute requiredPermission="View All Donors" fallback="/403">
+                        <DonorsPage />
+                </ProtectedRoute>
+        } />
+
+        <Route path="/donor/addDonor" element={
+                <ProtectedRoute requiredPermission="Add Donor" fallback="/403">
+                        <AddDonorPage />
+                </ProtectedRoute>
+        } />
+
+        <Route path="/donor/donations" element={
+                <ProtectedRoute requiredPermission="View All Donations" fallback="/403">
+                        <DonationsManagementPage />
+                </ProtectedRoute>
+        } />
+
+        <Route path="/donor/addDonation" element={
+                <ProtectedRoute requiredPermission="Add Donation" fallback="/403">
+                        <AddDonationPage />
+                </ProtectedRoute>
+        } />
+
+        <Route path="/donor/donorCategories" element={
+                <ProtectedRoute requiredPermission="View Donor Categories" fallback="/403">
+                        <DonorCategoriesPage />
+                </ProtectedRoute>
+        } />
+
+        <Route path="/donor/donorView" element={
+                <ProtectedRoute requiredPermission="View Detailed Info about a Donor" fallback="/403">
+                        <ViewDonorPage />
+                </ProtectedRoute>
+        } />
+
+        <Route path="/donor/editDonor/:donorId" element={
+                <ProtectedRoute requiredPermission="Edit Donor Info" fallback="/403">
+                        <EditDonor />
+                </ProtectedRoute>
+        } />
+
+        <Route path="/donor/DonationViewPage/:id" element={
+                <ProtectedRoute requiredPermission="View Detailed Info about a Donation" fallback="/403">
+                        <DonationViewPage />
+                </ProtectedRoute>
+        } />
+
+        <Route path="/donor/EditDonationPage/:id" element={
+                <ProtectedRoute requiredPermission="Edit Donation Info" fallback="/403">
+                        <EditDonationPage />
+                </ProtectedRoute>
+        } />
+
 
           {/* ------------------------------
                   CONGREGATION MODULE
           --------------------------------*/}
-          <Route path="/congregation/members" element={<ChurchMembersDashboard />} />
-          <Route path="/congregation/attendance" element={<AttendancePage />} />
-          <Route path="/congregation/recordAttendance" element={<RecordAttendance />} />
-          <Route path="/congregation/followups" element={<CongregationDashboard />} />
-          <Route path="/congregation/memberRecords" element={<MembersRecords />} />
-          <Route path="/congregation/addMember" element={<AddMemberPage />} />
-          <Route path="/congregation/viewMember/:id" element={<ViewMemberPage />} />
-          <Route path="/congregation/editMember/:memberId" element={<EditMemberPage />} />
-          <Route path="/congregation/viewVisitor/:id" element={<ViewVisitorPage />} />
-          <Route path="/congregation/editVisitor/:id" element={<EditVisitorPage />} />
-          <Route path="/congregation/converts" element={<ConvertsDashboard />} />
-          <Route path="/congregation/convertRecords" element={<ConvertsPage />} />
-          <Route path="/congregation/addConvert" element={<AddConvert />} />
-          <Route path="/congregation/visitors" element={<VisitorsDashboard />} />
-          <Route path="/congregation/addVisitors" element={<AddVisitorPage />} />
-          <Route path="/congregation/visitorRecords" element={<VisitorRecordsPage />} />
-          <Route path="/congregation/viewConvert/:id" element={<ViewConvert />} />
-
+          <Route path="/congregation/members" element={
+            <ProtectedRoute requiredPermission="View Members Summary" fallback="/403">
+              <ChurchMembersDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/attendance" element={
+            <ProtectedRoute requiredPermission="Manage Congregation Attendance" fallback="/403">
+              <AttendancePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/recordAttendance" element={
+            <ProtectedRoute requiredPermission="Record Congregation Attendance" fallback="/403">
+              <RecordAttendance />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/followups" element={
+            <ProtectedRoute requiredPermission="View Congregation Follow-ups" fallback="/403">
+              <CongregationDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/memberRecords" element={
+            <ProtectedRoute requiredPermission="View Member Records" fallback="/403">
+              <MembersRecords />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/addMember" element={
+            <ProtectedRoute requiredPermission="Add Congregation Member" fallback="/403">
+              <AddMemberPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/viewMember/:id" element={
+            <ProtectedRoute requiredPermission="View Detailed Info about a Member" fallback="/403">
+              <ViewMemberPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/editMember/:memberId" element={
+            <ProtectedRoute requiredPermission="Edit Member Info" fallback="/403">
+              <EditMemberPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/viewVisitor/:id" element={
+            <ProtectedRoute requiredPermission="View Detailed Info about a Visitor" fallback="/403">
+              <ViewVisitorPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/editVisitor/:id" element={
+            <ProtectedRoute requiredPermission="Edit Visitor Info" fallback="/403">
+              <EditVisitorPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/converts" element={
+            <ProtectedRoute requiredPermission="View Converts Dashboard" fallback="/403">
+              <ConvertsDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/convertRecords" element={
+            <ProtectedRoute requiredPermission="View Convert Records" fallback="/403">
+              <ConvertsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/addConvert" element={
+            <ProtectedRoute requiredPermission="Add New Convert" fallback="/403">
+              <AddConvert />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/visitors" element={
+            <ProtectedRoute requiredPermission="View Visitor Dashboard" fallback="/403">
+              <VisitorsDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/addVisitors" element={
+            <ProtectedRoute requiredPermission="Add New Visitor" fallback="/403">
+              <AddVisitorPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/visitorRecords" element={
+            <ProtectedRoute requiredPermission="View Visitor Records" fallback="/403">
+              <VisitorRecordsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/congregation/viewConvert/:id" element={
+            <ProtectedRoute requiredPermission="View Convert Info" fallback="/403">
+              <ViewConvert />
+            </ProtectedRoute>
+          } />
 
           {/* ------------------------------
                   FINANCE MODULE
           --------------------------------*/}
-          <Route path="/finance/transactions" element={<FinanceDashboard />} />
-          <Route path="/finance/expensetracker" element={<ExpenseTrackerPage />} />
-          <Route path="/finance/incometracker" element={<IncomeTrackerPage />} />
-          <Route path="/finance/expenseDashboard" element={<ExpenseDashboardPage />} />
-          <Route path="/finance/incomeDashboard" element={<IncomeDashboardPage />} />
-          <Route path="/finance/addExpense" element={<AddExpensePage />} />
-          <Route path="/finance/addIncome" element={<AddIncomePage />} />
-          <Route path="/finance/payroll" element={<FinancePayrollPage />} />
-          <Route path="/finance/financeCategory" element={<FinanceCategoryPage />} />
-          <Route path="/finance/budgets" element={<BudgetsPage />} />
-          <Route path="/finance/setBudget" element={<SetBudgetsPage />} />
-          <Route path="/finance/budgetBreakdown" element={<BudgetBreakdownPage />} />
-          <Route path="/finance/ViewPayrollPage/:payrollId" element={<FinanceViewPayrollPage />} />
-          <Route path="/finance/reports" element={<FinanceDashboard />} />
+          <Route path="/finance/transactions" element={
+            <ProtectedRoute requiredPermission="View Finance Transactions" fallback="/403">
+              <FinanceDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/expensetracker" element={
+            <ProtectedRoute requiredPermission="Manage Expense Tracker" fallback="/403">
+              <ExpenseTrackerPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/incometracker" element={
+            <ProtectedRoute requiredPermission="Manage Income Tracker" fallback="/403">
+              <IncomeTrackerPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/expenseDashboard" element={
+            <ProtectedRoute requiredPermission="View Expense Dashboard" fallback="/403">
+              <ExpenseDashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/incomeDashboard" element={
+            <ProtectedRoute requiredPermission="View Income Dashboard" fallback="/403">
+              <IncomeDashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/addExpense" element={
+            <ProtectedRoute requiredPermission="Add Expense" fallback="/403">
+              <AddExpensePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/addIncome" element={
+            <ProtectedRoute requiredPermission="Add Income" fallback="/403">
+              <AddIncomePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/payroll" element={
+            <ProtectedRoute requiredPermission="Manage Payroll" fallback="/403">
+              <FinancePayrollPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/financeCategory" element={
+            <ProtectedRoute requiredPermission="View Finance Categories" fallback="/403">
+              <FinanceCategoryPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/budgets" element={
+            <ProtectedRoute requiredPermission="View Budgets Summary" fallback="/403">
+              <BudgetsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/setBudget" element={
+            <ProtectedRoute requiredPermission="Set Budget" fallback="/403">
+              <SetBudgetsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/budgetBreakdown" element={
+            <ProtectedRoute requiredPermission="View Budget Breakdown" fallback="/403">
+              <BudgetBreakdownPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/ViewPayrollPage/:payrollId" element={
+            <ProtectedRoute requiredPermission="View Detailed Payroll" fallback="/403">
+              <FinanceViewPayrollPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/finance/reports" element={
+            <ProtectedRoute requiredPermission="View Finance Reports" fallback="/403">
+              <FinanceDashboard />
+            </ProtectedRoute>
+          } />
+
 
           {/* ------------------------------
                   HR MODULE
           --------------------------------*/}
-          <Route path="/hr/staffDirectory" element={<StaffDirectory />} />
-          <Route path="/hr/attendance" element={<HRDashboard />} />
-          <Route path="/hr/payroll" element={<HrPayrollPage />} />
-          <Route path="/hr/addPayroll" element={<Payroll />} />
-          <Route path="/hr/leave" element={<LeaveManagementPage />} />
-          <Route path="/hr/departments" element={<DepartmentsPage />} />
-          <Route path="/hr/addStaff" element={<AddStaffPage />} />
-          <Route path="/hr/addLeave" element={<AddLeave />} />
-          <Route path="/hr/leaveApplications" element={<LeaveApplicationsPage />} />
-          <Route path="/hr/ViewPayroll/:payrollId" element={<ViewPayrollPage />} />
-          <Route path="/hr/EditPayrollPage/:payrollId" element={<EditPayroll />} />
-          <Route path="/hr/viewStaff/:id" element={<ViewStaff />} />
-          <Route path="/hr/editStaff/:id" element={<EditStaff />} />
+
+          <Route path="/hr/staffDirectory" element={
+            <ProtectedRoute requiredPermission="View Staff Directory" fallback="/403">
+              <StaffDirectory />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/attendance" element={
+            <ProtectedRoute requiredPermission="Manage Attendance" fallback="/403">
+              <HRDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/payroll" element={
+            <ProtectedRoute requiredPermission="Manage Payroll" fallback="/403">
+              <HrPayrollPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/addPayroll" element={
+            <ProtectedRoute requiredPermission="Add Payroll" fallback="/403">
+              <Payroll />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/leave" element={
+            <ProtectedRoute requiredPermission="Manage Leave" fallback="/403">
+              <LeaveManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/departments" element={
+            <ProtectedRoute requiredPermission="View Departments" fallback="/403">
+              <DepartmentsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/addStaff" element={
+            <ProtectedRoute requiredPermission="Add Staff" fallback="/403">
+              <AddStaffPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/addLeave" element={
+            <ProtectedRoute requiredPermission="Add Leave" fallback="/403">
+              <AddLeave />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/leaveApplications" element={
+            <ProtectedRoute requiredPermission="View Leave Applications" fallback="/403">
+              <LeaveApplicationsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/ViewPayroll/:payrollId" element={
+            <ProtectedRoute requiredPermission="View Detailed Info about a Payroll Record" fallback="/403">
+              <ViewPayrollPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/EditPayrollPage/:payrollId" element={
+            <ProtectedRoute requiredPermission="Edit Payroll Record" fallback="/403">
+              <EditPayroll />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/viewStaff/:id" element={
+            <ProtectedRoute requiredPermission="View Detailed Info about a Staff Member" fallback="/403">
+              <ViewStaff />
+            </ProtectedRoute>
+          } />
+          <Route path="/hr/editStaff/:id" element={
+            <ProtectedRoute requiredPermission="Edit Staff Info" fallback="/403">
+              <EditStaff />
+            </ProtectedRoute>
+          } />
 
           {/* ------------------------------
                   PROGRAMS MODULE
           --------------------------------*/}
-          <Route path="/programs/donors" element={<ProgramsDashboard />} />
-          <Route path="/programs/RegisteredPrograms" element={<RegisteredProgramsPage />} />
-          <Route path="/programs/attendeeManagement" element={<AttendeeManagement />} />
-          <Route path="/programs/addPrograms" element={<AddProgram />} />
-          <Route path="/programs/addAttendees/:programId" element={<NewAttendees />} />
-          <Route path="/programs/editAttendee/:attendeeId" element={<EditAttendee />} />
-          <Route path="/programs/viewProgram" element={<ViewProgramPage />} />
-          <Route path="/programs/editProgram/:id" element={<EditProgram />} />
+
+          <Route path="/programs/donors" element={
+            <ProtectedRoute requiredPermission="View Donors" fallback="/403">
+              <ProgramsDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/programs/RegisteredPrograms" element={
+            <ProtectedRoute requiredPermission="View Registered Programs" fallback="/403">
+              <RegisteredProgramsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/programs/attendeeManagement" element={
+            <ProtectedRoute requiredPermission="Manage Attendees" fallback="/403">
+              <AttendeeManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/programs/addPrograms" element={
+            <ProtectedRoute requiredPermission="Add Program" fallback="/403">
+              <AddProgram />
+            </ProtectedRoute>
+          } />
+          <Route path="/programs/addAttendees/:programId" element={
+            <ProtectedRoute requiredPermission="Add Attendees" fallback="/403">
+              <NewAttendees />
+            </ProtectedRoute>
+          } />
+          <Route path="/programs/editAttendee/:attendeeId" element={
+            <ProtectedRoute requiredPermission="Edit Attendee Info" fallback="/403">
+              <EditAttendee />
+            </ProtectedRoute>
+          } />
+          <Route path="/programs/viewProgram" element={
+            <ProtectedRoute requiredPermission="View Program Details" fallback="/403">
+              <ViewProgramPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/programs/editProgram/:id" element={
+            <ProtectedRoute requiredPermission="Edit Program Info" fallback="/403">
+              <EditProgram />
+            </ProtectedRoute>
+          } />
+
 
           {/* ------------------------------
                   CLASS MODULE
           --------------------------------*/}
-          <Route path="/class/classes" element={<ClassDashboard />} />
-          <Route path="/class/add-class" element={<ClassDashboard />} />
-          <Route path="/class/teachers" element={<ClassDashboard />} />
-          <Route path="/class/enrollments" element={<ClassDashboard />} />
-          <Route path="/class/attendance" element={<ClassDashboard />} />
-          <Route path="/class/reports" element={<ClassDashboard />} />
+
+          <Route path="/class/classes" element={
+            <ProtectedRoute requiredPermission="View Classes" fallback="/403">
+              <ClassDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/class/add-class" element={
+            <ProtectedRoute requiredPermission="Add Class" fallback="/403">
+              <ClassDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/class/teachers" element={
+            <ProtectedRoute requiredPermission="View Teachers" fallback="/403">
+              <ClassDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/class/enrollments" element={
+            <ProtectedRoute requiredPermission="Manage Enrollments" fallback="/403">
+              <ClassDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/class/attendance" element={
+            <ProtectedRoute requiredPermission="Manage Attendance" fallback="/403">
+              <ClassDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/class/reports" element={
+            <ProtectedRoute requiredPermission="View Class Reports" fallback="/403">
+              <ClassDashboard />
+            </ProtectedRoute>
+          } />
+
 
           {/* ------------------------------
                   MINISTRY MODULE
           --------------------------------*/}
-          <Route path="/ministry/teams" element={<MinistryDashboard />} />
-          <Route path="/ministry/members" element={<MinistryDashboard />} />
-          <Route path="/ministry/reports" element={<MinistryDashboard />} />
-          <Route path="/ministry/pastors" element={<PastorsPage />} />
+          <Route path="/ministry/teams" element={
+            <ProtectedRoute requiredPermission="View Ministry Teams" fallback="/403">
+              <MinistryDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/ministry/members" element={
+            <ProtectedRoute requiredPermission="View Ministry Members" fallback="/403">
+              <MinistryDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/ministry/reports" element={
+            <ProtectedRoute requiredPermission="View Ministry Reports" fallback="/403">
+              <MinistryDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/ministry/pastors" element={
+            <ProtectedRoute requiredPermission="View Pastors Records" fallback="/403">
+              <PastorsPage />
+            </ProtectedRoute>
+          } />
+
 
           {/* ------------------------------
                   PASTORAL MODULE
           --------------------------------*/}
-          <Route path="/pastoral/donors" element={<PastoralDashboard />} />
-          <Route path="/pastoral/add-donor" element={<PastoralDashboard />} />
-          <Route path="/pastoral/donations" element={<PastoralDashboard />} />
-          <Route path="/pastoral/reports" element={<PastoralDashboard />} />
+          <Route path="/pastoral/donors" element={
+            <ProtectedRoute requiredPermission="View Pastoral Donors" fallback="/403">
+              <PastoralDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/pastoral/add-donor" element={
+            <ProtectedRoute requiredPermission="Add Pastoral Donor" fallback="/403">
+              <PastoralDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/pastoral/donations" element={
+            <ProtectedRoute requiredPermission="View Pastoral Donations" fallback="/403">
+              <PastoralDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/pastoral/reports" element={
+            <ProtectedRoute requiredPermission="View Pastoral Reports" fallback="/403">
+              <PastoralDashboard />
+            </ProtectedRoute>
+          } />
+
 
           {/* ------------------------------
                   GOVERNANCE MODULE
           --------------------------------*/}
-          <Route path="/governance/policies" element={<GovernanceDashboard />} />
-          <Route path="/governance/audit-reports" element={<GovernanceDashboard />} />
-          <Route path="/governance/compliance-logs" element={<GovernanceDashboard />} />
-          <Route path="/governance/documentation" element={<GovernanceDashboard />} />
-          <Route path="/governance/certificates" element={<GovernanceDashboard />} />
+          <Route path="/governance/policies" element={
+            <ProtectedRoute requiredPermission="View Policies" fallback="/403">
+              <GovernanceDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/governance/audit-reports" element={
+            <ProtectedRoute requiredPermission="View Audit Reports" fallback="/403">
+              <GovernanceDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/governance/compliance-logs" element={
+            <ProtectedRoute requiredPermission="View Compliance Logs" fallback="/403">
+              <GovernanceDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/governance/documentation" element={
+            <ProtectedRoute requiredPermission="View Documentation" fallback="/403">
+              <GovernanceDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/governance/certificates" element={
+            <ProtectedRoute requiredPermission="View Certificates" fallback="/403">
+              <GovernanceDashboard />
+            </ProtectedRoute>
+          } />
 
           {/* ------------------------------
                   ORGANIZATION MODULE

@@ -7,10 +7,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import headerLogo from '../../assets/headerlogo.png';
 import { useAuth } from '../../hooks/useAuth'; // Access the Auth context
-import { fetchRoleId, fetchPermissionsForRole } from '../../context/AuthContext';  // Adjust the import path if necessary
+import { fetchPermissionsForRole } from '../../context/AuthContext';  // Adjust the import path if necessary
 import { permissionsMap } from '../../context/permissionsMap'; // Import the permissions map
 
-// Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const loginSchema = z.object({
@@ -24,7 +23,6 @@ type Permission = {
   method: string;
 };
 
-
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export const LoginForm = () => {
@@ -37,7 +35,9 @@ export const LoginForm = () => {
   });
 
   const navigate = useNavigate();
-  const { login } = useAuth(); // Access the login function from context
+  //const { login, _loadingPermissions } = useAuth(); // Access the login function and loading state from context
+
+  const { login } = useAuth(); // Access the login function and loading state from context
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -62,32 +62,38 @@ export const LoginForm = () => {
 
       // Log user roles
       console.log("User Roles:", user.role);
-      console.log("User role_id:", user.role_id);
+      console.log("User role_id:", user.role.id);
 
       // Fetch role_id based on the role name(s)
-      if (user.role && user.role[0]) {
-        const roleId = await fetchRoleId(user.role[0], token);
-        if (roleId) {
-          // Now that we have roleId, let's fetch permissions
-          const permissions = await fetchPermissionsForRole(roleId.toString(), token); // Pass role_id as string
-          
-          if (!permissions || permissions.length === 0) {
-            throw new Error("User has no permissions");
-          }
-
-          // Attach permissions and role_id to the user object
-          user.permissions = permissions; 
-          user.role_id = roleId;
-
-          console.log("User permissions:", user.permissions);
+      if (user.role && user.role.id) {
+        const roleId = user.role.id;
+        // Now that we have roleId, let's fetch permissions
+        const permissions = await fetchPermissionsForRole(roleId.toString(), token); // Pass role_id as string
+        
+        if (!permissions || permissions.length === 0) {
+          throw new Error("User has no permissions");
         }
+
+        // Attach permissions and role_id to the user object
+        user.permissions = permissions;
+        user.role_id = roleId;
+
+        console.log("User permissions:", user.permissions);
       }
 
       // Use the login function from context to set user, token, and permissions
       login(token, user, response.data.organization);
 
+      // Debugging: Log permissions and the result of findFirstAccessibleRoute
+      console.log("Permissions after login:", user.permissions);
+
+      // Find the first accessible route based on permissions
       const firstAccessibleRoute = findFirstAccessibleRoute(user.permissions);
 
+      // Debugging: Log the first accessible route result
+      console.log("First accessible route:", firstAccessibleRoute);
+
+      // Handle navigation after permissions are loaded and processed
       if (firstAccessibleRoute) {
         setTimeout(() => {
           setShowSuccessCard(false);
@@ -96,7 +102,7 @@ export const LoginForm = () => {
       } else {
         setTimeout(() => {
           setShowSuccessCard(false);
-          navigate('/dashboard'); // Fallback route
+          navigate('/dashboard'); // Fallback route if no accessible route is found
         }, 2000);
       }
 
@@ -182,18 +188,28 @@ export const LoginForm = () => {
 };
 
 // Function to map permissions to routes
+// Function to map permissions to routes
 const findFirstAccessibleRoute = (permissions: Permission[]) => {
-  // Ensure permissions are available before iterating over them
   if (!permissions || permissions.length === 0) {
+    console.log('No permissions found');
     return null;  // No permissions, return null
   }
 
-  // Iterate through permissions and return the first valid route from permissionsMap
-  for (let perm of permissions) {
-    if (permissionsMap[perm.name]) {
-      return permissionsMap[perm.name];  // Return the first accessible route from permissionsMap
+  // Iterate through routes in permissionsMap
+  for (let route in permissionsMap) {
+    // Get the required permissions for this route from permissionsMap
+    const requiredPermissions = permissionsMap[route];
+
+    // Check if the user has any of the required permissions for this route
+    for (let perm of permissions) {
+      if (requiredPermissions.includes(perm.name)) {
+        console.log(`Accessible route found for permission: ${perm.name} -> ${route}`);
+        return [route];  // Return the route as the first accessible route
+      }
     }
   }
 
+  console.log('No accessible route found');
   return null;  // If no accessible route, return null
 };
+

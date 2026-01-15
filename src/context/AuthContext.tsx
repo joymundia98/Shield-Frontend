@@ -40,6 +40,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   organization: Organization | null;
+  loadingPermissions: boolean;  // Track if permissions are still being loaded
   login: (token: string, user: User | null, organization: Organization | null) => void;
   logout: () => void;
   hasPermission: (route: string) => boolean; // Add this function to check permissions
@@ -76,35 +77,13 @@ export const fetchPermissionsForRole = async (roleId: string, token: string): Pr
   return uniquePermissions;
 };
 
-// Fetch Role ID based on role name
-// Export the fetchRoleId function so that you can import it in LoginForm
-export const fetchRoleId = async (roleName: string, token: string): Promise<number | null> => {
-  const baseURL = import.meta.env.VITE_BASE_URL;
-  try {
-    const res = await fetch(`${baseURL}/api/roles`, {
-      headers: { Authorization: `Bearer ${token}` },
-      
-    });
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch roles for role name: ${roleName}`);
-    }
-
-    const roles = await res.json();
-    const userRole = roles.find((role: any) => role.name === roleName);
-    return userRole ? userRole.id : null;
-  } catch (error) {
-    console.error("Error fetching roles:", error);
-    return null;
-  }
-};
-
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loadingPermissions, setLoadingPermissions] = useState<boolean>(false); // Track loading state for permissions
 
   // Debugging: Logs whenever state is initialized or updated
   useEffect(() => {
@@ -168,13 +147,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('Updated User:', user);
     console.log('Updated Organization:', organization);
 
-    // Assuming user.roleId is available (if not, you may need to map role name to role ID manually)
-    if (user?.role && user.role[0]) {
-      const roleId = await fetchRoleId(user.role[0], token);
-      if (roleId) {
-        const permissions = await fetchPermissionsForRole(roleId.toString(), token);  // Ensure roleId is passed as a string
-        setUser((prev) => prev ? { ...prev, role_id: roleId, permissions } : prev);
-      }
+    // Fetch permissions using the role_id directly from the user object
+    if (user?.role_id) {
+      const roleId = user.role_id;  // Directly using user.role_id
+      setLoadingPermissions(true); // Start loading permissions
+      const permissions = await fetchPermissionsForRole(roleId.toString(), token); // Ensure roleId is passed as a string
+      setUser((prev) => prev ? { ...prev, permissions } : prev);
+      setLoadingPermissions(false); // Stop loading permissions
     }
   };
 
@@ -196,21 +175,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('Organization:', organization);
   };
 
-  // Check if the user has permission for a specific route
   const hasPermission = (route: string): boolean => {
-    if (!user || !user.permissions) return false;
+  // Step 1: Check if user and permissions are available
+  if (!user || !user.permissions) return false;
 
-    // Check if the route exists in permissionsMap and get the required permissions
-    const requiredPermissions = permissionsMap[route];
+  // Step 2: Look up the permissions required for the given route in permissionsMap
+  const requiredPermissions = permissionsMap[route];
 
-    if (!requiredPermissions) return true; // If no permissions are required for the route, allow access
+  // Step 3: If no specific permissions are required for this route, allow access
+  if (!requiredPermissions || requiredPermissions.length === 0) {
+    return true;  // No permissions required, access granted
+  }
 
-    // Check if user has any of the required permissions
-    return user.permissions.some((perm) => requiredPermissions.includes(perm.name));
-  };
+  // Step 4: Check if the user has any of the required permissions for the route
+  return user.permissions.some((perm) => requiredPermissions.includes(perm.name));
+};
+
+
 
   return (
-    <AuthContext.Provider value={{ user, token, organization, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, token, organization, loadingPermissions, login, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );
