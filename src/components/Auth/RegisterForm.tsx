@@ -57,7 +57,7 @@ export const RegisterForm = () => {
   // Fetch roles and organizations on mount
   useEffect(() => {
     // Fetch roles
-    axios.get(`${baseURL}/api/roles`)
+    axios.get(`${baseURL}/api/roles/org`)
       .then(res => {
         // Sort roles alphabetically by name
         setRoles(res.data.sort((a: Role, b: Role) => a.name.localeCompare(b.name)));
