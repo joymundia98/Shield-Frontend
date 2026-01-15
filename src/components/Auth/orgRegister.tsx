@@ -161,7 +161,7 @@ const OrgRegister = () => {
       const statusToSend = data.status || "active";
 
       const response = await axios.post(
-        `${baseURL}/api/organizations/register`,
+        `${baseURL}/api/auth/organizations/register`,
         {
           name: data.name,
           organization_email: data.organization_email, // <-- use this key,
@@ -178,8 +178,8 @@ const OrgRegister = () => {
         }
       );
 
-      const { id: organizationID, organization_account_id: accountID } =
-        response.data;
+      // The response data has the organization object nested inside
+    const { id: organizationID, organization_account_id: accountID } = response.data.organization;
 
       setShowSuccessCard(true);
       setTimeout(() => {

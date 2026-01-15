@@ -1,11 +1,11 @@
 export const permissionsMap: { [key: string]: string[] } = {
   // PRIVATE AUTH PAGES
-  '/admin/create-account': ['Create Admin Account'],
+  /*'/admin/create-account': ['Create Admin Account'],
 
   // ORGANIZATION PAGES
   '/org-login': ['View Organization Login'],
   '/org-register': ['View Organization Registration'],
-  '/org-dashboard': ['View Organization Dashboard'],
+  '/org-dashboard': ['View Organization Dashboard'],*/
 
   // MAIN DASHBOARD
   '/dashboard': ['View Main Dashboard'],
