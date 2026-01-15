@@ -52,6 +52,7 @@ const OrganizationSuccessPage = () => {
         {/* Next Steps */}
         <div className="next-steps">
           <p><strong>Next Steps:</strong></p>
+          <p>Check your email inbox or spam folder for the Organization Account ID...</p>
           <p>Login with your new credentials...</p>
         </div>
 
