@@ -795,7 +795,6 @@ body:not(.sidebar-open) .close-wrapper {
 }
 
 /* =================== PRICING =================== */
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@500;600&display=swap");
 
 .pricing-page-wrapper{
     display: flex;
