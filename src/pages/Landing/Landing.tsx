@@ -414,6 +414,11 @@ const Landing: React.FC = () => {
 
 
       {/* You can add additional sections here for the landing page */}
+
+      {/* Footer */}
+        <footer>
+          <p>&copy; 2026 SCI-ELD | All rights reserved.</p>
+        </footer>
       
     </div>
   );

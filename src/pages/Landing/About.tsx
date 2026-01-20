@@ -165,6 +165,10 @@ const AboutPage: React.FC = () => {
       </ul>
     </div>
     </div>
+    {/* Footer */}
+        <footer>
+          <p>&copy; 2026 SCI-ELD | All rights reserved.</p>
+        </footer>
     </div>
   );
 };
