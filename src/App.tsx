@@ -123,6 +123,7 @@ import UserTrackerPage from "./pages/Organization/ListedAccounts";
 import ViewUserPage from "./pages/Organization/viewUser";
 import RolesPage from "./pages/Organization/roles";
 import PermissionsPage from "./pages/Organization/permissions";
+import HQDashboardPage from "./pages/Organization/HQDashboard";
 
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -727,6 +728,7 @@ function App() {
           <Route path="/Organization/viewUser/:id" element={<ViewUserPage />} />
           <Route path="/Organization/roles" element={<RolesPage />} />
           <Route path="/Organization/permissions" element={<PermissionsPage />} />
+          <Route path="/Organization/HQDashboard" element={<HQDashboardPage />} />
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />
