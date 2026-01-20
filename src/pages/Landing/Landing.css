@@ -1363,3 +1363,153 @@ footer a:hover {
             }
 
         }
+    
+/* =================== CONTACT =================== */
+        .contact-wrapper {
+            width: 100vw;
+            /*font-family: 'Poppins', sans-serif;
+            background: #E5E6EB;*/
+            color: #333;
+        }
+
+        .contact-wrapper .contact-info {
+            text-align: center;
+            margin: 1rem 0;
+            color: #333;
+        }
+
+        .contact-wrapper .contact-info p {
+            font-size: 1.2rem;
+        }
+        .contact-wrapper .contact-info a {
+            color: #2b2d42;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-wrapper .contact-form {
+            background-color: #ffffff;
+            padding: 3rem;
+            border-radius: 12px;
+            /*box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);*/
+            box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+            max-width: 800px;
+            margin: 0 auto;
+            transition: transform 0.3s ease-in-out;
+        }
+        .contact-wrapper .contact-form:hover {
+            transform: scale(1.05);
+        }
+
+        .contact-wrapper .contact-form h2 {
+            font-size: 2.5rem;
+            text-align: center;
+            color: #2b2d42;
+            margin-bottom: 2rem;
+        }
+
+        .contact-wrapper .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-wrapper label {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2b2d42;
+        }
+
+        .contact-wrapper input, .contact-wrapper select, .contact-wrapper textarea {
+            width: 100%;
+            padding: 1.2rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .contact-wrapper input:focus, .contact-wrapper select:focus, .contact-wrapper textarea:focus {
+            border-color: #8d99ae;
+        }
+
+        .contact-wrapper textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .contact-wrapper button {
+            background: linear-gradient(90deg, #ff416c, #ff4b2b);
+            color: white;
+            padding: 1.2rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: background 0.3s ease, transform 0.3s ease;
+            box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+        }
+
+        .contact-wrapper button:hover {
+            background: linear-gradient(90deg, #ff4b2b, #ff416c);
+            transform: translateY(-4px);
+        }
+
+        .contact-wrapper .partner-section {
+            background: #e0e0e0;
+            padding: 3rem;
+            margin: 3rem 0;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 1px, rgba(9, 30, 66, 0.13) 0px 0px 1px 1px;
+        }
+        .contact-wrapper .partner-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #2b2d42;
+        }
+        .contact-wrapper .partner-section p {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 1.5rem;
+        }
+        .contact-wrapper .partner-section ul {
+            list-style-type: none;
+            padding: 0;
+            font-size: 1.1rem;
+            color: #2b2d42;
+            margin-bottom: 2rem;
+        }
+        .contact-wrapper .partner-section ul li {
+            margin-bottom: 0.8rem;
+        }
+
+        .contact-wrapper footer {
+            text-align: center;
+            padding: 1.5rem;
+            background-color: #1D1411;
+            color: white;
+        }
+        .contact-wrapper footer p {
+            font-size: 1rem;
+            color: white;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .contact-wrapper .contact-form {
+                padding: 2rem;
+            }
+            .contact-wrapper .contact-form h2 {
+                font-size: 2rem;
+            }
+            .contact-wrapper header h1 {
+                font-size: 2rem;
+            }
+            .contact-wrapper .partner-section {
+                padding: 2rem;
+            }
+        }

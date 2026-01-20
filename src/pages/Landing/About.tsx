@@ -24,7 +24,7 @@ const AboutPage: React.FC = () => {
         { label: "About Us", path: "/about" },
         { label: "Pricing", path: "/pricing" },
         { label: "Sign In / Sign Up", path: "/login" },
-        { label: "Contact", path: "/#contact" },
+        { label: "Contact", path: "/contact" },
       ];
     
       const closeSidebar = () => {

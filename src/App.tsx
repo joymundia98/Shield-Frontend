@@ -8,6 +8,7 @@ import { LandingPage } from "./pages/LandingPage";
 import  Landing  from "./pages/Landing/Landing";
 import  AboutPage  from "./pages/Landing/About";
 import  Pricing  from "./pages/Landing/pricing";
+import  ContactUs  from "./pages/Landing/contact";
 
 import { OrgLoginPage } from "./pages/orgLoginPage";
 import { OrgRegisterPage } from "./pages/orgRegisterPage";
@@ -135,12 +136,13 @@ function App() {
           {/* ------------------------------
                   PUBLIC PAGES
           --------------------------------*/}
-          <Route path="/home" element={<LandingPage />} />
+          <Route path="/Oldhome" element={<LandingPage />} />
 
           {/*Remodelled Home Page */}
           <Route path="/" element={<Landing />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/contact" element={<ContactUs />} />
 
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
