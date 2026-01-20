@@ -3,6 +3,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LandingPage } from "./pages/LandingPage";
+
+//Remodelled Landing Page
+import  Landing  from "./pages/Landing/Landing";
+import  AboutPage  from "./pages/Landing/About";
+import  Pricing  from "./pages/Landing/pricing";
+
 import { OrgLoginPage } from "./pages/orgLoginPage";
 import { OrgRegisterPage } from "./pages/orgRegisterPage";
 import { AdminAccountPage } from "./pages/AdminAccountPage";
@@ -129,7 +135,13 @@ function App() {
           {/* ------------------------------
                   PUBLIC PAGES
           --------------------------------*/}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/home" element={<LandingPage />} />
+
+          {/*Remodelled Home Page */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/pricing" element={<Pricing />} />
+
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 

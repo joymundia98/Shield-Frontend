@@ -48,6 +48,7 @@ export const LoginForm = () => {
       const response = await axios.post(apiUrl, {
         email: data.email,
         password: data.password,
+      
       });
 
       console.log("Login response full:", response.data);

@@ -18,7 +18,6 @@ const registerSchema = z
     email: z.string().email("Invalid email"),
     phone: z.string().min(10, "Phone number is required"),
     position: z.string().min(1, "Position is required"),
-    role: z.string().min(1, "Role is required"),
     organization: z.string().min(1, "Organization is required"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirm_password: z.string().min(1, "Confirm Password is required"),
@@ -30,11 +29,6 @@ const registerSchema = z
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-interface Role {
-  id: number;
-  name: string;
-}
-
 interface Organization {
   id: number;
   name: string;
@@ -44,7 +38,6 @@ export const RegisterForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSuccessCard, setShowSuccessCard] = useState(false);
-  const [roles, setRoles] = useState<Role[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -54,16 +47,8 @@ export const RegisterForm = () => {
 
   const navigate = useNavigate();
 
-  // Fetch roles and organizations on mount
+  // Fetch organizations on mount
   useEffect(() => {
-    // Fetch roles
-    axios.get(`${baseURL}/api/roles/org`)
-      .then(res => {
-        // Sort roles alphabetically by name
-        setRoles(res.data.sort((a: Role, b: Role) => a.name.localeCompare(b.name)));
-      })
-      .catch(err => console.error("Error fetching roles:", err));
-
     // Fetch organizations
     axios.get(`${baseURL}/api/organizations`)
       .then(res => {
@@ -82,8 +67,8 @@ export const RegisterForm = () => {
         email: data.email,
         phone: data.phone,
         position: data.position,
-        role_id: data.role, // send role id
-        organization_id: data.organization, // send organization id
+        role_id: null, // Set role_id to null
+        organization_id: data.organization, // Send organization id
         password: data.password,
         status: "pending", // Set status to pending
       });
@@ -144,17 +129,6 @@ export const RegisterForm = () => {
             <input type="text" {...register("position")} />
             <label>Position</label>
             {errors.position && <p className="form-error">{errors.position.message}</p>}
-          </div>
-
-          {/* Role Dropdown */}
-          <div className="field input-field select-field">
-            <select {...register("role")}>
-              <option value="">Select Role</option>
-              {roles.map((role: Role) => (
-                <option key={role.id} value={role.id}>{role.name}</option>
-              ))}
-            </select>
-            {errors.role && <p className="form-error">{errors.role.message}</p>}
           </div>
 
           {/* Organization Dropdown */}

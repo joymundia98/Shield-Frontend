@@ -178,13 +178,12 @@ export const LandingPage = () => {
         <div className="container">
           <div className="content">
             <div className="text-cont" data-aos="fade-right" data-aos-delay="200">
-              <h1 className="header">
-                <span className="first-clr">SCI-ELD</span> Church{" "}
-                <span className="first-clr">Management</span> Platform
+              <h1 className="header landing-h1">
+                <span className="first-clr">SCI-ELD</span> <span className="regular-text">Church</span> <span className="first-clr">Management</span> <span className="regular-text">Platform</span>
               </h1>
 
               <p className="description">
-                SCI-ELD - Sustainable Church Initiative for Effective Leadership Development
+                SCI-ELD : Strengthening Church Institutions with Effective Leadership and Digital Financial Systems
               </p>
 
               <Link to="/register">
