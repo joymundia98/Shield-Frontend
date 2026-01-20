@@ -16,7 +16,7 @@ const Pricing = () => {
 
   const menuLinks = [
     { label: "Home", path: "/" },
-    { label: "Features", path: "/#features" },
+    { label: "About Us", path: "/about" },
     { label: "Pricing", path: "/pricing" },
     { label: "Sign In / Sign Up", path: "/login" },
     { label: "Contact", path: "/contact" },

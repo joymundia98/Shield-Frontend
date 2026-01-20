@@ -16,10 +16,10 @@ export const RegisterPage = () => {
 
   const menuLinks = [
     { label: "Home", path: "/" },
-    { label: "Features", path: "/#features" },
-    { label: "Who we serve", path: "/#who-we-serve" },
+    { label: "About Us", path: "/about" },
+    { label: "Pricing", path: "/pricing" },
     { label: "Sign In / Sign Up", path: "/login" },
-    { label: "Contact", path: "/#contact" },
+    { label: "Contact", path: "/contact" },
   ];
 
   const closeSidebar = () => {
