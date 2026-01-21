@@ -28,7 +28,7 @@ const ContactUs: React.FC = () => {
     { label: "Home", path: "/" },
     { label: "About Us", path: "/about" },
     { label: "Pricing", path: "/pricing" },
-    { label: "Sign In / Sign Up", path: "/login" },
+    { label: "Sign In / Sign Up", path: "/SignUp" },
     { label: "Contact", path: "/contact" },
   ];
 

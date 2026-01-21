@@ -9,17 +9,17 @@
   align-items: center; /* vertically center */
   width: 100vw;        /* full viewport width */
   min-height: 100vh;       /* full viewport height */
-  background: linear-gradient(
+  /*background: linear-gradient(
     109.6deg,
     rgba(129, 126, 122, 0.447) 11.2%,
     rgba(129, 126, 122, 0.735) 51.2%,
     rgb(129, 126, 122) 100%
-  );
+  );*/
   padding: 1rem;
 }
 
 .loginContainer {
-  width: 380px;
+  min-width: 380px;
   background-color: #fff;
   box-shadow: 0 15px 20px rgba(0,0,0,0.2);
   border-radius: 15px;

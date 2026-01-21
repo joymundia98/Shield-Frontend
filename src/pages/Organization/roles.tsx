@@ -192,27 +192,28 @@ const handleAddDepartment = async () => {
 
     const addedDepartment = await response.json();
 
-    // Add the department to the appropriate list
+    // Update departments immediately
     if (departmentCategory === "church") {
       setChurchDepartments((prev) => [...prev, addedDepartment]);
+      setVisibleChurchCount((prev) => prev + 1);
     } else {
       setCorporateDepartments((prev) => [...prev, addedDepartment]);
+      setVisibleCorporateCount((prev) => prev + 1);
     }
+
+    // Immediately trigger success message without relying on state update delay
+    setSuccessMessage("Department added successfully!");
+    setTimeout(() => setSuccessMessage(null), 2000); // Hide success message after 2 seconds
 
     // Close the modal after adding the department
     closeDepartmentModal();
-    setSuccessMessage("Department added successfully!");
-    setTimeout(() => setSuccessMessage(null), 2000); // Hide success message after 2 seconds
   } catch (error: unknown) {
-      if (error instanceof Error) {
-        // Now TypeScript knows that `error` is an instance of `Error`
-        setError(error.message || "An error occurred while adding the department.");
-      } else {
-        // Handle the case where the error is not an instance of `Error`
-        setError("An unknown error occurred while adding the department.");
-      }
+    if (error instanceof Error) {
+      setError(error.message || "An error occurred while adding the department.");
+    } else {
+      setError("An unknown error occurred while adding the department.");
     }
-
+  }
 };
 
 
@@ -464,14 +465,14 @@ const handleAddDepartment = async () => {
           ))}
 
             {/* Conditionally show the "Add Department" card */}
-            {visibleChurchCount === churchDepartments.length && (
-              <div className="department-card add-department-card" onClick={() => openDepartmentModal("church")}>
-                <div className="add-department-content">
-                  <span className="add-icon">+</span>
-                  <p>Add Department</p>
-                </div>
+            {(churchDepartments.length === 0 || visibleChurchCount === churchDepartments.length || churchDepartments.length > 0) && (
+            <div className="department-card add-department-card" onClick={() => openDepartmentModal("church")}>
+              <div className="add-department-content">
+                <span className="add-icon">+</span>
+                <p>Add Department</p>
               </div>
-            )}
+            </div>
+          )}
         </div>
 
         {/* View More and View Less buttons for Church Departments */}
@@ -567,14 +568,14 @@ const handleAddDepartment = async () => {
 
           {/* Add Corporate Department Card */}
           {/* Conditionally show the "Add Department" card */}
-          {visibleCorporateCount === corporateDepartments.length && (
-            <div className="department-card add-department-card" onClick={() => openDepartmentModal("corporate")}>
-              <div className="add-department-content">
-                <span className="add-icon">+</span>
-                <p>Add Department</p>
-              </div>
+          {(corporateDepartments.length === 0 || visibleCorporateCount === corporateDepartments.length || corporateDepartments.length > 0) && (
+          <div className="department-card add-department-card" onClick={() => openDepartmentModal("corporate")}>
+            <div className="add-department-content">
+              <span className="add-icon">+</span>
+              <p>Add Department</p>
             </div>
-          )}
+          </div>
+        )}
         </div>
 
         {/* View More and View Less buttons for Corporate Departments */}

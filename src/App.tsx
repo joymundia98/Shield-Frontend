@@ -8,6 +8,7 @@ import { LandingPage } from "./pages/LandingPage";
 import  Landing  from "./pages/Landing/Landing";
 import  AboutPage  from "./pages/Landing/About";
 import  Pricing  from "./pages/Landing/pricing";
+import  SignUpGuide  from "./pages/Landing/SignUpGuide";
 import  ContactUs  from "./pages/Landing/contact";
 
 import { OrgLoginPage } from "./pages/orgLoginPage";
@@ -143,6 +144,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/signUp" element={<SignUpGuide />} />
           <Route path="/contact" element={<ContactUs />} />
 
           <Route path="/login" element={<LoginPage />} />
@@ -151,11 +153,13 @@ function App() {
           {/* ------------------------------
                   PRIVATE AUTH PAGES
           --------------------------------*/}
-          <Route path="/admin/create-account" element={
+          {/*<Route path="/admin/create-account" element={
             <ProtectedRoute requiredPermission="Create Admin Account" fallback="/403">
               <AdminAccountPage />
             </ProtectedRoute>
-          } />
+          } />*/}
+
+          <Route path="/admin/create-account" element={<AdminAccountPage />} />
 
           {/* ------------------------------
                   ORGANIZATION PAGES
