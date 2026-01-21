@@ -181,11 +181,11 @@ const OrgLobby: React.FC = () => {
         <h2>ORG MANAGER</h2>
         <a href="/Organization/edittableProfile">Profile</a>
         <a href="/Organization/orgLobby" className="active">The Lobby</a>
-        <a href="/Organization/ListedAccounts">Accounts Tracker</a>
+        <a href="/Organization/ListedAccounts">Manage Accounts</a>
         <a href="/Organization/roles">Roles</a>
         <a href="/Organization/permissions">Permissions</a>
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">To SCI-ELD ERP</a>
+        <a href="/Organization/to_SCI-ELD_ERP" className="return-main">To SCI-ELD ERP</a>
         <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}> ➜ Logout </a>
       </div>
 
@@ -247,7 +247,7 @@ const OrgLobby: React.FC = () => {
         {/* Confirmation Modal for Approve/Reject */}
         {modalOpen && selectedUser && actionType && (
           <div className="confirmation-modal">
-            <div className="modal-content">
+            <div className="modal-content org-modal-content">
               <h2>{actionType === "approve" ? "Approve this user?" : "Reject this user?"}</h2>
               <p>This action cannot be undone. Are you sure you want to proceed?</p>
               <div className="modal-buttons">

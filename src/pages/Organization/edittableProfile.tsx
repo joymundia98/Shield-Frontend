@@ -527,12 +527,12 @@ const EdittableChurchProfilePage: React.FC = () => {
         <h2>ORG MANAGER</h2>
         <a href="/Organization/edittableProfile" className="active">Profile</a>
         <a href="/Organization/orgLobby">The Lobby</a>
-        <a href="/Organization/ListedAccounts">Accounts Tracker</a>
+        <a href="/Organization/ListedAccounts">Manage Accounts</a>
         <a href="/Organization/roles">Roles</a>
         <a href="/Organization/permissions">Permissions</a>
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">To SCI-ELD ERP</a>
+        <a href="/Organization/to_SCI-ELD_ERP" className="return-main">To SCI-ELD ERP</a>
         <a
           href="/"
           className="logout-link"

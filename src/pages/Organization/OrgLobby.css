@@ -75,7 +75,7 @@ header {
   transition: all 0.3s ease;
 }
 
-.approve {
+.org-modal-content .approve-btn {
   background-color: #4CAF50;
   color: white;
 }
@@ -122,6 +122,18 @@ header {
             justify-content: center;
             align-items: center;
             z-index: 9999;
+        }
+
+        .org-modal-content {
+          background-color: white;
+          padding: 20px;
+          border-radius: 8px;
+          width: 400px;
+          max-width: 100%;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
         }
 
         
