@@ -209,7 +209,7 @@ const UserTrackerPage: React.FC = () => {
 
     try {
       const response = await orgFetch(`${baseURL}/api/users/${userToUpdate.id}/role`, {
-        method: userToUpdate.role_id ? "PATCH" : "POST",  // Use PUT for update, POST for new assignment
+        method: userToUpdate.role_id ? "PATCH" : "PATCH",  // Use PUT for update, POST for new assignment
         headers: {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
