@@ -14,6 +14,7 @@ import  ContactUs  from "./pages/Landing/contact";
 import { OrgLoginPage } from "./pages/orgLoginPage";
 import { OrgRegisterPage } from "./pages/orgRegisterPage";
 import { AdminAccountPage } from "./pages/AdminAccountPage";
+import  InternalAccountCreation  from "./components/Auth/InternalAccountCreation";
 
 import NotFoundPage from "./pages/NotFoundPage"; // Import the 404 page
 
@@ -161,6 +162,7 @@ function App() {
           } />*/}
 
           <Route path="/admin/create-account" element={<AdminAccountPage />} />
+          <Route path="/Create_new_User" element={<InternalAccountCreation />} />
 
           {/* ------------------------------
                   ORGANIZATION PAGES

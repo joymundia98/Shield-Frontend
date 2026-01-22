@@ -18,6 +18,10 @@
   padding: 1rem;
 }
 
+.accountActivationPrompt{
+  font-size: 1.2rem;
+}
+
 .loginContainer {
   min-width: 380px;
   background-color: #fff;
