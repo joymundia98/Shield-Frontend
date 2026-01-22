@@ -360,7 +360,7 @@ const UserTrackerPage: React.FC = () => {
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
         <header className="page-header user-header">
-          <h1>User Tracker</h1>
+          <h1>User Management</h1>
           <div className="header-buttons">
             <button className="add-btn" onClick={() => navigate("/Create_new_User")}>+ &nbsp; New User</button>
           </div>
