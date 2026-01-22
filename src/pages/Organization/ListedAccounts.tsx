@@ -54,6 +54,9 @@ const UserTrackerPage: React.FC = () => {
   const [userToUpdate, setUserToUpdate] = useState<User | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
 
+  // Success Card state
+  const [showSuccessCard, setShowSuccessCard] = useState(false); // New success card state
+
   // Fetch token from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -202,38 +205,57 @@ const UserTrackerPage: React.FC = () => {
 
 
   const handleConfirmRoleChange = async () => {
-    if (!userToUpdate || selectedRoleId === null || !authToken) return;
+  if (!userToUpdate || selectedRoleId === null || !authToken) return;
 
-    console.log("Updating user:", userToUpdate);
-    console.log("New Role ID:", selectedRoleId);
+  console.log("Updating user:", userToUpdate);
+  console.log("New Role ID:", selectedRoleId);
 
-    try {
-      const response = await orgFetch(`${baseURL}/api/users/${userToUpdate.id}/role`, {
-        method: userToUpdate.role_id ? "PATCH" : "PATCH",  // Use PUT for update, POST for new assignment
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ role_id: selectedRoleId }),
+  try {
+    const response = await orgFetch(`${baseURL}/api/users/${userToUpdate.id}/role`, {
+      method: "PATCH", // Use PATCH for updating
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ role_id: selectedRoleId }),
+    });
+
+    // Check if the response contains the updated user data
+    if (response && response.role_id === selectedRoleId) {
+      // Immediately update the user categories without re-fetching users
+      setUserCategories((prevCategories) => {
+        const updatedCategories = { ...prevCategories };
+        for (const status in updatedCategories) {
+          const userIndex = updatedCategories[status as keyof UserStatusCategories].findIndex(
+            (user) => user.id === userToUpdate.id
+          );
+          if (userIndex !== -1) {
+            updatedCategories[status as keyof UserStatusCategories][userIndex] = {
+              ...updatedCategories[status as keyof UserStatusCategories][userIndex],
+              role_id: selectedRoleId, // Update the user's role
+            };
+            break;
+          }
+        }
+        return updatedCategories;
       });
 
-      if (response.ok) {
-        fetchUsers(); // Refresh user list after update
-      } else {
-        const errorData = await response.json();
-        setError(`Failed to update user role: ${errorData.error || 'Unknown error'}`);
-      }
-    } catch (err) {
-      console.error("Error updating role:", err);
-      setError("Error updating user role.");
+      // Show success card after successful role update
+      setShowSuccessCard(true);
+      setTimeout(() => setShowSuccessCard(false), 3000); // Hide after 3 seconds
+    } else {
+      setError("Failed to update user role: Role ID mismatch.");
     }
+  } catch (err) {
+    console.error("Error updating role:", err);
+    setError("Error updating user role.");
+  }
 
-    // Close the RoleAssignModal
-    setIsRoleAssignModalOpen(false);
-    setUserToUpdate(null);
-    setSelectedRoleId(null);
-  };
-
+  // Close the RoleAssignModal
+  setIsRoleAssignModalOpen(false);
+  setUserToUpdate(null);
+  setSelectedRoleId(null);
+};
 
   const handleCancelRoleChange = () => {
     setIsRoleAssignModalOpen(false);
@@ -328,7 +350,7 @@ const UserTrackerPage: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/");
+            navigate("/"); 
           }}
         >
           ➜ Logout
@@ -347,6 +369,13 @@ const UserTrackerPage: React.FC = () => {
         {/* Error or loading state */}
         {error && <div className="error">{error}</div>}
         {loading && <p>Loading users...</p>}
+
+        {/* Success Card */}
+        {showSuccessCard && (
+          <div className="success-card">
+            Role updated successfully!
+          </div>
+        )}
 
         <br /><br />
 
