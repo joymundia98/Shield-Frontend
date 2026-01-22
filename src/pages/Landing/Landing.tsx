@@ -113,7 +113,7 @@ const Landing: React.FC = () => {
       {/* =================== HEADER =================== */}
       <header className="landingHeader">
         <div className="logo">
-          <Link to="/home">
+          <Link to="/">
             <Link to="/"><img src={logo} alt="Logo" /></Link>
           </Link>
         </div>
@@ -200,7 +200,7 @@ const Landing: React.FC = () => {
                     
                     <br/><br/>
 
-                    <Link to="/register">
+                    <Link to="/signUp">
                         <button className="btn-get-started">Get Started</button>
                     </Link>
 

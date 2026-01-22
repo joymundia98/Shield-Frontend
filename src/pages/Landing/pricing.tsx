@@ -39,7 +39,7 @@ const Pricing = () => {
       {/* =================== HEADER =================== */}
       <header className="landingHeader">
         <div className="logo">
-          <Link to="/home">
+          <Link to="/">
             <img src={logo} alt="Logo" />
           </Link>
         </div>

@@ -2070,3 +2070,98 @@
                     box-shadow: #D6D6E7 0 3px 7px inset;
                     transform: translateY(2px);
                     }
+
+/* Modal For Role Assignment Background */
+.RoleAssignModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease; /* Fade-in effect */
+}
+
+/* Modal Content */
+.RoleAssignModal-content {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%; /* Makes it responsive */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transform: scale(0.95);
+  opacity: 0;
+  animation: fadeIn 0.3s forwards; /* Animation for modal appearance */
+}
+
+/* Animation for fade-in */
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Modal Header */
+.RoleAssignModal-content p {
+  font-size: 16px;
+  margin-bottom: 20px;
+  color: #333; /* Text color */
+}
+
+/* Modal Actions Container */
+.RoleAssignModal-actions {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px; /* Space between buttons */
+}
+
+/* Button Styles */
+.RoleAssignModal button {
+  padding: 12px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 48%; /* Buttons will be equal width */
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px, rgba(0, 0, 0, 0.3) 0px 30px 60px -30px, rgba(10, 37, 64, 0.35) 0px -2px 6px 0px inset;
+}
+
+.RoleAssignModal button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+.RoleAssignModal .confirmRole{
+    background-color: #198437;
+}
+
+.RoleAssignModal .cancelRoleAssignment{
+    background-color: #a21818;
+}
+
+.RoleAssignModal button:active {
+  transform: scale(0.98); /* Button shrink on click */
+}
+
+/* Close button (optional) */
+.RoleAssignModal button.cancel {
+  background-color: #f44336; /* Red color for cancel */
+}
+
+.RoleAssignModal button.cancel:hover {
+  background-color: #d32f2f; /* Darker red on hover */
+}
+

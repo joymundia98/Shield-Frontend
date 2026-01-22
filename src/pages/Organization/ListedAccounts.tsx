@@ -9,11 +9,17 @@ interface User {
   last_name: string;
   position: string;
   status: "active" | "pending" | "inactive";
+  role_id?: number; // Added role_id to track assigned role
   fullName?: string;
 }
 
 interface UserStatusCategories {
   [status: string]: User[];
+}
+
+interface Role {
+  id: number;
+  name: string;
 }
 
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -30,6 +36,7 @@ const UserTrackerPage: React.FC = () => {
     inactive: [],
   });
 
+  const [roles, setRoles] = useState<Role[]>([]); // State for roles
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +48,12 @@ const UserTrackerPage: React.FC = () => {
   const [recordsToShow, setRecordsToShow] = useState<number>(5);
   const [showAll, setShowAll] = useState<boolean>(false);
 
+  // RoleAssignModal states
+  const [isRoleAssignModalOpen, setIsRoleAssignModalOpen] = useState(false);
+  const [RoleAssignModalMessage, setRoleAssignModalMessage] = useState('');
+  const [userToUpdate, setUserToUpdate] = useState<User | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+
   // Fetch token from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -50,6 +63,32 @@ const UserTrackerPage: React.FC = () => {
       console.log("No authToken found in localStorage");
     }
   }, []);
+
+  // Fetch roles on mount
+  useEffect(() => {
+    const fetchRoles = async () => {
+      if (!authToken) return;
+
+      try {
+        const response = await orgFetch(`${baseURL}/api/roles`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        });
+
+        if (Array.isArray(response)) {
+          setRoles(response.sort((a: Role, b: Role) => a.name.localeCompare(b.name)));
+        } else {
+          setError("Failed to fetch roles.");
+        }
+      } catch (err) {
+        console.error("Error fetching roles:", err);
+        setError("There was an error fetching roles.");
+      }
+    };
+
+    fetchRoles();
+  }, [authToken]);
 
   // Fetch users based on token and organization
   const fetchUsers = useCallback(async () => {
@@ -66,8 +105,6 @@ const UserTrackerPage: React.FC = () => {
         },
       });
 
-      console.log("Fetched users response:", response);
-
       const categorizedUsers: UserStatusCategories = {
         active: [],
         pending: [],
@@ -81,6 +118,7 @@ const UserTrackerPage: React.FC = () => {
           last_name: user.last_name,
           position: user.position,
           status: user.status,
+          role_id: user.role_id, // Added role_id to user
           fullName: `${user.first_name} ${user.last_name}`,
         };
 
@@ -142,70 +180,121 @@ const UserTrackerPage: React.FC = () => {
     window.open(`/Organization/viewUser/${id}`, "_blank");
   };
 
-  const handleStatusChange = async (userId: number, newStatus: "active" | "pending" | "inactive") => {
-  if (!authToken) return;
+  const handleRoleSelection = (user: User, newRoleId: number) => {
+  const selectedRole = roles.find((role) => role.id === newRoleId);
+  if (!selectedRole) return;
 
-  try {
-    // Optimistically update the UI
-    setUserCategories((prevCategories) => {
-      const updatedCategories = { ...prevCategories };
-
-      // Find and update the user in the appropriate category
-      for (const status in updatedCategories) {
-        const userIndex = updatedCategories[status as keyof UserStatusCategories].findIndex(user => user.id === userId);
-        if (userIndex !== -1) {
-          const updatedUser = { 
-            ...updatedCategories[status as keyof UserStatusCategories][userIndex], 
-            status: newStatus 
-          };
-
-          // Remove from the current category
-          updatedCategories[status as keyof UserStatusCategories].splice(userIndex, 1);
-
-          // Add to the new status category
-          updatedCategories[newStatus].push(updatedUser);
-          break;
-        }
-      }
-
-      return updatedCategories;
-    });
-
-    // Send the PATCH request to update the user's status
-    const response = await orgFetch(`${baseURL}/api/users/${userId}`, {
-      method: "PATCH",
-      headers: {
-        "Authorization": `Bearer ${authToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ status: newStatus }),
-    });
-
-    // Check if the response was successful
-    if (response.ok) {
-      // Refetch users if needed (optional)
-      fetchUsers();
-    } else {
-      // Handle error
-      const errorData = await response.json();
-      setError(`Failed to update user status: ${errorData.error || 'Unknown error'}`);
-    }
-  } catch (err) {
-    // Handle network or unexpected errors
-    console.error("Error updating status:", err);
-    setError("Error updating user status.");
+  // Check if there's already a role assigned
+  if (!user.role_id) {
+    // If no role is assigned, show the modal asking for assignment
+    setRoleAssignModalMessage(`Do you want to assign the role "${selectedRole.name}" to ${user.first_name} ${user.last_name}?`);
+  } else {
+    // If a role is assigned, show the modal asking for confirmation to change the role
+    const currentRole = roles.find((role) => role.id === user.role_id);
+    setRoleAssignModalMessage(`Are you sure you want to change the role of ${user.first_name} ${user.last_name} from "${currentRole?.name}" to "${selectedRole.name}"?`);
   }
+
+  // Set up the state for the user to update and the selected role ID
+  setUserToUpdate(user);
+  setSelectedRoleId(newRoleId);
+  setIsRoleAssignModalOpen(true); // This opens the modal
 };
+
+
+  const handleConfirmRoleChange = async () => {
+    if (!userToUpdate || selectedRoleId === null || !authToken) return;
+
+    console.log("Updating user:", userToUpdate);
+    console.log("New Role ID:", selectedRoleId);
+
+    try {
+      const response = await orgFetch(`${baseURL}/api/users/${userToUpdate.id}/role`, {
+        method: userToUpdate.role_id ? "PATCH" : "POST",  // Use PUT for update, POST for new assignment
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role_id: selectedRoleId }),
+      });
+
+      if (response.ok) {
+        fetchUsers(); // Refresh user list after update
+      } else {
+        const errorData = await response.json();
+        setError(`Failed to update user role: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Error updating role:", err);
+      setError("Error updating user role.");
+    }
+
+    // Close the RoleAssignModal
+    setIsRoleAssignModalOpen(false);
+    setUserToUpdate(null);
+    setSelectedRoleId(null);
+  };
+
+
+  const handleCancelRoleChange = () => {
+    setIsRoleAssignModalOpen(false);
+    setUserToUpdate(null);
+    setSelectedRoleId(null);
+  };
+
+  const handleStatusChange = async (userId: number, newStatus: "active" | "pending" | "inactive") => {
+    if (!authToken) return;
+
+    try {
+      setUserCategories((prevCategories) => {
+        const updatedCategories = { ...prevCategories };
+
+        for (const status in updatedCategories) {
+          const userIndex = updatedCategories[status as keyof UserStatusCategories].findIndex(user => user.id === userId);
+          if (userIndex !== -1) {
+            const updatedUser = {
+              ...updatedCategories[status as keyof UserStatusCategories][userIndex],
+              status: newStatus
+            };
+
+            updatedCategories[status as keyof UserStatusCategories].splice(userIndex, 1);
+            updatedCategories[newStatus].push(updatedUser);
+            break;
+          }
+        }
+
+        return updatedCategories;
+      });
+
+      const response = await orgFetch(`${baseURL}/api/users/${userId}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        fetchUsers();
+      } else {
+        const errorData = await response.json();
+        setError(`Failed to update user status: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Error updating status:", err);
+      setError("Error updating user status.");
+    }
+  };
 
   // Handle View More functionality
   const handleViewMore = () => {
     setShowAll(true);
-    setRecordsToShow(Infinity); // Display all records
+    setRecordsToShow(Infinity);
   };
 
   const handleViewLess = () => {
     setShowAll(false);
-    setRecordsToShow(5); // Reset to initial limit
+    setRecordsToShow(5);
   };
 
   return (
@@ -239,7 +328,7 @@ const UserTrackerPage: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/"); 
+            navigate("/");
           }}
         >
           ➜ Logout
@@ -250,9 +339,8 @@ const UserTrackerPage: React.FC = () => {
       <div className="dashboard-content">
         <header className="page-header user-header">
           <h1>User Tracker</h1>
-           <div className="header-buttons">
+          <div className="header-buttons">
             <button className="add-btn" onClick={() => navigate("/Create_new_User")}>+ &nbsp; New User</button>
-            
           </div>
         </header>
 
@@ -288,7 +376,6 @@ const UserTrackerPage: React.FC = () => {
         <br />
         {/* GROUPED TABLE RENDERING */}
         {["active", "pending", "inactive"].map((status) => {
-          // Only render groups that match the selected filter
           if (selectedFilter !== "all" && selectedFilter !== status) return null;
 
           const users = filteredUsers.filter((user) => user.status === status);
@@ -302,6 +389,7 @@ const UserTrackerPage: React.FC = () => {
                     <tr>
                       <th>Full Name</th>
                       <th>Position</th>
+                      <th>Role</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -310,6 +398,13 @@ const UserTrackerPage: React.FC = () => {
                       <tr key={user.id}>
                         <td>{user.first_name} {user.last_name}</td>
                         <td>{user.position}</td>
+                        <td>
+                          {user.role_id ? (
+                            roles.find(role => role.id === user.role_id)?.name
+                          ) : (
+                            "⚠️ No role Assigned"
+                          )}
+                        </td>
                         <td>
                           <button className="add-btn" onClick={() => openViewUser(user.id)}>
                             View
@@ -324,8 +419,7 @@ const UserTrackerPage: React.FC = () => {
                               onClick={() => handleStatusChange(user.id, "active")}
                             >
                               Set Active
-                            </button>
-                            &emsp; 
+                            </button>&emsp;
                             </>
                           )}
                           {user.status !== "pending" && (
@@ -335,20 +429,44 @@ const UserTrackerPage: React.FC = () => {
                               onClick={() => handleStatusChange(user.id, "pending")}
                             >
                               Set Pending
-                            </button>
-                            &emsp;
+                            </button>&emsp;
                             </>
                           )}
                           {user.status !== "inactive" && (
+                            <>
                             <button
                               className="user-status-btn inactive"
                               onClick={() => handleStatusChange(user.id, "inactive")}
                             >
                               Set Inactive
-                            </button>
+                            </button>&emsp;
+                            </>
                           )}
 
-                          
+                          {/* Role Editing */}
+                          {user.role_id ? (
+                            <select
+                              value={user.role_id}
+                              onChange={(e) => handleRoleSelection(user, parseInt(e.target.value))}
+                            >
+                              {roles.map((role) => (
+                                <option key={role.id} value={role.id}>
+                                  {role.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <select
+                              onChange={(e) => handleRoleSelection(user, parseInt(e.target.value))}
+                            >
+                              <option value="">Assign Role</option>
+                              {roles.map((role) => (
+                                <option key={role.id} value={role.id}>
+                                  {role.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -367,6 +485,19 @@ const UserTrackerPage: React.FC = () => {
           );
         })}
       </div>
+
+      {/* RoleAssignModal */}
+      {isRoleAssignModalOpen && (
+        <div className="RoleAssignModal">
+          <div className="RoleAssignModal-content">
+            <p>{RoleAssignModalMessage}</p>
+            <div className="RoleAssignModal-actions">
+              <button onClick={handleCancelRoleChange} className="cancelRoleAssignment">Cancel</button>
+              <button onClick={handleConfirmRoleChange} className="confirmRole">Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

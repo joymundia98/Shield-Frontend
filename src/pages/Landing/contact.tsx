@@ -68,7 +68,7 @@ const ContactUs: React.FC = () => {
       {/* =================== HEADER =================== */}
       <header className="landingHeader">
         <div className="logo">
-          <Link to="/home">
+          <Link to="/">
             <Link to="/"><img src={logo} alt="Logo" /></Link>
           </Link>
         </div>
