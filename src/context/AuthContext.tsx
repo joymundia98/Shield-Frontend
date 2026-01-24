@@ -61,6 +61,7 @@ export const fetchPermissionsForRole = async (roleId: string, token: string): Pr
     }
 
     const data = await res.json();
+    console.log('Fetched permissions data:', data); // <-- Log full response here
 
     if (data.data && Array.isArray(data.data)) {
       allPermissions.push(...data.data);
@@ -139,7 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('user', JSON.stringify(user));
     }
     if (organization) {
-      localStorage.setItem('organization', JSON.stringify(organization));  // Ensure this line is working
+      localStorage.setItem('organization', JSON.stringify(organization));
     }
 
     console.log('Login successful, state updated:');
@@ -147,12 +148,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('Updated User:', user);
     console.log('Updated Organization:', organization);
 
-    // Fetch permissions using the role_id directly from the user object
+    // Fetch permissions after login and update state
     if (user?.role_id) {
-      const roleId = user.role_id;  // Directly using user.role_id
+      const roleId = user.role_id.toString();  // Ensure roleId is passed as a string
+      console.log('RoleId', roleId);
       setLoadingPermissions(true); // Start loading permissions
-      const permissions = await fetchPermissionsForRole(roleId.toString(), token); // Ensure roleId is passed as a string
-      setUser((prev) => prev ? { ...prev, permissions } : prev);
+
+      try {
+        const permissions = await fetchPermissionsForRole(roleId, token);
+        console.log('permissions', permissions);
+        setUser((prev) => prev ? { ...prev, permissions } : prev);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+
       setLoadingPermissions(false); // Stop loading permissions
     }
   };
@@ -175,20 +184,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('Organization:', organization);
   };
 
-  const hasPermission = (route: string): boolean => {
-  // Step 1: Check if user and permissions are available
-  if (!user || !user.permissions) return false;
-
-  // Step 2: Look up the permissions required for the given route in permissionsMap
-  const requiredPermissions = permissionsMap[route];
-
-  // Step 3: If no specific permissions are required for this route, allow access
-  if (!requiredPermissions || requiredPermissions.length === 0) {
-    return true;  // No permissions required, access granted
+  const hasPermission = (requiredPermission: string): boolean => {
+  console.log('Checking permission...');
+  console.log(`Required permission: ${requiredPermission}`);
+  
+  // Ensure permissions are loaded before proceeding
+  if (!user || !user.permissions || user.permissions.length === 0) {
+    console.log('User or permissions are not available or permissions are empty');
+    return false;  // Return false if the user or permissions are missing or empty
   }
 
-  // Step 4: Check if the user has any of the required permissions for the route
-  return user.permissions.some((perm) => requiredPermissions.includes(perm.name));
+  console.log('User and permissions are available');
+  console.log('User object:', user);
+  console.log('User permissions:', user.permissions);
+
+  const permissionMatch = user.permissions.find(
+    (perm) => perm.name === requiredPermission
+  );
+
+  if (permissionMatch) {
+    console.log(`Permission found for "${requiredPermission}":`, permissionMatch);
+    return true;
+  } else {
+    console.log(`No permission found for "${requiredPermission}"`);
+    return false;
+  }
 };
 
 

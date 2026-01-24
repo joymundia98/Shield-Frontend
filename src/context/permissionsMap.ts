@@ -79,7 +79,7 @@ export const permissionsMap: { [key: string]: string[] } = {
   // HR MODULE
   '/hr/staffDirectory': ['View Staff Directory'],
   '/hr/attendance': ['Manage Attendance'],
-  '/hr/payroll': ['Manage Payroll'],
+  '/hr/payroll': ['Manage HR Payroll'],
   '/hr/addPayroll': ['Add Payroll'],
   '/hr/leave': ['Manage Leave'],
   '/hr/departments': ['View Departments'],

@@ -2,7 +2,7 @@
 
 // Existing authFetch function
 export const authFetch = async (url: string, options: RequestInit = {}) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("authToken");
   console.log("Using token:", token);
   if (!token) throw new Error("No JWT token found");
 
