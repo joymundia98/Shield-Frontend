@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import type { ReactNode } from 'react';
-import { permissionsMap } from './permissionsMap'; // Import the permissions map
+//import { permissionsMap } from './permissionsMap'; // Import the permissions map
 
 // Updated User and Organization interfaces to reflect the database structure
 interface Permission {

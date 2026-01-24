@@ -527,6 +527,7 @@ const EdittableChurchProfilePage: React.FC = () => {
         <h2>ORG MANAGER</h2>
         <a href="/Organization/edittableProfile" className="active">Profile</a>
         <a href="/Organization/orgLobby">The Lobby</a>
+        <a href="/Organization/orgAdminAccounts">Admin Accounts</a>
         <a href="/Organization/ListedAccounts">Manage Accounts</a>
         <a href="/Organization/roles">Roles</a>
         <a href="/Organization/permissions">Permissions</a>

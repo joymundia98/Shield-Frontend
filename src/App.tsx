@@ -126,6 +126,7 @@ import ViewUserPage from "./pages/Organization/viewUser";
 import RolesPage from "./pages/Organization/roles";
 import PermissionsPage from "./pages/Organization/permissions";
 import AdminLoginPromptPage from "./pages/Organization/AdminLoginPrompt";
+import AdminAccounts from "./pages/Organization/orgAdminAccounts";
 //import HQDashboardPage from "./pages/Organization/HQDashboard";
 
 import { AuthProvider } from "./context/AuthContext";
@@ -736,6 +737,7 @@ function App() {
           <Route path="/Organization/roles" element={<RolesPage />} />
           <Route path="/Organization/permissions" element={<PermissionsPage />} />
           <Route path="/Organization/to_SCI-ELD_ERP" element={<AdminLoginPromptPage />} />
+          <Route path="/Organization/orgAdminAccounts" element={<AdminAccounts />} />
           {/*<Route path="/Organization/HQDashboard" element={<HQDashboardPage />} />*/}
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
