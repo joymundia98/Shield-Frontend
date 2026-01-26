@@ -36,9 +36,10 @@ const PermissionsPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessCard, setShowSuccessCard] = useState(false);
   const navigate = useNavigate();
 
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  //const [successMessage, _setSuccessMessage] = useState<string | null>(null);
 
   const fetchDepartments = async () => {
     try {
@@ -253,17 +254,17 @@ const PermissionsPage: React.FC = () => {
       }),
     });
 
-    if (response.status === 200 || response.status === 201 || response.status === 204) {
-      // If the response is successful, show success card
-      setSuccessMessage("Permissions successfully assigned to role");  // Set success message
+    console.log("response", response);
 
-      // Reset the error state and hide the success card after 2 seconds
-      setError(null);  // Clear any previous error messages
+    if (response.message === "Permissions successfully assigned to role") {
+      setShowSuccessCard(true);  // Show the success card
       setTimeout(() => {
-        setSuccessMessage(null);  // Hide the success message after 2 seconds
+        setShowSuccessCard(false); // Hide the success card after 2 seconds
       }, 2000);
+
+      await fetchRoles();  // Refresh the roles list
+      await fetchPermissions();  // Refresh the permissions list
     } else {
-      // If the response fails, set the error state
       setError(response.message || "Failed to save permissions.");
     }
   } catch (err) {
@@ -369,14 +370,15 @@ const PermissionsPage: React.FC = () => {
         </a>
       </div>
 
-      {successMessage && (
+      {showSuccessCard && (
         <div className="success-card">
-          <h3>✅ {successMessage}</h3>
+          <h3>✅</h3>
           <p>Changes have been saved.</p>
         </div>
       )}
 
-      {error && !successMessage && <p className="error-message">{error}</p>}
+
+      {/*{error && !successMessage && <p className="error-message">{error}</p>}*/}
 
 
       {/* Main Content */}

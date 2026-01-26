@@ -108,6 +108,15 @@ export const AdminAccount = () => {
     fetchRoles();
   }, [navigate]);
 
+  // Sidebar toggle effect
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add("sidebar-open");
+    } else {
+      document.body.classList.remove("sidebar-open");
+    }
+  }, [sidebarOpen]);
+
   // Fetch permissions after role data is loaded
   useEffect(() => {
     const fetchPermissions = async () => {
@@ -255,6 +264,7 @@ export const AdminAccount = () => {
     }
   };
 
+  
     return (
 
     <div className="dashboard-wrapper">
