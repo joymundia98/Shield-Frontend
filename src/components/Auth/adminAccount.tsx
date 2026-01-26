@@ -268,6 +268,7 @@ export const AdminAccount = () => {
     return (
 
     <div className="dashboard-wrapper">
+
       {/* SIDEBAR */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
@@ -293,6 +294,7 @@ export const AdminAccount = () => {
       <button className="hamburger" onClick={toggleSidebar}> ☰ </button>
 
     <div className="login-parent-container">
+
       <div className="loginContainer">
         <div className="header">
           <img src={headerLogo} alt="Logo" />

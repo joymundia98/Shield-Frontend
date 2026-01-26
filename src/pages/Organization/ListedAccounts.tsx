@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { orgFetch } from "../../utils/api";
 import "../../styles/global.css";
-
+import OrganizationHeader from './OrganizationHeader';
 interface User {
   id: number;
   first_name: string;
@@ -360,6 +360,9 @@ const UserTrackerPage: React.FC = () => {
 
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
+
+        <OrganizationHeader/><br/>
+
         <header className="page-header user-header">
           <h1>User Management</h1>
           <div className="header-buttons">

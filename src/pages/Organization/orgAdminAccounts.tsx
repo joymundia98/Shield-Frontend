@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { orgFetch } from "../../utils/api"; // API fetch function
 import profile_icon from "../../assets/profile_icon.png"; // Profile image for the card
 import "./OrgLobby.css"; // Import the OrgLobby styles
+import OrganizationHeader from './OrganizationHeader';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -152,6 +153,9 @@ const AdminAccounts: React.FC = () => {
 
       {/* Main Dashboard Content */}
       <div className="dashboard-content">
+
+        <OrganizationHeader/><br/>
+
         <header className="page-header">
           <h1>Admin Accounts for {organization?.name}</h1>
           {/* Create Admin Account button moved here */}

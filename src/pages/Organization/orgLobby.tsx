@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { orgFetch } from "../../utils/api"; // Import orgFetch
 import profile_icon from '../../assets/profile_icon.png';
 import "./OrgLobby.css";
+import OrganizationHeader from './OrganizationHeader';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -192,6 +193,9 @@ const OrgLobby: React.FC = () => {
 
       {/* Main Dashboard Content */}
       <div className="dashboard-content">
+
+        <OrganizationHeader/><br/>
+
         <header className="page-header">
           <h1>The Lobby</h1>
           <button className="hamburger" onClick={toggleSidebar}> ☰ </button>

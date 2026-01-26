@@ -8,6 +8,7 @@ import { useLocation } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 //import axios from 'axios'; // Add this import // Ensure AxiosError is imported
+import OrganizationHeader from './OrganizationHeader';
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -495,6 +496,8 @@ const EdittableChurchProfilePage: React.FC = () => {
   return (
     <div className="orgProfileContainer">
 
+      <OrganizationHeader/><br/> 
+
       {/* Success Card */}
       {showSuccessCard && (
         <div className="success-card">
@@ -555,6 +558,7 @@ const EdittableChurchProfilePage: React.FC = () => {
 
       {/* Profile Info */}
       <section className="profile-info">
+
         <h1>
           {isEditing ? (
             <input

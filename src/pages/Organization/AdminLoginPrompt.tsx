@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import OrganizationHeader from './OrganizationHeader';
+
 
 const AdminLoginPromptPage: React.FC = () => {
   const navigate = useNavigate();
@@ -54,6 +56,9 @@ const AdminLoginPromptPage: React.FC = () => {
 
       {/* Main Content */}
       <div style={styles.container}>
+
+        <OrganizationHeader/><br/>
+
         <h1 style={styles.heading}>⚠️ Login Required!</h1>
         <div style={styles.card}>
           <div style={styles.message}>
@@ -109,6 +114,7 @@ const styles = {
     fontSize: '3rem',
     marginBottom: '30px',
     color: '#5C4736',
+    paddingTop: '3rem',
   },
   card: {
     padding: '20px',

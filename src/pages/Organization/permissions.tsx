@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { orgFetch } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import "./permissions.css";
+import OrganizationHeader from './OrganizationHeader';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -383,6 +384,9 @@ const PermissionsPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="permissions-page-content">
+
+        <OrganizationHeader/><br/><br/>
+
         <h1>Permissions</h1>
 
         {/* Department Drop-down */}

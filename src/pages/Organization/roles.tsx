@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./roles.css";
 import { authFetch, orgFetch } from "../../utils/api"; // Importing authFetch and orgFetch
+import OrganizationHeader from './OrganizationHeader';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -394,6 +395,9 @@ const handleAddDepartment = async () => {
 
       {/* Main Content */}
       <div className="roles-page-content">
+
+        <OrganizationHeader/><br/>
+
         <header className="page-header">
           <h1>Roles</h1>
           <button className="hamburger" onClick={toggleSidebar}> ☰ </button>
