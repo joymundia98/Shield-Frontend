@@ -40,6 +40,10 @@ export const AdminAccount = () => {
   const [roles, setRoles] = useState<any[]>([]); // To store roles fetched from API
   const [permissions, setPermissions] = useState<any[]>([]); // To store all permissions
 
+  // Sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
@@ -192,19 +196,21 @@ export const AdminAccount = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Make sure the token is passed in the header
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           role_id: roleId,
-          permission_ids: allPermissionIds, // Grant all permissions
+          permission_ids: allPermissionIds,
         }),
       });
 
-      // Check for successful permission assignment based on status code and message
-      if (permissionResponse.status === 200 || permissionResponse.status === 201 || permissionResponse.status === 204) {
-        const result = await permissionResponse.json(); // Assuming the response is JSON
+      console.log("Permission Assignment Response:", permissionResponse);
 
-        if (result.message === "Permissions successfully assigned to role") {
+      // Temporarily comment out the status check
+      /*
+      if (permissionResponse.status === 200 || permissionResponse.status === 201 || permissionResponse.status === 204) {
+        // Check if the message is the one we expect
+        if (permissionResponse.message === "Permissions successfully assigned to role") {
           // Permissions were successfully assigned
           setShowSuccessCard(true);
           setTimeout(() => {
@@ -212,13 +218,25 @@ export const AdminAccount = () => {
             setShowModal(true); // Show modal after success
           }, 2000);
         } else {
-          // If the response message is not the success message
           setErrorMessage("Failed to assign permissions.");
         }
       } else {
-        // In case the status is not 200 but still response body has a message
         setErrorMessage("Failed to assign permissions.");
       }
+      */
+
+      // Check if the message matches the expected success message
+      if (permissionResponse.message === "Permissions successfully assigned to role") {
+        // Permissions were successfully assigned
+        setShowSuccessCard(true);
+        setTimeout(() => {
+          setShowSuccessCard(false);
+          setShowModal(true); // Show modal after success
+        }, 2000);
+      } else {
+        setErrorMessage("Failed to assign permissions.");
+      }
+
     }
   } catch (err: any) {
     console.error(err);
@@ -230,14 +248,40 @@ export const AdminAccount = () => {
   // Handle modal choice for redirection
   const handleRedirect = (choice: string) => {
     setShowModal(false); // Close the modal
-    if (choice === "profile") {
-      navigate("/Organization/edittableProfile", { state: { organizationID: organizationId } }); // Redirect to the Organization Profile
-    } else if (choice === "dashboard") {
-      navigate("/dashboard"); // Redirect to the SCI-ELD ERP Platform Dashboard
+    if (choice === "AdminAccounts") {
+      navigate("/Organization/orgAdminAccounts", { state: { organizationID: organizationId } }); // Redirect to the Organization Profile
+    } else if (choice === "AdminLogin") {
+      navigate("/login"); // Redirect to the SCI-ELD ERP Platform Dashboard
     }
   };
 
-  return (
+    return (
+
+    <div className="dashboard-wrapper">
+      {/* SIDEBAR */}
+      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        <div className="close-wrapper">
+          <div className="toggle close-btn">
+            <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
+            <span className="button"></span>
+            <span className="label">X</span>
+          </div>
+        </div>
+
+        <h2>ORG MANAGER</h2>
+        <a href="/Organization/edittableProfile">Profile</a>
+        <a href="/Organization/orgLobby">The Lobby</a>
+        <a href="/Organization/orgAdminAccounts" className="active">Admin Accounts</a>
+        <a href="/Organization/ListedAccounts">Manage Accounts</a>
+        <a href="/Organization/roles">Roles</a>
+        <a href="/Organization/permissions">Permissions</a>
+        <hr className="sidebar-separator" />
+        <a href="/Organization/to_SCI-ELD_ERP" className="return-main">To SCI-ELD ERP</a>
+        <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}> ➜ Logout </a>
+      </div>
+
+      <button className="hamburger" onClick={toggleSidebar}> ☰ </button>
+
     <div className="login-parent-container">
       <div className="loginContainer">
         <div className="header">
@@ -316,16 +360,17 @@ export const AdminAccount = () => {
           <div className="success-modal">
             <h2>You have successfully created an account! How would you like to proceed?</h2>
             <div className="modal-buttons">
-              <button className="modal-btn" onClick={() => handleRedirect("profile")}>
-                Go to Organization Profile
+              <button className="modal-btn" onClick={() => handleRedirect("AdminAccounts")}>
+                Go to Admin Accounts
               </button>&emsp;
-              <button className="modal-btn" onClick={() => handleRedirect("dashboard")}>
-                Go to SCI-ELD ERP Platform
+              <button className="modal-btn" onClick={() => handleRedirect("AdminLogin")}>
+                Login with Admin Account
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
+  </div>
   );
 };

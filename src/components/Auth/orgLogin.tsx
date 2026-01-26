@@ -88,8 +88,8 @@ const onSubmit = async (data: OrgLoginFormData) => {
       setShowSuccessCard(true);
       setTimeout(() => {
         setShowSuccessCard(false);
-        console.log('➡️ Navigating to /Organization/Lobby');
-        navigate('/Organization/orgLobby');
+        console.log('➡️ Navigating to /Organization/orgAdminAccounts');
+        navigate('/Organization/orgAdminAccounts');
       }, 2000); // Adjust timeout as necessary
     } else {
       setError(response.data.message || 'Invalid credentials.');
@@ -175,7 +175,7 @@ const onSubmit = async (data: OrgLoginFormData) => {
       {showSuccessCard && (
         <div className="success-card">
           <h3>✅ Login Successful!</h3>
-          <p>Redirecting to Lobby...</p>
+          <p>Redirecting to Admin Accounts...</p>
         </div>
       )}
     </div>
