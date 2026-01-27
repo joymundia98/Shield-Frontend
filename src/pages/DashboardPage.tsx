@@ -132,15 +132,15 @@ const DashboardPage: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
 
   const [kpi, setKpi] = useState<KPI>({
-    totalMembers: 1248,
+    totalMembers: 0,
     weeklyAttendance: 0,
     monthlyGiving: 0,
-    activeVolunteers: 75,
+    activeVolunteers: 0,
   });
 
   const [chartData, _setChartData] = useState<ChartData>({
     attendance: [0, 0, 0, 0],
-    donations: [15000, 8000, 5000, 6000],
+    donations: [0, 0, 0, 0],
   });
 
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
