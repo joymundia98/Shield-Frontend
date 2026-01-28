@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
 import { authFetch, orgFetch } from "../../utils/api";  // Import authFetch and orgFetch
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -22,6 +23,7 @@ interface Member {
 
 const ChurchMembersDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
 
@@ -193,15 +195,16 @@ useEffect(() => {
         </div>
 
         <h2>CONGREGATION</h2>
-        <a href="/congregation/dashboard">Dashboard</a>
-        <a href="/congregation/members" className="active">Members</a>
-        <a href="/congregation/attendance">Attendance</a>
-        <a href="/congregation/followups">Follow-ups</a>
-        <a href="/congregation/visitors">Visitors</a>
-        <a href="/congregation/converts">New Converts</a>
+        {/* Conditional Sidebar Links Based on Permissions */}
+        {hasPermission("View Congregation Dashboard") && <a href="/congregation/dashboard">Dashboard</a>}
+        {hasPermission("View Members Summary") && <a href="/congregation/members" className="active">Members</a>}
+        {hasPermission("Record Congregation Attendance") && <a href="/congregation/attendance">Attendance</a>}
+        {hasPermission("View Congregation Follow-ups") && <a href="/congregation/followups">Follow-ups</a>}
+        {hasPermission("View Visitor Dashboard") && <a href="/congregation/visitors">Visitors</a>}
+        {hasPermission("View Converts Dashboard") && <a href="/congregation/converts">New Converts</a>}
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
         <a
           href="/"
           className="logout-link"

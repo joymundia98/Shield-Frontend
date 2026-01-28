@@ -1,22 +1,24 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ReusableHeader from '../../components/reusableHeader';
+import { useAuth } from '../../hooks/useAuth';  // Import useAuth to access hasPermission
 
 const HRHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();  // Get the current location
-
+  const { hasPermission } = useAuth();  // Access the hasPermission function from the context
+  
   // Define the HR links
   const hrLinks = [
-    { name: "← Back to Main", href: "/dashboard" },
-    { name: "Dashboard", href: "/hr/dashboard" },
-    { name: "Staff Directory", href: "/hr/staffDirectory" },
-    { name: "Payroll", href: "/hr/payroll" },
-    { name: "Leave Management", href: "/hr/leave" },
-    { name: "Leave Applications", href: "/hr/leaveApplications" },
-    { name: "Departments", href: "/hr/departments" },
+    { name: "← Back to Main", href: "/dashboard", permission: "View Main Dashboard"  },
+    { name: "Dashboard", href: "/hr/dashboard", permission: "View HR Dashboard"  },
+    { name: "Staff Directory", href: "/hr/staffDirectory", permission: "View Staff Directory"  },
+    { name: "Payroll", href: "/hr/payroll", permission: "Manage HR Payroll"  },
+    { name: "Leave Management", href: "/hr/leave", permission: "Manage Leave"  },
+    { name: "Leave Applications", href: "/hr/leaveApplications", permission: "View Leave Applications"  },
+    { name: "Departments", href: "/hr/departments", permission: "View Departments"  },
     // Add logout link with a special href
-    { name: "➜] Logout", href: "#logout" },
+    { name: "➜] Logout", href: "#logout", permission: "logout" },  // Special case for logout
   ];
 
   const handleLogout = (e: React.MouseEvent) => {
@@ -25,11 +27,20 @@ const HRHeader: React.FC = () => {
     navigate('/'); // Navigate to the LandingPage ("/")
   };
 
+  // Filter the links based on permissions
+  const filteredLinks = hrLinks.filter(link => {
+    // For logout link, we don't need permission check, just show it
+    if (link.permission === "logout") return true;
+    
+    // For other links, check if the user has the required permission
+    return hasPermission(link.permission);
+  });
+
   return (
     <div className="hr-header">
       {/* Pass hrLinks, location, and logout handler to ReusableHeader */}
       <ReusableHeader
-        links={hrLinks}
+        links={filteredLinks}
         location={location}  // Pass location to check for active link
         onLogout={handleLogout}  // Pass handleLogout as a prop
       />

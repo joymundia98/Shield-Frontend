@@ -1,22 +1,24 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ReusableHeader from '../../components/reusableHeader';
+import { useAuth } from '../../hooks/useAuth';  // Import useAuth to access hasPermission
 
 const FinanceHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();  // Get the current location
-
+  const { hasPermission } = useAuth();  // Access the hasPermission function from the context
+  
   // Define the finance links
   const financeLinks = [
-    { name: "← Back to Main", href: "/dashboard" },
-    { name: "Dashboard", href: "/finance/dashboard" },
-    { name: "Track Income", href: "/finance/incometracker" },
-    { name: "Track Expenses", href: "/finance/expensetracker" },
-    { name: "Budget", href: "/finance/budgets" },
-    { name: "Payroll", href: "/finance/payroll" },
-    { name: "Finance Categories", href: "/finance/financeCategory" },
+    { name: "← Back to Main", href: "/dashboard", permission: "View Main Dashboard" },
+    { name: "Dashboard", href: "/finance/dashboard", permission: "View Finance Dashboard" },
+    { name: "Track Income", href: "/finance/incometracker", permission: "Manage Income Tracker" },
+    { name: "Track Expenses", href: "/finance/expensetracker", permission: "Manage Expense Tracker" },
+    { name: "Budget", href: "/finance/budgets", permission: "View Budgets Summary" },
+    { name: "Payroll", href: "/finance/payroll", permission: "Manage Payroll" },
+    { name: "Finance Categories", href: "/finance/financeCategory", permission: "View Finance Categories" },
     // Add logout link with a special href
-    { name: "➜] Logout", href: "#logout" },
+    { name: "➜] Logout", href: "#logout", permission: "logout" },  // Special case for logout
   ];
 
   const handleLogout = (e: React.MouseEvent) => {
@@ -25,11 +27,20 @@ const FinanceHeader: React.FC = () => {
     navigate('/'); // Navigate to the LandingPage ("/")
   };
 
+  // Filter the links based on permissions
+  const filteredLinks = financeLinks.filter(link => {
+    // For logout link, we don't need permission check, just show it
+    if (link.permission === "logout") return true;
+    
+    // For other links, check if the user has the required permission
+    return hasPermission(link.permission);
+  });
+
   return (
     <div className="finance-header">
       {/* Pass financeLinks, location, and logout handler to ReusableHeader */}
       <ReusableHeader
-        links={financeLinks}
+        links={filteredLinks}
         location={location}  // Pass location to check for active link
         onLogout={handleLogout}  // Pass handleLogout as a prop
       />
