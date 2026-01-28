@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './HeaderNav.css';
-import { useAuth } from "../hooks/useAuth"; // Import the useAuth hook to get permissions
+import { useAuth } from "../hooks/useAuth"; // Import useAuth hook
 
 type NavLink = {
   name: string;
@@ -16,6 +16,7 @@ type NavItem = {
 
 const HeaderNav: React.FC = () => {
   const { hasPermission } = useAuth();  // Access hasPermission from context or hook
+  const navigate = useNavigate();  // To programmatically navigate after logout
   const navItems: NavItem[] = [
     {
       label: "Congregation",
@@ -97,32 +98,45 @@ const HeaderNav: React.FC = () => {
     setActiveItem(to);
   };
 
+  // Handle logout
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();  // Prevent default anchor behavior
+    localStorage.clear(); // Replace with actual logout logic (e.g., clearing auth tokens)
+    navigate('/'); // Redirect to the login page after logout
+  };
+
   // Render the menu by filtering links based on permission
   const renderMenu = (items: NavItem[]) => {
     return (
       <ul className="header-nav">
-        {items.map((item, index) => (
-          <li
-            key={index}
-            className={activeItem.includes(item.links[0].href) ? 'active' : ''}
-          >
-            <span>{item.label}</span>
-            <ul>
-              {item.links
-                .filter((link) => hasPermission(link.permission))  // Filter links by permission
-                .map((link, idx) => (
-                  <li
-                    key={idx}
-                    className={activeItem === link.href ? 'active' : ''}
-                  >
+        {items.map((item, index) => {
+          // Filter links based on permissions
+          const visibleLinks = item.links.filter(link => hasPermission(link.permission));
+          
+          // If no links are visible, don't render the category
+          if (visibleLinks.length === 0) return null;
+
+          return (
+            <li key={index} className={activeItem.includes(item.links[0].href) ? 'active' : ''}>
+              <span>{item.label}</span>
+              <ul>
+                {visibleLinks.map((link, idx) => (
+                  <li key={idx} className={activeItem === link.href ? 'active' : ''}>
                     <Link to={link.href} onClick={() => handleClick(link.href)}>
                       {link.name}
                     </Link>
                   </li>
                 ))}
-            </ul>
-          </li>
-        ))}
+              </ul>
+            </li>
+          );
+        })}
+        {/* Always visible logout link */}
+        <li className="logout">
+          <a href="#logout" onClick={handleLogout}>
+            ➜] &nbsp; Logout
+          </a>
+        </li>
       </ul>
     );
   };

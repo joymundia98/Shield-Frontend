@@ -154,10 +154,14 @@ const DashboardPage: React.FC = () => {
   const givingChartRef = useRef<Chart | null>(null);
 
   // Filter the links based on permissions
-  const filteredDropdowns = dropdowns.map((dropdown) => ({
-    ...dropdown,
-    links: dropdown.links.filter(link => hasPermission(link.permission))  // Filter links based on permission
-  }));
+  // Filter the dropdowns based on permissions and check if there are any visible links
+    const filteredDropdowns = dropdowns
+      .map((dropdown) => ({
+        ...dropdown,
+        links: dropdown.links.filter((link) => hasPermission(link.permission)),
+      }))
+      .filter((dropdown) => dropdown.links.length > 0);  // Remove dropdowns with no valid links
+
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -489,17 +493,14 @@ const DashboardPage: React.FC = () => {
               className="dropdown-container"
               style={{ display: dropdownStates[dropdown.label] ? "block" : "none" }}
             >
-              {dropdown.links.filter(link => hasPermission(link.permission))  // Filter links based on permission
-                .map((link) => (
-                  <a key={link.name} href={link.href}>
-                    {link.name}
-                  </a>
-                ))
-              }
+              {dropdown.links.map((link) => (
+                <a key={link.name} href={link.href}>
+                  {link.name}
+                </a>
+              ))}
             </div>
           </div>
         ))}
-
 
         <br />
         <br />
