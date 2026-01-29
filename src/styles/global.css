@@ -2165,3 +2165,145 @@
   background-color: #d32f2f; /* Darker red on hover */
 }
 
+/* ----------------UPCOMING CARD IN PROGRAMS DASHBOARD ---------------- */
+:upcominEventRoot {
+  --bg-gradient: linear-gradient(135deg, #fbfbfb, #e2e2e2);
+  --card-bg: rgba(255, 255, 255, 0.18);
+  --glass-border: rgba(255, 255, 255, 0.35);
+  --text-dark: #2b2b2b;
+  --accent: #000000;
+}
+
+.upcoming-program {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.upcoming-program .upcominEvent-card {
+  width: 100%;
+  max-width: 60rem;
+  background: var(--card-bg);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  padding: 2rem;
+  color: var(--text-dark);
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 50px 100px -20px,
+              rgba(0, 0, 0, 0.3) 0px 30px 60px -30px,
+              rgba(10, 37, 64, 0.35) 0px -2px 6px 0px inset;
+  position: relative;
+}
+
+.upcoming-program .hourglass {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  width: clamp(32px, 6vw, 60px);
+  height: auto;
+  opacity: 0.75;
+  pointer-events: none;
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.upcoming-program .upcominEvent-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.upcoming-program .upcominEvent-desc {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  margin-bottom: 1.5rem;
+}
+
+.upcoming-program .upcominEvent-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.upcoming-program .meta-box {
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 14px;
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px,
+              rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+}
+
+.upcoming-program .meta-box span {
+  display: block;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+  color: #02007e;
+  margin-bottom: 0.2rem;
+}
+
+.upcoming-program .agenda {
+  margin-bottom: 1.8rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.upcoming-program .agenda strong {
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.upcoming-program .countdown {
+  background: rgba(0, 0, 0, 0.097);
+  color: var(--accent);
+  border-radius: 18px;
+  padding: 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px,
+              rgba(0, 0, 0, 0.23) 0px 3px 6px;
+}
+
+.upcoming-program .time-box {
+  flex: 1;
+}
+
+.upcoming-program .time-box h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.upcoming-program .time-box span {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.8;
+}
+
+@media (max-width: 480px) {
+  .upcoming-program .hourglass {
+    width: 32px;
+    top: 0.8rem;
+    right: 0.8rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .upcoming-program .upcominEvent-title {
+    font-size: 1.5rem;
+  }
+}

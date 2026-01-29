@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+import { authFetch, orgFetch } from "../../utils/api";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -45,7 +45,9 @@ const RecordAttendance: React.FC = () => {
 
   const [services, setServices] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<number | null>(null);
-  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [attendanceDate, setAttendanceDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
 
   const getCategory = (age: number): Category => {
     if (age < 18) return "Children";
@@ -58,25 +60,29 @@ const RecordAttendance: React.FC = () => {
     const fetchPeople = async () => {
       try {
         const [membersRes, visitorsRes] = await Promise.all([
-          axios.get(`${baseURL}/api/members`),
-          axios.get(`${baseURL}/api/visitor`)
+          authFetch(`${baseURL}/api/members`),
+          authFetch(`${baseURL}/api/visitor`)
         ]);
 
-        const allMembers: Person[] = membersRes.data.map((m: any) => ({
-          id: m.member_id,
-          name: m.full_name,
-          age: m.age,
-          gender: m.gender,
-          type: "member",
-        }));
+        const allMembers: Person[] = Array.isArray(membersRes?.data)
+          ? membersRes.data.map((m: any) => ({
+              id: m.member_id,
+              name: m.full_name,
+              age: m.age,
+              gender: m.gender,
+              type: "member",
+            }))
+          : [];
 
-        const allVisitors: Person[] = visitorsRes.data.map((v: any) => ({
-          id: v.id,
-          name: v.name,
-          age: v.age,
-          gender: v.gender,
-          type: "visitor",
-        }));
+        const allVisitors: Person[] = Array.isArray(visitorsRes)
+          ? visitorsRes.map((v: any) => ({
+              id: v.id,
+              name: v.name,
+              age: v.age,
+              gender: v.gender,
+              type: "visitor",
+            }))
+          : [];
 
         const allPeople = [...allMembers, ...allVisitors];
 
@@ -93,7 +99,44 @@ const RecordAttendance: React.FC = () => {
         setAttendance(initialAttendance);
 
       } catch (err) {
-        console.error("Error fetching people:", err);
+        console.error("authFetch failed, falling back to orgFetch:", err);
+        try {
+          const [membersRes, visitorsRes] = await Promise.all([
+            orgFetch(`${baseURL}/api/members`),
+            orgFetch(`${baseURL}/api/visitor`)
+          ]);
+
+          const allMembers: Person[] = Array.isArray(membersRes?.data)
+            ? membersRes.data.map((m: any) => ({
+                id: m.member_id,
+                name: m.full_name,
+                age: m.age,
+                gender: m.gender,
+                type: "member",
+              }))
+            : [];
+
+          const allVisitors: Person[] = Array.isArray(visitorsRes)
+            ? visitorsRes.map((v: any) => ({
+                id: v.id,
+                name: v.name,
+                age: v.age,
+                gender: v.gender,
+                type: "visitor",
+              }))
+            : [];
+
+          const allPeople = [...allMembers, ...allVisitors];
+
+          const filtered = allPeople
+            .filter(p => getCategory(p.age) === category && p.gender === gender)
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+          setPeople(filtered);
+        } catch (error) {
+          console.error("Error fetching people:", error);
+          setPeople([]);
+        }
       }
     };
 
@@ -103,10 +146,17 @@ const RecordAttendance: React.FC = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await axios.get(`${baseURL}/api/services`);
-        setServices(res.data);
+        const res = await authFetch(`${baseURL}/api/services`);
+        setServices(Array.isArray(res) ? res : []);
       } catch (err) {
-        console.error("Error fetching services:", err);
+        console.error("authFetch failed, falling back to orgFetch:", err);
+        try {
+          const res = await orgFetch(`${baseURL}/api/services`);
+          setServices(Array.isArray(res) ? res : []);
+        } catch (error) {
+          console.error("Error fetching services:", error);
+          setServices([]);
+        }
       }
     };
 
@@ -131,24 +181,30 @@ const RecordAttendance: React.FC = () => {
       service_id: selectedService,
     }));
 
-    // Log the request to debug the data being sent
     console.log("Attendance records being sent:", records);
 
     try {
-      const response = await axios.post(`${baseURL}/api/congregation/attendance`, { records });
-      console.log("Server response:", response); // Log the response from the backend
+      const response = await authFetch(
+        `${baseURL}/api/congregation/attendance`,
+        { method: "POST", data: { records } }
+      );
+      console.log("Server response:", response);
       alert("Attendance saved successfully!");
       navigate("/congregation/attendance");
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        console.error("Error saving attendance:", err.message);
-        if (err.response) {
-          console.error("Response data:", err.response.data);
-        }
-      } else {
-        console.error("Unexpected error:", err);
+      console.error("authFetch failed, falling back to orgFetch:", err);
+      try {
+        const response = await orgFetch(
+          `${baseURL}/api/congregation/attendance`,
+          { method: "POST", data: { records } }
+        );
+        console.log("Server response:", response);
+        alert("Attendance saved successfully!");
+        navigate("/congregation/attendance");
+      } catch (error) {
+        console.error("Unexpected error:", error);
+        alert("Failed to save attendance.");
       }
-      alert("Failed to save attendance.");
     }
   };
 
@@ -183,7 +239,9 @@ const RecordAttendance: React.FC = () => {
         <header>
           <h1>Record Attendance</h1>
           <br />
-          <button className="add-btn" onClick={() => navigate("/congregation/attendance")}>← Back to Attendance Records</button>
+          <button className="add-btn" onClick={() => navigate("/congregation/attendance")}>
+            ← Back to Attendance Records
+          </button>
         </header>
         <br /><br />
 
@@ -253,7 +311,9 @@ const RecordAttendance: React.FC = () => {
           </div>
         </div>
 
-        <button className="add-btn" style={{ marginTop: 20 }} onClick={saveAttendance}>Save Attendance</button>
+        <button className="add-btn" style={{ marginTop: 20 }} onClick={saveAttendance}>
+          Save Attendance
+        </button>
       </div>
     </div>
   );

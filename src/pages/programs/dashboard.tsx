@@ -11,13 +11,16 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 interface Event {
   id: number;
   name: string;
+  description: string;
   date: string;
   time: string;
+  venue: string;
   status: "Scheduled" | "Completed" | "Upcoming";
   category_id: number;
   event_type: string;
-  link: string;
+  notes: string;
 }
+
 
 export interface Program {
   id: number;
@@ -60,7 +63,7 @@ const ProgramsDashboard: React.FC = () => {
           name: program.name,
           description: program.description,
           date: program.date.slice(0, 10), // Extract the date part (YYYY-MM-DD)
-          start: program.time, // Use the time field for start time
+          time: program.time, // Use the time field for start time
           end: "17:00", // Default end time (adjust if you have specific end times)
           venue: program.venue,
           event_type: program.event_type,
@@ -123,6 +126,49 @@ const ProgramsDashboard: React.FC = () => {
     5: "#1D1411",    // Other
   };
 
+  // Upcoming Program Countdown State
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [nextEvent, setNextEvent] = useState<Event | null>(null);
+
+  // Compute the next upcoming program
+  useEffect(() => {
+    const now = new Date();
+    const upcomingEvents = events
+      .filter((e) => new Date(`${e.date}T${e.time}`) > now)
+      .sort(
+        (a, b) =>
+          new Date(`${a.date}T${a.time}`).getTime() -
+          new Date(`${b.date}T${b.time}`).getTime()
+      );
+    setNextEvent(upcomingEvents[0] || null);
+  }, [events]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!nextEvent) return;
+
+    const interval = setInterval(() => {
+      const nowTime = new Date().getTime();
+      const eventTime = new Date(`${nextEvent.date}T${nextEvent.time}`).getTime();
+      const diff = eventTime - nowTime;
+
+      if (diff <= 0) {
+        clearInterval(interval);
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      setCountdown({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / (1000 * 60)) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [nextEvent]);
+
   return (
     <div className="dashboard-wrapper">
       <button className="hamburger" onClick={toggleSidebar}>
@@ -174,29 +220,91 @@ const ProgramsDashboard: React.FC = () => {
           <div className="kpi-card">
             <h3>Life Events</h3>
             <p>{groupCounts["Life Events"]}</p>
-            <div className="category-circle" style={{ backgroundColor: categoryColors[1] }}></div> {/* Circle for Life Events */}
+            <div className="category-circle" style={{ backgroundColor: categoryColors[1] }}></div>
           </div>
           <div className="kpi-card">
             <h3>Church Business Events</h3>
             <p>{groupCounts["Church Business Events"]}</p>
-            <div className="category-circle" style={{ backgroundColor: categoryColors[2] }}></div> {/* Circle for Church Business Events */}
+            <div className="category-circle" style={{ backgroundColor: categoryColors[2] }}></div>
           </div>
           <div className="kpi-card">
             <h3>Community Events</h3>
             <p>{groupCounts["Community Events"]}</p>
-            <div className="category-circle" style={{ backgroundColor: categoryColors[3] }}></div> {/* Circle for Community Events */}
+            <div className="category-circle" style={{ backgroundColor: categoryColors[3] }}></div>
           </div>
           <div className="kpi-card">
             <h3>Spiritual Events</h3>
             <p>{groupCounts["Spiritual Events"]}</p>
-            <div className="category-circle" style={{ backgroundColor: categoryColors[4] }}></div> {/* Circle for Spiritual Events */}
+            <div className="category-circle" style={{ backgroundColor: categoryColors[4] }}></div>
           </div>
           <div className="kpi-card">
             <h3>Other Events</h3>
             <p>{groupCounts["Other"]}</p>
-            <div className="category-circle" style={{ backgroundColor: categoryColors[5] }}></div> {/* Circle for Other Events */}
+            <div className="category-circle" style={{ backgroundColor: categoryColors[5] }}></div>
           </div>
         </div>
+
+        {/* Upcoming Program Section */}
+        {nextEvent && (
+          <div className="upcoming-program">
+            <div className="upcominEvent-card">
+              <img src="/hourglass.png" alt="Hourglass" className="hourglass" />
+
+              <h1 className="upcominEvent-title">
+                Just around the corner: {nextEvent.name}
+              </h1>
+              <p className="upcominEvent-desc">{nextEvent.description}</p>
+
+              <div className="upcominEvent-meta">
+                <div className="meta-box">
+                  <span>Date</span>
+                  {new Date(nextEvent.date).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </div>
+                <div className="meta-box">
+                  <span>Time</span>
+                  {nextEvent.time}
+                </div>
+
+                <div className="meta-box">
+                  <span>Venue</span>
+                  {nextEvent.venue}
+                </div>
+                <div className="meta-box">
+                  <span>Status</span>
+                  {nextEvent.status}
+                </div>
+              </div>
+
+              <div className="agenda">
+                <strong>Agenda</strong>
+                {nextEvent.notes || "Details will be provided soon."}
+              </div>
+
+              <div className="countdown">
+                <div className="time-box">
+                  <h2>{countdown.days}</h2>
+                  <span>Days</span>
+                </div>
+                <div className="time-box">
+                  <h2>{countdown.hours}</h2>
+                  <span>Hours</span>
+                </div>
+                <div className="time-box">
+                  <h2>{countdown.minutes}</h2>
+                  <span>Minutes</span>
+                </div>
+                <div className="time-box">
+                  <h2>{countdown.seconds}</h2>
+                  <span>Seconds</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="kpi-card">
           <h3>Event Calendar</h3>
