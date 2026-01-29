@@ -544,3 +544,21 @@ body:not(.sidebar-open) .close-wrapper {
   padding: 8px;
 }
 
+/* Dark mode based on user's OS/browser preference */
+@media (prefers-color-scheme: dark) {
+  .select-field select {
+    background: #1D1411;      /* dark background */
+    color: #f2f2f2;           /* light text */
+    border-bottom: 2px solid #5C4736; /* darker accent */
+  }
+
+  .select-field select option {
+    background: #1D1411;      /* option background */
+    color: #f2f2f2;           /* option text */
+  }
+
+  .select-field::after {
+    color: #ccc;              /* lighter arrow for dark bg */
+  }
+}
+
