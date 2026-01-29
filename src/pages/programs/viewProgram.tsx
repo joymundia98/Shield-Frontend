@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import "../../styles/global.css";
-import ProgramsHeader from './ProgramsHeader';
+import ProgramsHeader from "./ProgramsHeader";
+import { authFetch, orgFetch } from "../../utils/api";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -60,19 +60,29 @@ const ViewProgramPage: React.FC = () => {
   /* Sidebar body lock */
   useEffect(() => {
     const body = document.body;
-    if (sidebarOpen) body.classList.add("sidebar-open");
-    else body.classList.remove("sidebar-open");
+    sidebarOpen
+      ? body.classList.add("sidebar-open")
+      : body.classList.remove("sidebar-open");
 
     return () => body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
   /* =========================
+     Auth / Org Fetch Helper
+  ========================= */
+  const fetchWithAuthFallback = async (url: string, options?: RequestInit) => {
+    try {
+      return await authFetch(url, options);
+    } catch (err) {
+      console.warn("authFetch failed, falling back to orgFetch");
+      return await orgFetch(url, options);
+    }
+  };
+
+  /* =========================
      Fetch Program by ID
   ========================= */
   useEffect(() => {
-
-    const baseURL = import.meta.env.VITE_BASE_URL;
-
     const fetchProgram = async () => {
       if (!programId) {
         setError("Program ID is missing");
@@ -82,10 +92,10 @@ const ViewProgramPage: React.FC = () => {
 
       try {
         setLoading(true);
-        const res = await axios.get(
+        const data = await fetchWithAuthFallback(
           `${baseURL}/api/programs/${programId}`
         );
-        setProgram(res.data);
+        setProgram(data);
       } catch (err: any) {
         setError(err.message || "Error fetching program details");
       } finally {
@@ -111,13 +121,14 @@ const ViewProgramPage: React.FC = () => {
     if (!window.confirm("Are you sure you want to delete this program?")) return;
 
     try {
-      await axios.delete(
-        `${baseURL}/api/programs/${program.id}`
+      await fetchWithAuthFallback(
+        `${baseURL}/api/programs/${program.id}`,
+        { method: "DELETE" }
       );
       alert("Program deleted successfully.");
       navigate("/programs/RegisteredPrograms");
     } catch (err: any) {
-      alert("Failed to delete program: " + err.message);
+      alert("Failed to delete program.");
     }
   };
 
@@ -171,8 +182,8 @@ const ViewProgramPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-
-        <ProgramsHeader/><br/>
+        <ProgramsHeader />
+        <br />
 
         <h1>Program Details</h1>
 
