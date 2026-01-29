@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
-// Declare the base URL here
+// Base URL
 const baseURL = import.meta.env.VITE_BASE_URL;
+const BACKEND_URL = `${baseURL}/api`;
 
 interface NewExpense {
   subcategory: number | "";
@@ -32,12 +34,20 @@ interface Department {
   name: string;
 }
 
-const BACKEND_URL = `${baseURL}/api`;
+// Helper function: authFetch with orgFetch fallback
+const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
+  try {
+    return await authFetch(url, options);
+  } catch (err) {
+    console.warn("authFetch failed, falling back to orgFetch", err);
+    return await orgFetch(url, options);
+  }
+};
 
 const AddExpense: React.FC = () => {
   const navigate = useNavigate();
 
-  // ---------------- SIDEBAR ----------------
+  // Sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -47,6 +57,7 @@ const AddExpense: React.FC = () => {
       : document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  // Form state
   const [form, setForm] = useState<NewExpense>({
     subcategory: "",
     department: "",
@@ -54,7 +65,7 @@ const AddExpense: React.FC = () => {
     description: "",
     amount: "",
     attachments: [],
-    extraFields: {}
+    extraFields: {},
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -62,33 +73,50 @@ const AddExpense: React.FC = () => {
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
 
-  // Get logged-in user ID
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.id;
 
+  // Fetch categories
   useEffect(() => {
-    fetch(`${BACKEND_URL}/finance/expense_categories`)
-      .then(res => res.json())
-      .then(data => setCategories(data));
+    const fetchCategories = async () => {
+      try {
+        const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expense_categories`);
+        setCategories(data);
+      } catch (err) {
+        console.error("Failed to fetch categories:", err);
+      }
+    };
+    fetchCategories();
   }, []);
 
+  // Fetch subcategories
   useEffect(() => {
-    fetch(`${BACKEND_URL}/finance/expense_subcategories`)
-      .then(res => res.json())
-      .then(data => setAllSubcategories(data));
+    const fetchSubcategories = async () => {
+      try {
+        const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expense_subcategories`);
+        setAllSubcategories(data);
+      } catch (err) {
+        console.error("Failed to fetch subcategories:", err);
+      }
+    };
+    fetchSubcategories();
   }, []);
 
+  // Fetch departments
   useEffect(() => {
-    fetch(`${BACKEND_URL}/departments`)
-      .then(res => res.json())
-      .then(data => setDepartments(data))
-      .catch(err => console.error("Failed to fetch departments:", err));
+    const fetchDepartments = async () => {
+      try {
+        const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/departments`);
+        setDepartments(data);
+      } catch (err) {
+        console.error("Failed to fetch departments:", err);
+      }
+    };
+    fetchDepartments();
   }, []);
 
   const handleCategoryChange = (categoryId: number) => {
-    const filtered = allSubcategories.filter(
-      (sub) => sub.category_id === categoryId
-    );
+    const filtered = allSubcategories.filter((sub) => sub.category_id === categoryId);
     setSubcategories(filtered);
     setForm({ ...form, subcategory: "", extraFields: {} });
   };
@@ -101,6 +129,11 @@ const AddExpense: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!userId) {
+      alert("User not logged in");
+      return;
+    }
+
     const payload = {
       subcategory_id: form.subcategory,
       department_id: form.department,
@@ -108,33 +141,35 @@ const AddExpense: React.FC = () => {
       description: form.description,
       amount: form.amount,
       user_id: userId,
-      status: "Pending"
+      status: "Pending",
     };
 
     try {
-      const res = await fetch(`${BACKEND_URL}/finance/expenses`, {
+      const res = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expenses`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const error = await res.json();
-        alert("Error: " + error.message);
-        return;
+      console.log("Response:", res);
+
+      if (res && res.id) {
+        alert("Expense submitted successfully!");
+        navigate("/finance/expensetracker");
+      } else {
+        const errorMessage = res.message || "There was an issue submitting the expense.";
+        console.error("Error response:", errorMessage);
+        alert(errorMessage);
       }
 
-      alert("Expense submitted successfully!");
-      navigate("/finance/expensetracker");
     } catch (err) {
-      console.error("Failed to submit expense:", err);
-      alert("Server error");
+      console.error("Fetch error:", err);
+      alert("Server error or network issue");
     }
   };
 
   return (
     <div className="dashboard-wrapper">
-      
       {/* ---------------- SIDEBAR ---------------- */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
         <div className="close-wrapper">
@@ -146,7 +181,6 @@ const AddExpense: React.FC = () => {
         </div>
 
         <h2>FINANCE</h2>
-
         <a href="/finance/dashboard">Dashboard</a>
         <a href="/finance/incometracker">Track Income</a>
         <a href="/finance/expensetracker" className="active">Track Expenses</a>
@@ -155,10 +189,7 @@ const AddExpense: React.FC = () => {
         <a href="/finance/financeCategory">Finance Categories</a>
 
         <hr className="sidebar-separator" />
-
-        <a href="/dashboard" className="return-main">
-          ← Back to Main Dashboard
-        </a>
+        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
 
         <a
           href="/"
@@ -175,23 +206,17 @@ const AddExpense: React.FC = () => {
 
       {/* ---------------- MAIN CONTENT ---------------- */}
       <div className="dashboard-content">
-
         <FinanceHeader />
-        
         <br/>
-        
         <header className="page-header expense-header">
-          
           <h1>Add Expense</h1>
           <button className="hamburger" onClick={toggleSidebar}>☰</button>
         </header>
 
         <div className="container">
           <h2 style={{ marginBottom: 20, textAlign: "center" }}>New Expense</h2>
-
           <form className="add-form-styling" onSubmit={handleSubmit}>
-            
-            {/* Category */}
+
             <label>Category</label>
             <select
               required
@@ -203,14 +228,11 @@ const AddExpense: React.FC = () => {
               ))}
             </select>
 
-            {/* Subcategory */}
             <label>Subcategory</label>
             <select
               required
               value={form.subcategory}
-              onChange={(e) =>
-                setForm({ ...form, subcategory: parseInt(e.target.value) })
-              }
+              onChange={(e) => setForm({ ...form, subcategory: parseInt(e.target.value) })}
             >
               <option value="">Select Subcategory</option>
               {subcategories.map(sub => (
@@ -218,14 +240,11 @@ const AddExpense: React.FC = () => {
               ))}
             </select>
 
-            {/* Department */}
             <label>Department</label>
             <select
               required
               value={form.department}
-              onChange={(e) =>
-                setForm({ ...form, department: parseInt(e.target.value) })
-              }
+              onChange={(e) => setForm({ ...form, department: parseInt(e.target.value) })}
             >
               <option value="">Select Department</option>
               {departments.map(dept => (
@@ -233,7 +252,6 @@ const AddExpense: React.FC = () => {
               ))}
             </select>
 
-            {/* Date */}
             <label>Date</label>
             <input
               type="date"
@@ -242,7 +260,6 @@ const AddExpense: React.FC = () => {
               onChange={(e) => setForm({ ...form, date: e.target.value })}
             />
 
-            {/* Description */}
             <label>Description</label>
             <textarea
               required
@@ -250,29 +267,24 @@ const AddExpense: React.FC = () => {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
 
-            {/* Amount */}
             <label>Amount</label>
             <input
               type="number"
               step="0.01"
               required
               value={form.amount}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  amount: e.target.value === "" ? "" : parseFloat(e.target.value)
-                })
-              }
+              onChange={(e) => setForm({
+                ...form,
+                amount: e.target.value === "" ? "" : parseFloat(e.target.value)
+              })}
             />
 
-            {/* Attachments */}
-              <label>Attachments</label>
-              <input
-                type="file"
-                multiple
-                onChange={(e) => handleAttachments(e.target.files)}
-              />
-
+            <label>Attachments</label>
+            <input
+              type="file"
+              multiple
+              onChange={(e) => handleAttachments(e.target.files)}
+            />
 
             <button type="submit" className="add-btn">Submit Expense</button>
           </form>

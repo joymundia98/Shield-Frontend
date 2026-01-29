@@ -25,10 +25,10 @@ const FinanceDashboard: React.FC = () => {
     }, [sidebarOpen]);
 
   // KPI values (static from your HTML demo)
-  const totalIncome = 12500;
-  const totalExpenses = 7200;
-  const netBalance = 5300;
-  const pendingPayroll = 2400;
+  const totalIncome = 0;
+  const totalExpenses = 0;
+  const netBalance = 0;
+  const pendingPayroll = 0;
 
   useEffect(() => {
     // Cleanup old chart
