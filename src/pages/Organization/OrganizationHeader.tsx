@@ -10,10 +10,10 @@ const OrganizationHeader: React.FC = () => {
   const organizationLinks = [
     { name: "Profile", href: "/Organization/edittableProfile" },
     { name: "The Lobby", href: "/Organization/orgLobby" },
-    { name: "Admin Accounts", href: "/Organization/orgAdminAccounts" },
     { name: "Manage Accounts", href: "/Organization/ListedAccounts" },
     { name: "Roles", href: "/Organization/roles" },
     { name: "Permissions", href: "/Organization/permissions" },
+    { name: "Admin Accounts", href: "/Organization/orgAdminAccounts" },
     { name: "To SCI-ELD ERP", href: "/Organization/to_SCI-ELD_ERP" },
     // Add logout link with a special href
     { name: "➜] Logout", href: "#logout" },
