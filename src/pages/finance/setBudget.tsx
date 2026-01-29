@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { AxiosError } from "axios";
 import "../../styles/global.css"; // Ensure your styles are being imported
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // <-- Added auth/org fetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
+
+// ---------------- Helper: Fetch with auth then fallback to org ----------------
+const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
+  try {
+    return await authFetch(url, options);
+  } catch (err) {
+    console.warn("authFetch failed, falling back to orgFetch", err);
+    return await orgFetch(url, options);
+  }
+};
 
 interface Budgets {
   [category: string]: { [subCategory: string]: number };
@@ -39,21 +48,21 @@ const SetBudgetsPage: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${baseURL}/api/finance/expense_categories`);
+        const res = await fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_categories`);
         const categories: { [category: string]: string[] } = {};
         const categoryIdsMap: { [category: string]: number } = {};
         
-        res.data.forEach((category: any) => {
+        res.forEach((category: any) => {
           categories[category.name] = []; // Initialize empty array for subcategories
           categoryIdsMap[category.name] = category.id; // Store category_id
         });
 
         // Fetch expense subcategories and group by category
-        const subCategoriesRes = await axios.get(`${baseURL}/api/finance/expense_subcategories`);
+        const subCategoriesRes = await fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_subcategories`);
         
         const subcategoryIdsMap: { [subCategory: string]: number } = {};
-        subCategoriesRes.data.forEach((subCategory: any) => {
-          const categoryName = res.data.find((cat: any) => cat.id === subCategory.category_id)?.name;
+        subCategoriesRes.forEach((subCategory: any) => {
+          const categoryName = res.find((cat: any) => cat.id === subCategory.category_id)?.name;
           if (categoryName) {
             categories[categoryName].push(subCategory.name);
             subcategoryIdsMap[subCategory.name] = subCategory.id; // Map subcategory name to ID
@@ -142,8 +151,12 @@ const SetBudgetsPage: React.FC = () => {
 
       // Send each budget entry separately
       for (const budgetData of dataToSave) {
-        const response = await axios.post(`${baseURL}/api/finance/budgets`, budgetData);
-        console.log("Response from backend:", response.data); // Log the response
+        const response = await fetchDataWithAuthFallback(`${baseURL}/api/finance/budgets`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(budgetData)
+        });
+        console.log("Response from backend:", response);
       }
 
       alert("Budgets have been saved successfully!");
@@ -152,14 +165,6 @@ const SetBudgetsPage: React.FC = () => {
       navigate("/finance/budgets");
     } catch (err: unknown) {
       console.error("Failed to save budgets:", err);
-
-      // Type narrow the error to AxiosError
-      if (err instanceof AxiosError) {
-        console.error("Error response:", err.response?.data);
-      } else {
-        console.error("Unexpected error:", err);
-      }
-
       alert("Error saving budgets. Please try again.");
     }
   };
