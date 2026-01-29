@@ -173,6 +173,7 @@ const RecordAttendance: React.FC = () => {
       return;
     }
 
+    // Send just the array, not wrapped in an object
     const records: AttendanceRecord[] = people.map(p => ({
       member_id: p.type === "member" ? p.id : null,
       visitor_id: p.type === "visitor" ? p.id : null,
@@ -181,12 +182,19 @@ const RecordAttendance: React.FC = () => {
       service_id: selectedService,
     }));
 
-    console.log("Attendance records being sent:", records);
+    console.log("📤 Attendance POST payload (array only)");
+    console.log("Endpoint:", `${baseURL}/api/congregation/attendance`);
+    console.log("Method: POST");
+    console.log(JSON.stringify(records, null, 2));
 
     try {
       const response = await authFetch(
         `${baseURL}/api/congregation/attendance`,
-        { method: "POST", data: { records } }
+        { 
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(records)
+        }
       );
       console.log("Server response:", response);
       alert("Attendance saved successfully!");
@@ -196,7 +204,11 @@ const RecordAttendance: React.FC = () => {
       try {
         const response = await orgFetch(
           `${baseURL}/api/congregation/attendance`,
-          { method: "POST", data: { records } }
+          { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(records)
+          }
         );
         console.log("Server response:", response);
         alert("Attendance saved successfully!");
@@ -206,6 +218,7 @@ const RecordAttendance: React.FC = () => {
         alert("Failed to save attendance.");
       }
     }
+
   };
 
   return (
