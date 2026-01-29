@@ -7,9 +7,48 @@ import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access u
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
+/* ---------------- AUTH FETCH / ORG FETCH ---------------- */
+// Attempt authFetch first, fallback to orgFetch if it fails
+const authFetch = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem("authToken");
+  if (!token) throw new Error("No auth token found");
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) throw new Error(`authFetch failed: ${res.status}`);
+  return res.json();
+};
+
+const orgFetch = async (url: string, options: RequestInit = {}) => {
+  const user = localStorage.getItem("user");
+  if (!user) throw new Error("No user found in localStorage");
+  const parsedUser = JSON.parse(user);
+  const orgId = parsedUser.organization;
+  if (!orgId) throw new Error("No organization ID found");
+
+  const orgUrl = url.includes("?") ? `${url}&organization_id=${orgId}` : `${url}?organization_id=${orgId}`;
+
+  const res = await fetch(orgUrl, options);
+  if (!res.ok) throw new Error(`orgFetch failed: ${res.status}`);
+  return res.json();
+};
+
+// Wrapper to try authFetch first, fallback to orgFetch
+const fetchWithAuthFallback = async (url: string, options: RequestInit = {}) => {
+  try {
+    return await authFetch(url, options);
+  } catch (err) {
+    console.warn("authFetch failed, falling back to orgFetch:", err);
+    return await orgFetch(url, options);
+  }
+};
+
 const AddConvert: React.FC = () => {
   const navigate = useNavigate();
-
   const { hasPermission } = useAuth(); // Access the hasPermission function
 
   // Sidebar toggle
@@ -23,7 +62,6 @@ const AddConvert: React.FC = () => {
   const [convertDate, setConvertDate] = useState("");
   const [followUpStatus, setFollowUpStatus] = useState<"required" | "not_required" | "">("");
 
-
   // State for visitors and members data
   const [visitors, setVisitors] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
@@ -32,10 +70,9 @@ const AddConvert: React.FC = () => {
   useEffect(() => {
     const fetchVisitors = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/visitor`);
-        const data = await response.json();
+        const data = await fetchWithAuthFallback(`${baseURL}/api/visitor`);
         console.log("Fetched visitors:", data);  // Debugging: Check fetched visitors data
-        setVisitors(data); // Save visitors data to state
+        setVisitors(data);
       } catch (error) {
         console.error("Error fetching visitors:", error);
       }
@@ -43,10 +80,9 @@ const AddConvert: React.FC = () => {
 
     const fetchMembers = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/members`);
-        const data = await response.json();
-        console.log("Fetched members:", data);  // Debugging: Check fetched members data
-        setMembers(data); // Save members data to state
+        const response = await fetchWithAuthFallback(`${baseURL}/api/members`);
+        console.log("Fetched members:", response);  // Debugging: Check fetched members data
+        setMembers(response.data || []); // <-- Extract data array
       } catch (error) {
         console.error("Error fetching members:", error);
       }
@@ -62,44 +98,37 @@ const AddConvert: React.FC = () => {
 
     // Get the organization ID from local storage
     const user = localStorage.getItem("user");
-    let organization_id = null; // Default to null
-
+    let organization_id = null;
     if (user) {
       const parsedUser = JSON.parse(user);
-      organization_id = parsedUser.organization || null; // Fetch organization ID or set to null if not present
+      organization_id = parsedUser.organization || null;
     }
 
     // Prepare data to be sent to the backend
     const data = {
       convert_type: convertType,
       convert_date: convertDate,
-      follow_up_status: followUpStatus,  // Add the follow-up status
+      follow_up_status: followUpStatus,
       member_id: convertType === "member" ? selectedMember : null,
       visitor_id: convertType === "visitor" ? selectedVisitor : null,
-      organization_id: organization_id,  // Using the organization_id from local storage (or null if missing)
+      organization_id: organization_id,
     };
 
-    console.log("Sending data to the backend:", data);  // Debugging: Check the data being sent
+    console.log("Sending data to the backend:", data);
 
     try {
-      const response = await fetch(`${baseURL}/api/converts`, {
+      await fetchWithAuthFallback(`${baseURL}/api/converts`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to add convert.");
-      }
 
       alert("Convert added successfully!");
       navigate("/congregation/convertRecords");  // Redirect to convert records page
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Error:", error);
-        alert("Error: " + error.message);  // Access message after confirming it's an instance of Error
+        alert("Error: " + error.message);
       } else {
         console.error("Unexpected error:", error);
         alert("An unexpected error occurred.");
