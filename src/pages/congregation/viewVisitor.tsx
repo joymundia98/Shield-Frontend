@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+import { authFetch, orgFetch } from "../../utils/api";  // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -21,8 +22,26 @@ interface Visitor {
   needs_follow_up: boolean;
 }
 
+// Helper function to fetch data with authFetch and fallback to orgFetch if needed
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    const data = await authFetch(url);
+    if (data) return data;
+    throw new Error("No data returned from authFetch.");
+  } catch (error) {
+    console.log("authFetch failed, falling back to orgFetch");
+    try {
+      const data = await orgFetch(url);
+      if (data) return data;
+      throw new Error("No data returned from orgFetch.");
+    } catch (error) {
+      throw new Error("Both authFetch and orgFetch failed");
+    }
+  }
+};
+
 const ViewVisitorPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();  // Get visitor ID from URL params
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,33 +58,36 @@ const ViewVisitorPage: React.FC = () => {
 
   // Fetch visitor data
   useEffect(() => {
-    const fetchVisitor = async () => {
-      if (!id) {
-        setError("Visitor ID is missing.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const res = await fetch(`${baseURL}/api/visitor/${id}`);
-
-        if (!res.ok) {
-          throw new Error("Visitor not found.");
+      const fetchVisitor = async () => {
+        if (!id) {
+          setError("Visitor ID is missing.");
+          setLoading(false);
+          return;
         }
 
-        const data: Visitor = await res.json();
-        setVisitor(data);
+        try {
+          setLoading(true);
+          // Use fetchDataWithAuthFallback for visitor data
+          const data = await fetchDataWithAuthFallback(`${baseURL}/api/visitor/${id}`);
 
-      } catch (error: any) {
-        setError(error.message || "Failed to fetch visitor data.");
-      } finally {
-        setLoading(false);
-      }
-    };
+          if (!data) {
+            throw new Error("Visitor data is missing.");
+          }
 
-    fetchVisitor();
-  }, [id]);
+          const visitorData: Visitor = data;  // <-- use data directly
+          setVisitor(visitorData);
+
+        } catch (error: any) {
+          console.error("Error fetching visitor data:", error);
+          setError(error.message || "Failed to fetch visitor data.");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchVisitor();
+    }, [id]);
+
 
   if (loading) {
     return <div>Loading...</div>;
