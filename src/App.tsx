@@ -129,6 +129,12 @@ import AdminLoginPromptPage from "./pages/Organization/AdminLoginPrompt";
 import AdminAccounts from "./pages/Organization/orgAdminAccounts";
 //import HQDashboardPage from "./pages/Organization/HQDashboard";
 
+// HQ Organizations Module Functional Pages
+import BranchDirectoryPage from "./pages/HQ/branchDirectory";
+import BranchRegister from "./pages/HQ/newBranch";
+import HQRegister from "./components/Auth/HQRegister";
+import HQOrganizationSuccessPage from "./pages/HQ/success";
+
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
@@ -739,6 +745,14 @@ function App() {
           <Route path="/Organization/to_SCI-ELD_ERP" element={<AdminLoginPromptPage />} />
           <Route path="/Organization/orgAdminAccounts" element={<AdminAccounts />} />
           {/*<Route path="/Organization/HQDashboard" element={<HQDashboardPage />} />*/}
+
+          {/* ------------------------------
+                  HQ ORGANIZATION MODULE
+          --------------------------------*/}
+          <Route path="/HQ/branchDirectory" element={<BranchDirectoryPage />} />
+          <Route path="/HQ/new_Account" element={<HQRegister />} />
+          <Route path="/HQ/newBranch" element={<BranchRegister />} />
+          <Route path="/HQ/success" element={<HQOrganizationSuccessPage />} />
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />
