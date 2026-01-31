@@ -57,7 +57,7 @@ const HQOrganizationSuccessPage = () => {
         </div>
 
         {/* Button to navigate to OrgLogin */}
-        <button className="create-account-btn" onClick={() => navigate('/org-login', { state: { headquarterId, headquarters_account_id } })}>
+        <button className="create-account-btn" onClick={() => navigate('/HQ-login', { state: { headquarterId, headquarters_account_id } })}>
           HeadQuarter Login
         </button>
       </div>

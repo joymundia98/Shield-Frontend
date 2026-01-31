@@ -140,6 +140,8 @@ import HQOrganizationSuccessPage from "./pages/HQ/success";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
+import UnderConstructionPage from "./pages/InProgress";
+
 function App() {
   return (
     <AuthProvider>
@@ -763,6 +765,9 @@ function App() {
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />
+
+          {/* ------------------------------ Under Construction PAGE ------------------------------ */}
+          <Route path="/Inprogress" element={<UnderConstructionPage />} />
           
           {/* Catch-all for undefined routes (404) */}
           <Route path="*" element={<NotFoundPage />} />

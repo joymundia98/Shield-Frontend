@@ -3,89 +3,124 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HQHeader from './HQHeader';
 
+const baseURL = import.meta.env.VITE_BASE_URL;
+
 interface Organization {
+  id: number;
   name: string;
-  status: "Active" | "Inactive";
+  status: "active" | "inactive";
   address: string;
-  orgType: number;
+  org_type_id: number;  // Ensure we're using `org_type_id` here
   district: string;
-  province: string;
+  region: string;
 }
-
-const organizationTypes = [
-  { id: 1, name: "Headquarters / Central Authority" },
-  { id: 2, name: "Regional / Territorial Level" },
-  { id: 3, name: "Local Church Level" },
-  { id: 4, name: "Sub-Local Units (Optional)" }
-];
-
-//const baseURL = import.meta.env.VITE_BASE_URL;
 
 const BranchDirectoryPage: React.FC = () => {
   const navigate = useNavigate();
-
   const [organizationData, setOrganizationData] = useState<Organization[]>([]);
+  const [orgTypes, setOrgTypes] = useState<Record<number, string>>({});
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
-  const [selectedProvinceFilter, setSelectedProvinceFilter] = useState("all");
+  const [selectedRegionFilter, setSelectedRegionFilter] = useState("all");
   const [selectedDistrictFilter, setSelectedDistrictFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, _setError] = useState<string | null>(null);
-
-  // Temporary static data for organizations
-  const staticData: Organization[] = [
-    { name: "Org A", status: "Active", address: "123 Street, Lusaka", orgType: 1, district: "Lusaka District", province: "Lusaka" },
-    { name: "Org B", status: "Inactive", address: "456 Avenue, Ndola", orgType: 2, district: "Ndola District", province: "Copperbelt" },
-    { name: "Org C", status: "Active", address: "789 Road, Kitwe", orgType: 3, district: "Kitwe District", province: "Copperbelt" },
-    // Add more organizations here...
-  ];
+  // Fetch headquarters info and auth token from local storage
+  const headquartersInfo = JSON.parse(localStorage.getItem("headquarters") || "{}");
+  const authToken = localStorage.getItem("authToken");
 
   useEffect(() => {
-    // Simulating an API fetch
-    setTimeout(() => {
-      setOrganizationData(staticData);
+    if (!headquartersInfo || !authToken) {
+      setError("Required authentication or headquarters data is missing.");
       setLoading(false);
-    }, 1000);
-  }, []);
+      return;
+    }
 
-  // Filter organizations based on search query
+    // Fetch organization data
+    const fetchOrganizations = async () => {
+      try {
+        const response = await fetch(`${baseURL}/api/headquarters/organizations/${headquartersInfo.id}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch organizations");
+        }
+
+        const data = await response.json();
+        console.log("Fetched Organization Data:", data); // Log to verify the organization data
+        setOrganizationData(data);
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to load organization data");
+        setLoading(false);
+      }
+    };
+
+    // Fetch organization types
+    const fetchOrgTypes = async () => {
+      try {
+        const response = await fetch(`${baseURL}/api/organization_type`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch organization types");
+        }
+
+        const data = await response.json();
+        console.log("Fetched Organization Types:", data); // Log to verify the fetched types
+
+        // Map org_type_id to names
+        const orgTypesMap = data.reduce((acc: Record<number, string>, orgType: { org_type_id: number; name: string }) => {
+          acc[orgType.org_type_id] = orgType.name;
+          return acc;
+        }, {});
+
+        setOrgTypes(orgTypesMap);
+      } catch (err) {
+        setError("Failed to load organization types");
+      }
+    };
+
+    fetchOrganizations();
+    fetchOrgTypes();
+  }, [headquartersInfo.id, authToken]);
+
   const filteredOrganizations = useMemo(() => {
     let filtered = organizationData;
 
-    // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter((org) =>
         org.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Filter by selected status filter
     if (selectedStatusFilter !== "all") {
       filtered = filtered.filter((org) => org.status === selectedStatusFilter);
     }
 
-    // Filter by selected province filter
-    if (selectedProvinceFilter !== "all") {
-      filtered = filtered.filter((org) => org.province === selectedProvinceFilter);
+    if (selectedRegionFilter !== "all") {
+      filtered = filtered.filter((org) => org.region === selectedRegionFilter);
     }
 
-    // Filter by selected district filter
     if (selectedDistrictFilter !== "all") {
       filtered = filtered.filter((org) => org.district === selectedDistrictFilter);
     }
 
     return filtered;
-  }, [organizationData, selectedStatusFilter, selectedProvinceFilter, selectedDistrictFilter, searchQuery]);
-
-  // Helper function to get organization type name by ID
-  const getOrgTypeName = (orgTypeId: number): string => {
-    const orgType = organizationTypes.find((type) => type.id === orgTypeId);
-    return orgType ? orgType.name : "Unknown Type";
-  };
+  }, [organizationData, selectedStatusFilter, selectedRegionFilter, selectedDistrictFilter, searchQuery]);
 
   useEffect(() => {
     if (sidebarOpen) {
@@ -95,10 +130,9 @@ const BranchDirectoryPage: React.FC = () => {
     }
   }, [sidebarOpen]);
 
-  // Get distinct provinces and districts
-  const provinces = useMemo(() => {
-    const uniqueProvinces = Array.from(new Set(organizationData.map((org) => org.province)));
-    return ["all", ...uniqueProvinces];
+  const regions = useMemo(() => {
+    const uniqueRegions = Array.from(new Set(organizationData.map((org) => org.region)));
+    return ["all", ...uniqueRegions];
   }, [organizationData]);
 
   const districts = useMemo(() => {
@@ -106,17 +140,16 @@ const BranchDirectoryPage: React.FC = () => {
     return ["all", ...uniqueDistricts];
   }, [organizationData]);
 
-  // Navigate to the organization details page
-  const openViewOrganization = (name: string) => {
-    navigate(`/Organization/view/${name}`);
+  const openViewOrganization = () => {
+    navigate(`/InProgress`);
   };
 
   return (
     <div className="dashboard-wrapper">
-
       {/* SIDEBAR */}
       <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>&#9776;</button>
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        {/* Sidebar content */}
         <div className="close-wrapper">
           <div className="toggle close-btn">
             <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
@@ -125,6 +158,7 @@ const BranchDirectoryPage: React.FC = () => {
           </div>
         </div>
         <h2>ORG MANAGER</h2>
+        {/* Sidebar links */}
         <a href="/Organization/edittableProfile">Profile</a>
         <a href="/HQ/orgLobby">The Lobby</a>
         <a href="/HQ/orgAdminAccounts">Admin Accounts</a>
@@ -139,7 +173,7 @@ const BranchDirectoryPage: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/");
+            navigate("/"); 
           }}
         >
           ➜ Logout
@@ -160,6 +194,13 @@ const BranchDirectoryPage: React.FC = () => {
         {error && <div className="error">{error}</div>}
         {loading && <p>Loading organizations...</p>}
 
+        {/* No branches message */}
+        {filteredOrganizations.length === 0 && !loading && !error && (
+          <p className="no-branches-message">
+            There are no branches under this organization.
+          </p>
+        )}
+
         <br />
 
         {/* Search and Filter */}
@@ -178,17 +219,17 @@ const BranchDirectoryPage: React.FC = () => {
               onChange={(e) => setSelectedStatusFilter(e.target.value)}
             >
               <option value="all">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
             <select
               className="user-filter-select"
-              value={selectedProvinceFilter}
-              onChange={(e) => setSelectedProvinceFilter(e.target.value)}
+              value={selectedRegionFilter}
+              onChange={(e) => setSelectedRegionFilter(e.target.value)}
             >
-              <option value="all">All Provinces</option>
-              {provinces.map((province) => (
-                <option key={province} value={province}>{province}</option>
+              <option value="all">All Regions</option>
+              {regions.map((region) => (
+                <option key={region} value={region}>{region}</option>
               ))}
             </select>
             <select
@@ -205,27 +246,27 @@ const BranchDirectoryPage: React.FC = () => {
         </div>
 
         <br />
+
         {/* GROUPED TABLE RENDERING */}
-        {["Active", "Inactive"].map((status) => {
+        {["active", "inactive"].map((status) => {
           if (selectedStatusFilter !== "all" && selectedStatusFilter !== status) return null;
 
           const filtered = filteredOrganizations.filter((org) => org.status === status);
 
-          // Group organizations by District then Province
           const groupedByDistrict = filtered.reduce((acc, org) => {
-            acc[org.province] = acc[org.province] || {};
-            acc[org.province][org.district] = acc[org.province][org.district] || [];
-            acc[org.province][org.district].push(org);
+            acc[org.region] = acc[org.region] || {};
+            acc[org.region][org.district] = acc[org.region][org.district] || [];
+            acc[org.region][org.district].push(org);
             return acc;
           }, {} as Record<string, Record<string, Organization[]>>);
 
           return (
             <div key={status}>
-              <h2>{status} Organizations</h2>
-              {Object.keys(groupedByDistrict).map((province) => (
-                <div key={province}>
-                  <h3>{province}</h3>
-                  {Object.keys(groupedByDistrict[province]).map((district) => (
+              <h2>{status === "active" ? "Active" : "Inactive"} Organizations</h2>
+              {Object.keys(groupedByDistrict).map((region) => (
+                <div key={region}>
+                  <h3>{region}</h3>
+                  {Object.keys(groupedByDistrict[region]).map((district) => (
                     <div key={district}>
                       <h4>{district}</h4>
                       <table className="responsive-table">
@@ -235,21 +276,21 @@ const BranchDirectoryPage: React.FC = () => {
                             <th>Status</th>
                             <th>Address</th>
                             <th>Organization Type</th>
-                            <th>Actions</th> {/* New Actions Column */}
+                            <th>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {groupedByDistrict[province][district].map((org) => (
-                            <tr key={org.name}>
+                          {groupedByDistrict[region][district].map((org) => (
+                            <tr key={org.id}>
                               <td>{org.name}</td>
                               <td>{org.status}</td>
                               <td>{org.address}</td>
-                              <td>{getOrgTypeName(org.orgType)}</td>
+                              <td>{orgTypes[org.org_type_id] || "Unknown Type"}</td> {/* Corrected to use org_type_id */}
                               <td>
                                 <button className="add-btn" onClick={() => openViewOrganization(org.name)}>
                                   View
                                 </button>
-                              </td> {/* View button */}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
