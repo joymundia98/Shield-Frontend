@@ -64,8 +64,8 @@ const onSubmit = async (data: OrgLoginFormData) => {
         role_id: 1,
       };
 
-      // 🔥 Save JWT + org info via AuthContext
-      login(accessToken, orgAsUser, {
+      // 🏢 Organization data
+      const orgData = {
         id: organization.id,
         name: organization.name,
         denomination: organization.denomination,
@@ -77,7 +77,14 @@ const onSubmit = async (data: OrgLoginFormData) => {
         organization_email: organization.organization_email,
         organization_account_id: organization.organization_account_id,
         org_type_id: organization.org_type_id,
-      });
+      };
+
+      // If you have headquarters data (e.g., from localStorage or an API call), use it. 
+      // Otherwise, you can pass null:
+      const headquarters = JSON.parse(localStorage.getItem('headquarters') || 'null');
+
+      // 🔥 Save JWT + org info via AuthContext (Now passing all four arguments)
+      login(accessToken, orgAsUser, orgData, headquarters);
 
       console.log('✅ Organization login successful');
       console.log('🔐 JWT:', accessToken);

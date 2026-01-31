@@ -84,7 +84,8 @@ export const LoginForm = () => {
     console.log("User permissions:", user.permissions); // Log user permissions to confirm
 
     // 1. Set permissions first (now that we have them, update the context)
-    await login(token, user, response.data.organization);
+    // Update the login call with the 4th argument as `null` or the actual HQ data if available
+    await login(token, user, response.data.organization, null); 
 
     // 2. Now that permissions are set, handle navigation
 

@@ -18,6 +18,8 @@ interface User {
   role_id: number;   // role_id is the ID of the role assigned to the user
   roles: string[];   // roles associated with the user
   permissions?: Permission[];
+  org_id?: string;
+  //org_type: 'church' | 'ngo';
   hq_id?: string;    // HQ-specific ID if logged in as HQ
   hq_type?: string;  // HQ-specific type (e.g., 'corporate', 'branch')
 }
