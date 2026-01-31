@@ -1,8 +1,8 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import type { ReactNode } from 'react';
-//import { permissionsMap } from './permissionsMap'; // Import the permissions map
 
-// Updated User and Organization interfaces to reflect the database structure
+// Permission, User, and Organization interfaces, now including headquarters (HQ) specific fields
+
 interface Permission {
   id: number;
   name: string;
@@ -15,35 +15,48 @@ interface User {
   id: string;
   full_name: string;
   email: string;
-  org_id: string;
-  org_type: 'church' | 'ngo';
-  role?: string[];   // role is an array of role names (e.g., ['admin', 'manager'])
   role_id: number;   // role_id is the ID of the role assigned to the user
-  permissions?: Permission[]; // Added permissions to user
+  roles: string[];   // roles associated with the user
+  permissions?: Permission[];
+  hq_id?: string;    // HQ-specific ID if logged in as HQ
+  hq_type?: string;  // HQ-specific type (e.g., 'corporate', 'branch')
 }
 
 interface Organization {
   id: string;
   name: string;
-  denomination: string; // Type of religious denomination
-  address: string;      // Address of the organization
-  region: string;       // Region where the organization is located
-  district: string;     // District where the organization is located
-  status: string;       // Status, e.g., "active"
-  created_at: string;   // Timestamp for when the organization was created
-  organization_email?: string; // Optional email for the organization
-  organization_account_id?: string; // Optional account identifier for the organization
-  org_type_id: string; // This will likely map to your organization types ('church', 'ngo', etc.)
+  denomination: string;
+  address: string;
+  region: string;
+  district: string;
+  status: string;
+  created_at: string;
+  organization_email?: string;
+  organization_account_id?: string;
+  org_type_id: string;
+}
+
+interface Hq {
+  id: string;
+  name: string;
+  address: string;
+  email: string;
+  region: string;
+  country: string;
+  hq_status: string;
+  created_at: string;
+  headquarters_account_id: string;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   organization: Organization | null;
-  loadingPermissions: boolean;  // Track if permissions are still being loaded
-  login: (token: string, user: User | null, organization: Organization | null) => void;
+  headquarters: Hq | null;  // HQ-specific data in context
+  loadingPermissions: boolean;
+  login: (token: string, user: User | null, organization: Organization | null, headquarters: Hq | null) => void;
   logout: () => void;
-  hasPermission: (route: string) => boolean; // Add this function to check permissions
+  hasPermission: (route: string) => boolean;
 }
 
 // Permission fetching function
@@ -83,56 +96,41 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const [headquarters, setHeadquarters] = useState<Hq | null>(null);  // State for HQ
   const [token, setToken] = useState<string | null>(null);
-  const [loadingPermissions, setLoadingPermissions] = useState<boolean>(false); // Track loading state for permissions
+  const [loadingPermissions, setLoadingPermissions] = useState<boolean>(false);
 
-  // Debugging: Logs whenever state is initialized or updated
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('authToken');
     const savedOrg = localStorage.getItem('organization');
-
-    // Log when checking localStorage on component mount
-    console.log('Initial localStorage check:');
-    console.log('Saved User:', savedUser);
-    console.log('Saved Token:', savedToken);
-    console.log('Saved Organization:', savedOrg);
+    const savedHq = localStorage.getItem('headquarters');  // Check for saved HQ data
 
     if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser));
       setToken(savedToken);
     }
+
     if (savedOrg) {
-      const parsedOrg = JSON.parse(savedOrg);
+      setOrganization(JSON.parse(savedOrg));
+    }
 
-      // Ensure proper structure of the organization object
-      const organization: Organization = {
-        id: parsedOrg.id || '',
-        name: parsedOrg.name || '',
-        denomination: parsedOrg.denomination || '',
-        address: parsedOrg.address || '',
-        region: parsedOrg.region || '',
-        district: parsedOrg.district || '',
-        status: parsedOrg.status || 'active', // default to "active"
-        created_at: parsedOrg.created_at || '',
-        organization_email: parsedOrg.organization_email || '', // Optional
-        organization_account_id: parsedOrg.organization_account_id || '', // Optional
-        org_type_id: parsedOrg.org_type_id || '1', // Default to "1" for church, adjust as necessary
-      };
-
-      setOrganization(organization);
+    if (savedHq) {
+      setHeadquarters(JSON.parse(savedHq));  // Retrieve HQ data from localStorage
     }
   }, []);
 
-  const login = async (token: string, user: User | null, organization: Organization | null) => {
+  const login = async (token: string, user: User | null, organization: Organization | null, headquarters: Hq | null) => {
     console.log('Logging in with the following data:');
     console.log('Token:', token);
     console.log('User:', user);
     console.log('Organization:', organization);
+    console.log('Headquarters:', headquarters);
 
     setToken(token);
     setUser(user);
     setOrganization(organization);
+    setHeadquarters(headquarters);  // Set HQ data in the context
 
     // Save to localStorage
     localStorage.setItem('authToken', token);
@@ -142,11 +140,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (organization) {
       localStorage.setItem('organization', JSON.stringify(organization));
     }
+    if (headquarters) {
+      localStorage.setItem('headquarters', JSON.stringify(headquarters));  // Save HQ data
+    }
 
     console.log('Login successful, state updated:');
     console.log('Updated Token:', token);
     console.log('Updated User:', user);
     console.log('Updated Organization:', organization);
+    console.log('Updated Headquarters:', headquarters);
 
     // Fetch permissions after login and update state
     if (user?.role_id) {
@@ -172,48 +174,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     setUser(null);
     setOrganization(null);
+    setHeadquarters(null);  // Clear HQ data on logout
 
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('organization');
+    localStorage.removeItem('headquarters');  // Remove HQ data from localStorage
 
     // Log after logout is completed
     console.log('Logout successful, state cleared:');
     console.log('Token:', token);
     console.log('User:', user);
     console.log('Organization:', organization);
+    console.log('Headquarters:', headquarters);
   };
 
   const hasPermission = (requiredPermission: string): boolean => {
-  console.log('Checking permission...');
-  console.log(`Required permission: ${requiredPermission}`);
-  
-  // Ensure permissions are loaded before proceeding
-  if (!user || !user.permissions || user.permissions.length === 0) {
-    console.log('User or permissions are not available or permissions are empty');
-    return false;  // Return false if the user or permissions are missing or empty
-  }
+    console.log('Checking permission...');
+    console.log(`Required permission: ${requiredPermission}`);
+    
+    // Ensure permissions are loaded before proceeding
+    if (!user || !user.permissions || user.permissions.length === 0) {
+      console.log('User or permissions are not available or permissions are empty');
+      return false;  // Return false if the user or permissions are missing or empty
+    }
 
-  console.log('User and permissions are available');
-  console.log('User object:', user);
-  console.log('User permissions:', user.permissions);
+    console.log('User and permissions are available');
+    console.log('User object:', user);
+    console.log('User permissions:', user.permissions);
 
-  const permissionMatch = user.permissions.find(
-    (perm) => perm.name === requiredPermission
-  );
+    const permissionMatch = user.permissions.find(
+      (perm) => perm.name === requiredPermission
+    );
 
-  if (permissionMatch) {
-    console.log(`Permission found for "${requiredPermission}":`, permissionMatch);
-    return true;
-  } else {
-    console.log(`No permission found for "${requiredPermission}"`);
-    return false;
-  }
-};
-
+    if (permissionMatch) {
+      console.log(`Permission found for "${requiredPermission}":`, permissionMatch);
+      return true;
+    } else {
+      console.log(`No permission found for "${requiredPermission}"`);
+      return false;
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, token, organization, loadingPermissions, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, token, organization, headquarters, loadingPermissions, login, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

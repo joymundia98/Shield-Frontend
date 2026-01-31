@@ -87,7 +87,9 @@ const HQRegister = () => {
         }
       );
 
-      const { headquarterId, headquarters_account_id } = response.data;
+      // Extract id and headquarters_account_id from the response
+    const { id: headquarterId, headquarters_account_id } = response.data.headquarters;
+
       setShowSuccessCard(true);
       setTimeout(() => {
         setShowSuccessCard(false);

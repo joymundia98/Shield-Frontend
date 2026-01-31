@@ -16,6 +16,9 @@ import { OrgRegisterPage } from "./pages/orgRegisterPage";
 import { AdminAccountPage } from "./pages/AdminAccountPage";
 import  InternalAccountCreation  from "./components/Auth/InternalAccountCreation";
 
+import HQRegister from "./components/Auth/HQRegister";
+import HqLoginForm from "./components/Auth/HQLogin";
+
 import NotFoundPage from "./pages/NotFoundPage"; // Import the 404 page
 
 import ForbiddenPage from "./pages/ForbiddenPage";  // Import the custom 403 page
@@ -132,7 +135,6 @@ import AdminAccounts from "./pages/Organization/orgAdminAccounts";
 // HQ Organizations Module Functional Pages
 import BranchDirectoryPage from "./pages/HQ/branchDirectory";
 import BranchRegister from "./pages/HQ/newBranch";
-import HQRegister from "./components/Auth/HQRegister";
 import HQOrganizationSuccessPage from "./pages/HQ/success";
 
 import { AuthProvider } from "./context/AuthContext";
@@ -172,11 +174,17 @@ function App() {
           <Route path="/Create_new_User" element={<InternalAccountCreation />} />
 
           {/* ------------------------------
-                  ORGANIZATION PAGES
+                  ORGANIZATION AUTH PAGES
           --------------------------------*/}
           <Route path="/org-login" element={<OrgLoginPage />} />
           <Route path="/org-register" element={<OrgRegisterPage />} />
           <Route path="/org-dashboard" element={<DashboardPage />} />
+
+          {/* ------------------------------
+                HQ ORGANIZATION AUTH PAGES
+          --------------------------------*/}
+          <Route path="/HQ-login" element={<HqLoginForm />} />
+          <Route path="/HQ/new_Account" element={<HQRegister />} />
 
           {/* ------------------------------
                   MAIN DASHBOARD
@@ -750,7 +758,6 @@ function App() {
                   HQ ORGANIZATION MODULE
           --------------------------------*/}
           <Route path="/HQ/branchDirectory" element={<BranchDirectoryPage />} />
-          <Route path="/HQ/new_Account" element={<HQRegister />} />
           <Route path="/HQ/newBranch" element={<BranchRegister />} />
           <Route path="/HQ/success" element={<HQOrganizationSuccessPage />} />
 
