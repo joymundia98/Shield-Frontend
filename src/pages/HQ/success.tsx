@@ -40,7 +40,7 @@ const HQOrganizationSuccessPage = () => {
     <div className="organization-success-container">
       <div className="main-content">
         <h1 className="success-h1">Your Headquarters was Registered Successfully!</h1>
-        <p>Please ensure that your account ID is kept secure, as it will be necessary for logging this organization in.</p>
+        <p>Please ensure that your account ID is kept secure, as it will be necessary for logging this headquarters in.</p>
 
         <br />
         {/* Glassmorphic Card with Account ID and Copy Button */}
@@ -52,13 +52,13 @@ const HQOrganizationSuccessPage = () => {
         {/* Next Steps */}
         <div className="next-steps">
           <p><strong>Next Steps:</strong></p>
-          <p>Check your email inbox or spam folder for the Organization Account ID...</p>
+          <p>Check your email inbox or spam folder for the Headquarters Account ID...</p>
           <p>Login with your new credentials...</p>
         </div>
 
         {/* Button to navigate to OrgLogin */}
         <button className="create-account-btn" onClick={() => navigate('/org-login', { state: { headquarterId, headquarters_account_id } })}>
-          Organization Login
+          HeadQuarter Login
         </button>
       </div>
     </div>
