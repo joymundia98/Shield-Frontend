@@ -287,7 +287,7 @@ const BranchDirectoryPage: React.FC = () => {
                               <td>{org.address}</td>
                               <td>{orgTypes[org.org_type_id] || "Unknown Type"}</td> {/* Corrected to use org_type_id */}
                               <td>
-                                <button className="add-btn" onClick={() => openViewOrganization(org.name)}>
+                                <button className="add-btn" onClick={() => openViewOrganization()}>
                                   View
                                 </button>
                               </td>
