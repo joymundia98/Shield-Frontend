@@ -4,6 +4,7 @@ import "../../styles/global.css";  // Make sure the styles are correctly importe
 import Calendar from "./Calendar"; // Import the Calendar component
 import ProgramsHeader from './ProgramsHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // Import the authFetch and orgFetch utilities
+import hourglass from "../../assets/hourglass.png";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -248,7 +249,7 @@ const ProgramsDashboard: React.FC = () => {
         {nextEvent && (
           <div className="upcoming-program">
             <div className="upcominEvent-card">
-              <img src="/hourglass.png" alt="Hourglass" className="hourglass" />
+              <img src={hourglass} alt="Hourglass" className="hourglass" />
 
               <h1 className="upcominEvent-title">
                 Just around the corner: {nextEvent.name}

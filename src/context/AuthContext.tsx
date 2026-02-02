@@ -61,6 +61,17 @@ interface AuthContextType {
   hasPermission: (route: string) => boolean;
 }
 
+/**
+ * ✅ Default permission granted to ALL users
+ */
+const DEFAULT_DASHBOARD_PERMISSION: Permission = {
+  id: -1,
+  name: 'View Programs Dashboard',
+  path: '/dashboard',
+  method: 'GET',
+  description: 'Default permission granted to all users',
+};
+
 // Permission fetching function
 export const fetchPermissionsForRole = async (roleId: string, token: string): Promise<Permission[]> => {
   const baseURL = import.meta.env.VITE_BASE_URL;
@@ -76,18 +87,17 @@ export const fetchPermissionsForRole = async (roleId: string, token: string): Pr
     }
 
     const data = await res.json();
-    console.log('Fetched permissions data:', data); // <-- Log full response here
+    console.log('Fetched permissions data:', data);
 
     if (data.data && Array.isArray(data.data)) {
       allPermissions.push(...data.data);
     }
   } catch (error) {
-    console.error("Error fetching permissions:", error);
+    console.error('Error fetching permissions:', error);
   }
 
-  // Remove duplicates if there are any
   const uniquePermissions = allPermissions.filter(
-    (perm, index, self) => index === self.findIndex((p) => p.id === perm.id)
+    (perm, index, self) => index === self.findIndex(p => p.id === perm.id)
   );
 
   return uniquePermissions;
@@ -98,7 +108,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
-  const [headquarters, setHeadquarters] = useState<Hq | null>(null);  // State for HQ
+  const [headquarters, setHeadquarters] = useState<Hq | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loadingPermissions, setLoadingPermissions] = useState<boolean>(false);
 
@@ -106,10 +116,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const savedUser = localStorage.getItem('user');
     const savedToken = localStorage.getItem('authToken');
     const savedOrg = localStorage.getItem('organization');
-    const savedHq = localStorage.getItem('headquarters');  // Check for saved HQ data
+    const savedHq = localStorage.getItem('headquarters');
 
     if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
+      const parsedUser: User = JSON.parse(savedUser);
+
+      // ✅ Ensure default permission always exists
+      parsedUser.permissions = [
+        DEFAULT_DASHBOARD_PERMISSION,
+        ...(parsedUser.permissions || []),
+      ].filter(
+        (perm, index, self) =>
+          index === self.findIndex(p => p.name === perm.name)
+      );
+
+      setUser(parsedUser);
       setToken(savedToken);
     }
 
@@ -118,11 +139,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (savedHq) {
-      setHeadquarters(JSON.parse(savedHq));  // Retrieve HQ data from localStorage
+      setHeadquarters(JSON.parse(savedHq));
     }
   }, []);
 
-  const login = async (token: string, user: User | null, organization: Organization | null, headquarters: Hq | null) => {
+  const login = async (
+    token: string,
+    user: User | null,
+    organization: Organization | null,
+    headquarters: Hq | null
+  ) => {
     console.log('Logging in with the following data:');
     console.log('Token:', token);
     console.log('User:', user);
@@ -132,41 +158,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(token);
     setUser(user);
     setOrganization(organization);
-    setHeadquarters(headquarters);  // Set HQ data in the context
+    setHeadquarters(headquarters);
 
-    // Save to localStorage
     localStorage.setItem('authToken', token);
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    }
-    if (organization) {
-      localStorage.setItem('organization', JSON.stringify(organization));
-    }
-    if (headquarters) {
-      localStorage.setItem('headquarters', JSON.stringify(headquarters));  // Save HQ data
-    }
+    if (user) localStorage.setItem('user', JSON.stringify(user));
+    if (organization) localStorage.setItem('organization', JSON.stringify(organization));
+    if (headquarters) localStorage.setItem('headquarters', JSON.stringify(headquarters));
 
-    console.log('Login successful, state updated:');
-    console.log('Updated Token:', token);
-    console.log('Updated User:', user);
-    console.log('Updated Organization:', organization);
-    console.log('Updated Headquarters:', headquarters);
+    console.log('Login successful, state updated');
 
-    // Fetch permissions after login and update state
     if (user?.role_id) {
-      const roleId = user.role_id.toString();  // Ensure roleId is passed as a string
-      console.log('RoleId', roleId);
-      setLoadingPermissions(true); // Start loading permissions
+      const roleId = user.role_id.toString();
+      setLoadingPermissions(true);
 
       try {
         const permissions = await fetchPermissionsForRole(roleId, token);
-        console.log('permissions', permissions);
-        setUser((prev) => prev ? { ...prev, permissions } : prev);
+        console.log('Fetched role permissions:', permissions);
+
+        const mergedPermissions: Permission[] = [
+          DEFAULT_DASHBOARD_PERMISSION,
+          ...(permissions || []),
+        ];
+
+        const uniquePermissions = mergedPermissions.filter(
+          (perm, index, self) =>
+            index === self.findIndex(p => p.name === perm.name)
+        );
+
+        setUser(prev =>
+          prev ? { ...prev, permissions: uniquePermissions } : prev
+        );
       } catch (error) {
         console.error('Error fetching permissions:', error);
       }
 
-      setLoadingPermissions(false); // Stop loading permissions
+      setLoadingPermissions(false);
     }
   };
 
@@ -176,50 +202,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     setUser(null);
     setOrganization(null);
-    setHeadquarters(null);  // Clear HQ data on logout
+    setHeadquarters(null);
 
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('organization');
-    localStorage.removeItem('headquarters');  // Remove HQ data from localStorage
-
-    // Log after logout is completed
-    console.log('Logout successful, state cleared:');
-    console.log('Token:', token);
-    console.log('User:', user);
-    console.log('Organization:', organization);
-    console.log('Headquarters:', headquarters);
+    localStorage.removeItem('headquarters');
   };
 
   const hasPermission = (requiredPermission: string): boolean => {
     console.log('Checking permission...');
     console.log(`Required permission: ${requiredPermission}`);
-    
-    // Ensure permissions are loaded before proceeding
+
     if (!user || !user.permissions || user.permissions.length === 0) {
       console.log('User or permissions are not available or permissions are empty');
-      return false;  // Return false if the user or permissions are missing or empty
+      return false;
     }
 
-    console.log('User and permissions are available');
-    console.log('User object:', user);
     console.log('User permissions:', user.permissions);
 
     const permissionMatch = user.permissions.find(
-      (perm) => perm.name === requiredPermission
+      perm => perm.name === requiredPermission
     );
 
     if (permissionMatch) {
-      console.log(`Permission found for "${requiredPermission}":`, permissionMatch);
+      console.log(`Permission found for "${requiredPermission}"`);
       return true;
-    } else {
-      console.log(`No permission found for "${requiredPermission}"`);
-      return false;
     }
+
+    console.log(`No permission found for "${requiredPermission}"`);
+    return false;
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, organization, headquarters, loadingPermissions, login, logout, hasPermission }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        organization,
+        headquarters,
+        loadingPermissions,
+        login,
+        logout,
+        hasPermission,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
