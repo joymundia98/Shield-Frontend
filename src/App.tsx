@@ -136,11 +136,15 @@ import AdminAccounts from "./pages/Organization/orgAdminAccounts";
 import BranchDirectoryPage from "./pages/HQ/branchDirectory";
 import BranchRegister from "./pages/HQ/newBranch";
 import HQOrganizationSuccessPage from "./pages/HQ/success";
+import GeneralReport from "./pages/HQ/generalReport";
 
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 import UnderConstructionPage from "./pages/InProgress";
+
+//CSV File Upload
+import UploadCSV from "./components/UploadCSV";
 
 function App() {
   return (
@@ -762,6 +766,7 @@ function App() {
           <Route path="/HQ/branchDirectory" element={<BranchDirectoryPage />} />
           <Route path="/HQ/newBranch" element={<BranchRegister />} />
           <Route path="/HQ/success" element={<HQOrganizationSuccessPage />} />
+          <Route path="/HQ/GeneralReport" element={<GeneralReport />} />
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />
@@ -769,6 +774,9 @@ function App() {
           {/* ------------------------------ Under Construction PAGE ------------------------------ */}
           <Route path="/Inprogress" element={<UnderConstructionPage />} />
           
+          {/* ------------------------------ UPLOAD CSV ------------------------------ */}
+          <Route path="/UploadCSV" element={<UploadCSV />} />
+
           {/* Catch-all for undefined routes (404) */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

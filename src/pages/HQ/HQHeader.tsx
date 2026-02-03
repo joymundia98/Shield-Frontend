@@ -9,7 +9,7 @@ const HQHeader: React.FC = () => {
   // Define the HQ links
   const HQLinks = [
     { name: "Branch Directory", href: "/HQ/branchDirectory" },
-    { name: "Reports", href: "/InProgress" },
+    { name: "Reports", href: "/HQ/GeneralReport" },
     { name: "Admin Accounts", href: "/InProgress" },
     { name: "To SCI-ELD ERP", href: "/InProgress" },
     // Add logout link with a special href

@@ -2307,3 +2307,138 @@
     font-size: 1.5rem;
   }
 }
+
+/* ----------------HQ GENERAL REPORT ---------------- */
+.gender-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .generalReportH3{
+    text-align: center;
+    font-size: 1.6rem;
+  }
+
+  .gender-gender-breakdown {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    flex: 1 1 400px;
+    display: flex;
+    flex-direction: column;
+    max-width: 500px;
+  }
+
+  .gender-content {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 20px;
+  }
+
+  .image-gender-breakdown {
+    flex: 1 1 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+  }
+
+  .gender-content img {
+    max-width: 120px;
+    /*border-radius: 50%;*/
+    filter: grayscale(60%);
+  }
+
+  .stats-gender-breakdown {
+    flex: 2 1 200px;
+    padding: 10px 20px;
+  }
+
+  .stats-gender-breakdown h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  /* Donut Chart */
+  .gender-breakdown .donut-chart {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px auto;
+    border-radius: 50%;
+    background: conic-gradient(#5C4736 0% 75%, #ddd 0% 100%);
+  }
+
+  /* Hole in the middle */
+  .gender-breakdown .donut-chart::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .gender-breakdown .donut-chart span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    z-index: 1;
+  }
+
+  .gender-breakdown .age-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gender-breakdown .age-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gender-breakdown .age-label {
+    width: 50px;
+  }
+
+  .gender-breakdown .bar {
+    flex: 1;
+    height: 15px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .gender-breakdown .bar-fill {
+    height: 100%;
+    background: #5C4736;
+    width: 50%; /* placeholder width */
+    border-radius: 10px;
+  }
+
+  @media (max-width: 800px) {
+    .gender-content {
+      flex-direction: column;
+      align-items: center;
+    }
+    .stats-gender-breakdown {
+      width: 100%;
+    }
+  }
+
+  .branch-dropdown {
+  display: flex;
+  align-items: center; /* Vertically centers the items */
+  gap: 10px; /* Adjust the space between the image and the dropdown */
+}
