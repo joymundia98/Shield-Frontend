@@ -210,6 +210,47 @@ const ChurchMembersPage: React.FC = () => {
     setRecordsToShow(5);
   };
 
+  const downloadFile = async (type: "pdf" | "excel" | "csv") => {
+  try {
+    const response = await axios.get(
+      `${baseURL}/api/reports/members/${type}`,
+      {
+        responseType: "blob", // VERY important
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+        params: {
+          organization_id: localStorage.getItem("organization_id"),
+          gender: filter.gender || undefined,
+          // status can be added later if needed
+        }
+      }
+    );
+
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+
+    const extensionMap = {
+      pdf: "pdf",
+      excel: "xlsx",
+      csv: "csv"
+    };
+
+    link.download = `members_report.${extensionMap[type]}`;
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("File download failed:", error);
+  }
+};
+
+
   return (
     <div className="dashboard-wrapper members-wrapper">
       <button className="hamburger" onClick={toggleSidebar}> &#9776; </button>
@@ -258,7 +299,7 @@ const ChurchMembersPage: React.FC = () => {
         </header>
 
         {/* Search and Filter buttons */}
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", rowGap: "1rem" }}>
           <input
             className="search-input"
             type="text"
@@ -269,8 +310,25 @@ const ChurchMembersPage: React.FC = () => {
           <button className="add-btn" onClick={() => navigate("/congregation/addMember")}>+ Add New Member</button>&emsp;
           <button className="filter-btn" onClick={openFilter}>
             📂 Filter
-          </button>
+          </button>&emsp;
+
+          <div style={{ display: "flex", gap: "10px"}}>
+            <button className="add-btn" onClick={() => downloadFile("pdf")}>
+              📄 Export PDF
+            </button>
+
+            <button className="add-btn" onClick={() => downloadFile("excel")}>
+              📊 Export Excel
+            </button>
+
+            <button className="add-btn" onClick={() => downloadFile("csv")}>
+              ⬇️ Export CSV
+            </button>
+          </div>
+
         </div>
+
+        
 
         {/* Filter Popup */}
         {showFilterPopup && (
