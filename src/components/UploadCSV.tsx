@@ -30,7 +30,7 @@ const UploadCSV = () => {
 
     try {
       // Try authFetch first
-      const response = await authFetch(`${baseURL}/api/upload`, {
+      const response = await authFetch(`${baseURL}/api/uploads`, {
         method: "POST",
         body: formData,
       });
@@ -41,7 +41,7 @@ const UploadCSV = () => {
 
       try {
         // Fallback to orgFetch
-        const response = await orgFetch(`${baseURL}/api/upload`, {
+        const response = await orgFetch(`${baseURL}/api/uploads`, {
           method: "POST",
           body: formData,
         });
