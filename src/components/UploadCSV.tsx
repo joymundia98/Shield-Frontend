@@ -49,7 +49,8 @@ const UploadCSV = () => {
         setMessage(`${response.count} rows uploaded successfully to ${type} table.`);
       } catch (error) {
         console.error("Upload failed:", error);
-        setMessage(error?.error || "Upload failed");
+        // Type assertion to specify error shape
+        setMessage((error as { error: string })?.error || "Upload failed");
       }
     }
   };
