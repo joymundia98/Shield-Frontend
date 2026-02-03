@@ -40,6 +40,17 @@ interface Visitor {
   headquarters_id: number;
 }
 
+interface Convert {
+  id: number;
+  convert_type: "member" | "visitor";
+  convert_date: string;
+  member_id: number | null;
+  visitor_id: number | null;
+  follow_up_status: string;
+  organization_id: number;
+  headquarters_id: number;
+}
+
 interface Branch {
   branch_id: number;
   name: string;
@@ -72,6 +83,9 @@ const GeneralReport: React.FC = () => {
   const [allVisitors, setAllVisitors] = useState<Visitor[]>([]);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
 
+  const [allConverts, setAllConverts] = useState<Convert[]>([]);
+  const [converts, setConverts] = useState<Convert[]>([]);
+
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -95,24 +109,18 @@ const GeneralReport: React.FC = () => {
   /* =======================
      FETCH MEMBERS
   ======================= */
-  const fetchMembersData = async () => {
+  const fetchMembers = async () => {
     if (!authToken || !headquarterId) return;
 
-    try {
-      const response = await fetch(
-        `${baseURL}/api/headquarters/${headquarterId}/members`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
+    const res = await fetch(
+      `${baseURL}/api/headquarters/${headquarterId}/members`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
 
-      if (!response.ok) throw new Error("Failed to fetch members");
-
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setAllMembers(data);
-        setMembers(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch members:", error);
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setAllMembers(data);
+      setMembers(data);
     }
   };
 
@@ -122,21 +130,33 @@ const GeneralReport: React.FC = () => {
   const fetchVisitors = async () => {
     if (!authToken || !headquarterId) return;
 
-    try {
-      const response = await fetch(
-        `${baseURL}/api/headquarters/${headquarterId}/visitors`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
+    const res = await fetch(
+      `${baseURL}/api/headquarters/${headquarterId}/visitors`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
 
-      if (!response.ok) throw new Error("Failed to fetch visitors");
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setAllVisitors(data);
+      setVisitors(data);
+    }
+  };
 
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setAllVisitors(data);
-        setVisitors(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch visitors:", error);
+  /* =======================
+     FETCH CONVERTS
+  ======================= */
+  const fetchConverts = async () => {
+    if (!authToken || !headquarterId) return;
+
+    const res = await fetch(
+      `${baseURL}/api/headquarters/${headquarterId}/converts`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setAllConverts(data);
+      setConverts(data);
     }
   };
 
@@ -146,32 +166,27 @@ const GeneralReport: React.FC = () => {
   const fetchBranches = async () => {
     if (!authToken || !headquarterId) return;
 
-    try {
-      const response = await fetch(
-        `${baseURL}/api/headquarters/organizations/${headquarterId}`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
+    const res = await fetch(
+      `${baseURL}/api/headquarters/organizations/${headquarterId}`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setBranches(
+        data.map((b: any) => ({
+          branch_id: b.id,
+          name: b.name,
+        }))
       );
-
-      if (!response.ok) throw new Error("Failed to fetch branches");
-
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setBranches(
-          data.map(branch => ({
-            branch_id: branch.id,
-            name: branch.name,
-          }))
-        );
-        setSelectedBranch(null);
-      }
-    } catch (error) {
-      console.error("Error fetching branches:", error);
+      setSelectedBranch(null);
     }
   };
 
   useEffect(() => {
-    fetchMembersData();
+    fetchMembers();
     fetchVisitors();
+    fetchConverts();
     fetchBranches();
   }, []);
 
@@ -182,11 +197,11 @@ const GeneralReport: React.FC = () => {
     setKpi({
       totalMembers: members.filter(m => m.status === "Active").length,
       totalVisitors: visitors.length,
-      totalConverts: members.filter(m => m.status === "New Convert").length,
+      totalConverts: converts.length,
       totalBranches: branches.length,
       monthlyGiving: 18364.05,
     });
-  }, [members, visitors, branches]);
+  }, [members, visitors, converts, branches]);
 
   /* =======================
      GENDER BREAKDOWN
@@ -232,22 +247,15 @@ const GeneralReport: React.FC = () => {
   ======================= */
   useEffect(() => {
     const weeklyAttendance = [1, 2, 3, 4].map((_, i) =>
-      members.length - i * 2
+      Math.max(members.length - i * 2, 0)
     );
 
-    setChartData(prev => ({
-      ...prev,
-      attendance: weeklyAttendance,
-    }));
+    setChartData(prev => ({ ...prev, attendance: weeklyAttendance }));
   }, [members]);
 
   useEffect(() => {
     attendanceChartRef.current?.destroy();
-
-    const ctx = document.getElementById(
-      "attendanceChart"
-    ) as HTMLCanvasElement;
-
+    const ctx = document.getElementById("attendanceChart") as HTMLCanvasElement;
     if (!ctx) return;
 
     attendanceChartRef.current = new Chart(ctx, {
@@ -274,11 +282,7 @@ const GeneralReport: React.FC = () => {
   ======================= */
   useEffect(() => {
     growthChartRef.current?.destroy();
-
-    const ctx = document.getElementById(
-      "growthChart"
-    ) as HTMLCanvasElement;
-
+    const ctx = document.getElementById("growthChart") as HTMLCanvasElement;
     if (!ctx) return;
 
     const months = Array.from({ length: 12 }, (_, i) =>
@@ -286,12 +290,9 @@ const GeneralReport: React.FC = () => {
     );
 
     const monthlyCounts = Array(12).fill(0);
-
     members.forEach(m => {
       const d = new Date(m.date_joined);
-      if (!isNaN(d.getTime())) {
-        monthlyCounts[d.getMonth()]++;
-      }
+      if (!isNaN(d.getTime())) monthlyCounts[d.getMonth()]++;
     });
 
     growthChartRef.current = new Chart(ctx, {
@@ -306,7 +307,6 @@ const GeneralReport: React.FC = () => {
             backgroundColor: "rgba(26,61,124,0.25)",
             fill: true,
             tension: 0.3,
-            borderWidth: 3,
           },
         ],
       },
@@ -324,19 +324,18 @@ const GeneralReport: React.FC = () => {
       setSelectedBranch(null);
       setMembers(allMembers);
       setVisitors(allVisitors);
+      setConverts(allConverts);
       return;
     }
 
     const id = parseInt(value);
     const branch = branches.find(b => b.branch_id === id) || null;
-
     setSelectedBranch(branch);
 
     if (branch) {
       setMembers(allMembers.filter(m => m.organization_id === branch.branch_id));
-      setVisitors(
-        allVisitors.filter(v => v.organization_id === branch.branch_id)
-      );
+      setVisitors(allVisitors.filter(v => v.organization_id === branch.branch_id));
+      setConverts(allConverts.filter(c => c.organization_id === branch.branch_id));
     }
   };
 
@@ -350,7 +349,7 @@ const GeneralReport: React.FC = () => {
         <br />
         <h1>General Report</h1>
 
-        <p>Please Remember to refresh your browser to get the Information.</p>
+        <p>Please Refresh your browser regularly to get the latest Information</p>
 
         <div className="kpi-container">
           <div className="kpi-card">
@@ -388,67 +387,48 @@ const GeneralReport: React.FC = () => {
         </div>
 
         <div className="kpi-container">
-          <div className="kpi-card">
-            <h3>Total Members</h3>
-            <p>{kpi.totalMembers}</p>
-          </div>
-          <div className="kpi-card">
-            <h3>Total Visitors</h3>
-            <p>{kpi.totalVisitors}</p>
-          </div>
-          <div className="kpi-card">
-            <h3>Total Converts</h3>
-            <p>{kpi.totalConverts}</p>
-          </div>
-          <div className="kpi-card">
-            <h3>Monthly Giving</h3>
-            <p>ZMW {kpi.monthlyGiving.toLocaleString()}</p>
-          </div>
+          <div className="kpi-card"><h3>Total Members</h3><p>{kpi.totalMembers}</p></div>
+          <div className="kpi-card"><h3>Total Visitors</h3><p>{kpi.totalVisitors}</p></div>
+          <div className="kpi-card"><h3>Total Converts</h3><p>{kpi.totalConverts}</p></div>
+          <div className="kpi-card"><h3>Monthly Giving</h3><p>ZMW {kpi.monthlyGiving.toLocaleString()}</p></div>
         </div>
 
         <div className="chart-box">
           <h3 className="generalReportH3">Member Breakdown</h3>
           <div className="gender-breakdown">
-            {genderData.map((gender, index) => (
-              <div className="gender-gender-breakdown" key={index}>
+            {genderData.map((gender, i) => (
+              <div className="gender-gender-breakdown" key={i}>
                 <div className="gender-content">
-                  <img
-                    src={gender.gender === "Male" ? maleImage : femaleImage}
-                    alt={gender.gender}
-                  />
+                  <img src={gender.gender === "Male" ? maleImage : femaleImage} />
                   <div className="stats-gender-breakdown">
                     <h2>{gender.gender} Breakdown</h2>
 
                     <div
                       className="donut-chart"
                       style={{
-                        background: `conic-gradient(${
-                          gender.gender === "Male" ? "#5C4736" : "#AF907A"
-                        } 0% ${gender.percentage}%, #ddd ${gender.percentage}% 100%)`,
+                        background: `conic-gradient(${gender.gender === "Male" ? "#5C4736" : "#AF907A"} 0% ${gender.percentage}%, #ddd ${gender.percentage}% 100%)`,
                       }}
+                      title={`${gender.totalCount} members (${gender.percentage}%)`}
                     >
                       <span>{gender.percentage}%</span>
                     </div>
 
                     <div className="age-bars">
-                      {gender.ageGroups.map((age, i) => (
-                        <div className="age-bar" key={i}>
-                          <div className="age-label">{age.label}</div>
-                          <div className="bar">
-                            <div
-                              className="bar-fill"
-                              style={{
-                                width: `${age.percentage}%`,
-                                background:
-                                  gender.gender === "Male"
-                                    ? "#5C4736"
-                                    : "#AF907A",
-                              }}
-                            />
+                        {gender.ageGroups.map((age, j) => (
+                          <div className="age-bar" key={j} title={`${age.count} members (${age.percentage}%)`}>
+                            <div className="age-label">{age.label}</div>
+                            <div className="bar">
+                              <div
+                                className="bar-fill"
+                                style={{
+                                  width: `${age.percentage}%`,
+                                  background: gender.gender === "Male" ? "#5C4736" : "#AF907A",
+                                }}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
 
                     <h4>Age</h4>
                   </div>
@@ -458,7 +438,7 @@ const GeneralReport: React.FC = () => {
           </div>
         </div>
 
-        <br />
+        <br/>
 
         <div className="chart-grid">
           <div className="chart-box">
