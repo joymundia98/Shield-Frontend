@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { authFetch, orgFetch } from "../utils/api"; // Import authFetch & orgFetch
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const UploadCSV = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [type, setType] = useState("users"); // default table
+  const [type, setType] = useState("users");
   const [message, setMessage] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,34 +23,36 @@ const UploadCSV = () => {
       return;
     }
 
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      setMessage("You are not authenticated.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("type", type);
 
     try {
-      // Try authFetch first
-      const response = await authFetch(`${baseURL}/api/uploads`, {
+      const res = await fetch(`${baseURL}/api/uploads`, {
         method: "POST",
-        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ only header
+        },
+        body: formData, // ✅ multipart handled by browser
       });
 
-      setMessage(`${response.count} rows uploaded successfully to ${type} table.`);
-    } catch (err) {
-      console.warn("authFetch failed, falling back to orgFetch", err);
+      const data = await res.json();
 
-      try {
-        // Fallback to orgFetch
-        const response = await orgFetch(`${baseURL}/api/uploads`, {
-          method: "POST",
-          body: formData,
-        });
-
-        setMessage(`${response.count} rows uploaded successfully to ${type} table.`);
-      } catch (error) {
-        console.error("Upload failed:", error);
-        // Type assertion to specify error shape
-        setMessage((error as { error: string })?.error || "Upload failed");
+      if (!res.ok) {
+        throw data;
       }
+
+      setMessage(`${data.count} rows uploaded successfully to ${type} table.`);
+    } catch (error: any) {
+      console.error("Upload failed:", error);
+      setMessage(error?.error || "Upload failed");
     }
   };
 
@@ -71,7 +72,11 @@ const UploadCSV = () => {
 
         <div>
           <label>Select File:</label>
-          <input type="file" accept=".csv,.xlsx" onChange={handleFileChange} />
+          <input
+            type="file"
+            accept=".csv,.xlsx"
+            onChange={handleFileChange}
+          />
         </div>
 
         <button type="submit">Upload</button>

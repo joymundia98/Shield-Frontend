@@ -56,10 +56,10 @@ interface Branch {
   name: string;
 }
 
-interface ChartData {
+/*interface ChartData {
   attendance: number[];
   donations: number[];
-}
+}*/
 
 interface GenderData {
   gender: "Male" | "Female";
@@ -98,10 +98,10 @@ const GeneralReport: React.FC = () => {
     monthlyGiving: 18364.05,
   });
 
-  const [chartData, setChartData] = useState<ChartData>({
+  /*const [_chartData, setChartData] = useState<ChartData>({
     attendance: [0, 0, 0, 0],
     donations: [18364.05, 18364.05, 18364.05, 18364.05],
-  });
+  });*/
 
   const attendanceChartRef = useRef<Chart | null>(null);
   const growthChartRef = useRef<Chart | null>(null);
@@ -243,39 +243,86 @@ const GeneralReport: React.FC = () => {
   }, [members]);
 
   /* =======================
-     ATTENDANCE CHART
+     FETCH ATTENDANCE
+  ======================= */
+  const fetchAttendance = async () => {
+    if (!authToken || !headquarterId) return;
+
+    try {
+      const res = await fetch(
+        `${baseURL}/api/headquarters/${headquarterId}/attendance_records`,
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
+
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
+
+      // Filter by selected branch
+      const filteredData = selectedBranch
+        ? data.filter((record: any) => record.organization_id === selectedBranch.branch_id)
+        : data;
+
+      // Group by week (last 4 weeks)
+      const today = new Date();
+      const lastFourWeeks = Array.from({ length: 4 }, (_, i) => {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - (i * 7) - today.getDay()); // start of week
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        return { startOfWeek, endOfWeek };
+      }).reverse(); // Oldest week first
+
+      const weeklyCounts = lastFourWeeks.map(({ startOfWeek, endOfWeek }) => {
+        return filteredData.filter(
+          (record: any) =>
+            record.status === "Present" &&
+            new Date(record.attendance_date) >= startOfWeek &&
+            new Date(record.attendance_date) <= endOfWeek
+        ).length;
+      });
+
+      const weekLabels = lastFourWeeks.map(({ startOfWeek, endOfWeek }) => {
+        const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+        return `${startOfWeek.toLocaleDateString(undefined, options)} - ${endOfWeek.toLocaleDateString(undefined, options)}`;
+      });
+
+      // Render chart
+      attendanceChartRef.current?.destroy();
+      const ctx = document.getElementById("attendanceChart") as HTMLCanvasElement;
+      if (!ctx) return;
+
+      attendanceChartRef.current = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: weekLabels,
+          datasets: [
+            {
+              label: "Weekly Attendance",
+              data: weeklyCounts,
+              borderColor: "#1A3D7C",
+              backgroundColor: "rgba(26,61,124,0.2)",
+              fill: true,
+              tension: 0.3,
+            },
+          ],
+        },
+        options: { responsive: true },
+      });
+    } catch (error) {
+      console.error("Failed to fetch attendance:", error);
+    }
+  };
+
+  /* =======================
+     ATTENDANCE CHART EFFECT
   ======================= */
   useEffect(() => {
-    const weeklyAttendance = [1, 2, 3, 4].map((_, i) =>
-      Math.max(members.length - i * 2, 0)
-    );
-
-    setChartData(prev => ({ ...prev, attendance: weeklyAttendance }));
-  }, [members]);
-
-  useEffect(() => {
-    attendanceChartRef.current?.destroy();
-    const ctx = document.getElementById("attendanceChart") as HTMLCanvasElement;
-    if (!ctx) return;
-
-    attendanceChartRef.current = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-        datasets: [
-          {
-            label: "Weekly Attendance",
-            data: chartData.attendance,
-            borderColor: "#1A3D7C",
-            backgroundColor: "rgba(26,61,124,0.2)",
-            fill: true,
-            tension: 0.3,
-          },
-        ],
-      },
-      options: { responsive: true },
-    });
-  }, [chartData]);
+    fetchAttendance();
+  }, [selectedBranch, members]);
 
   /* =======================
      GROWTH CHART
