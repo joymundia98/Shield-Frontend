@@ -2444,7 +2444,7 @@
 }
 
 /* ----------------UPLOADS CSS ---------------- */
-:uploadRoot {
+/*:uploadRoot {
       --primary: #5C4736;
       --bg: #f9fafb;
       --border: #e5e7eb;
@@ -2452,14 +2452,14 @@
       --muted: #6b7280;
       --warning: #b91c1c;
       --success: #065f46;
-    }
+    }*/
 
     .parent-upload-container {
       background: #f9fafb;
       margin: 0;
-      padding: 40px;
+      padding: clamp(16px, 4vw, 40px);
       color: #111827;
-      width: 100vw;
+      width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -2467,10 +2467,11 @@
     }
 
     .Upload-container {
+      width: 90vw;
       max-width: 1000px;
       margin: auto;
       background: white;
-      padding: 32px;
+      padding: clamp(16px, 4vw, 32px); /* responsive padding */
       border-radius: 8px;
       box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
     }
@@ -2558,7 +2559,9 @@
     }
 
     .Upload-container .template-preview img {
-      max-width: none;
+      /*max-width: none;*/
+      max-width: 100%;
+      height: auto;
       border: 1px solid #e5e7eb;
       border-radius: 6px;
       cursor: zoom-in;
@@ -2748,8 +2751,8 @@
   text-align: left;
   text-decoration: none;
   transition: box-shadow .15s,transform .15s;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
   touch-action: manipulation;
   white-space: nowrap;
   will-change: box-shadow,transform;
@@ -2944,4 +2947,5 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
 
