@@ -319,6 +319,11 @@ const UserTrackerPage: React.FC = () => {
     setRecordsToShow(5);
   };
 
+  const handleCSVUpload = () => {
+    // Navigate to UploadUsers page directly
+    navigate("/UploadUsers");
+  };
+
   return (
     <div className="dashboard-wrapper">
       {/* SIDEBAR */}
@@ -367,6 +372,10 @@ const UserTrackerPage: React.FC = () => {
           <h1>User Management</h1>
           <div className="header-buttons">
             <button className="add-btn" onClick={() => navigate("/Create_new_User")}>+ &nbsp; New User</button>
+            &emsp;
+            <button className="upload-btn" onClick={handleCSVUpload}>
+              📤 Upload CSV
+            </button>
           </div>
         </header>
 
