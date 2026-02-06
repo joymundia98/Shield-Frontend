@@ -255,7 +255,6 @@ const handleCSVUpload = () => {
     navigate("/UploadMembers");
   };
 
-
   return (
     <div className="dashboard-wrapper members-wrapper">
       <button className="hamburger" onClick={toggleSidebar}> &#9776; </button>
