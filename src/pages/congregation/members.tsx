@@ -181,6 +181,11 @@ useEffect(() => {
     }
   }, [members]);
 
+  const handleCSVUpload = () => {
+    // Navigate to UploadUsers page directly
+    navigate("/UploadMembers");
+  };
+
   return (
     <div className="dashboard-wrapper members-wrapper">
       <button className="hamburger" onClick={toggleSidebar}>&#9776;</button>
@@ -222,7 +227,10 @@ useEffect(() => {
           <h1>Church Members Overview</h1>
           <br/>
           <div className="header-buttons">
-            <button className="add-btn" onClick={() => navigate("/congregation/addMember")}>+ &nbsp; Add Member</button>&nbsp;&nbsp;
+            <button className="add-btn" onClick={() => navigate("/congregation/addMember")}>+ &nbsp; Add Member</button>&emsp;
+            <button className="upload-btn" onClick={handleCSVUpload}>
+              📤 Upload CSV
+            </button>&emsp;
             <button className="add-btn" onClick={() => navigate("/congregation/memberRecords")}>View Members</button>
           </div>
         </header>

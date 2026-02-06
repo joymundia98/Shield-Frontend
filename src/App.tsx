@@ -147,6 +147,7 @@ import UnderConstructionPage from "./pages/InProgress";
 import UploadCSV from "./components/UploadCSV";
 import UploadUsersGuide from "./pages/Organization/uploadUsers";
 import UploadMembersGuide from "./pages/congregation/uploadMembers";
+import UploadVisitorsGuide from "./pages/congregation/uploadVisitors";
 
 function App() {
   return (
@@ -780,6 +781,7 @@ function App() {
           <Route path="/UploadCSV" element={<UploadCSV />} />
           <Route path="/UploadUsers" element={<UploadUsersGuide />} />
           <Route path="/UploadMembers" element={<UploadMembersGuide />} />
+          <Route path="/UploadVisitors" element={<UploadVisitorsGuide />} />
 
           {/* Catch-all for undefined routes (404) */}
           <Route path="*" element={<NotFoundPage />} />

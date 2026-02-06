@@ -199,6 +199,11 @@ const VisitorRecordsPage: React.FC = () => {
     window.open(`/congregation/editVisitor/${id}`, "_blank");
   };
 
+  {/*const handleCSVUpload = () => {
+    // Navigate to UploadUsers page directly
+    navigate("/UploadVisitors");
+  };*/}
+
   return (
     <div className="dashboard-wrapper visitors-wrapper">
       {/* HAMBURGER */}
@@ -257,6 +262,10 @@ const VisitorRecordsPage: React.FC = () => {
             >
               ← Visitors Overview
             </button>
+            &emsp;
+            {/*<button className="upload-btn" onClick={handleCSVUpload}>
+              📤 Upload CSV
+            </button>*/}
           </div>
         </header>
 
