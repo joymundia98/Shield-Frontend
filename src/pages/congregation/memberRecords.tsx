@@ -250,6 +250,11 @@ const ChurchMembersPage: React.FC = () => {
   }
 };
 
+const handleCSVUpload = () => {
+    // Navigate to UploadUsers page directly
+    navigate("/UploadMembers");
+  };
+
 
   return (
     <div className="dashboard-wrapper members-wrapper">
@@ -295,6 +300,10 @@ const ChurchMembersPage: React.FC = () => {
           <div className="header-buttons">
             <br />
             <button className="add-btn" onClick={() => navigate("/congregation/members")}> ← Members Overview </button>
+            &emsp;
+            <button className="upload-btn" onClick={handleCSVUpload}>
+              📤 Upload CSV
+            </button>
           </div>
         </header>
 
