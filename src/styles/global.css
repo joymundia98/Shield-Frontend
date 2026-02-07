@@ -2948,4 +2948,97 @@
   to { opacity: 1; }
 }
 
+/*=====================PRINT CSS========================*/
+/* =======================
+   PRINT STYLES
+======================= */
+@media print {
+  /* Hide anything explicitly marked */
+  .do-not-print {
+    display: none !important;
+  }
+
+  /* Optional: remove page margins added by browser */
+  body {
+    margin: 0;
+  }
+
+  /* Ensure background colors & charts print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove box shadows & UI fluff */
+  .kpi-card,
+  .chart-box {
+    box-shadow: none !important;
+  }
+
+  /* Prevent awkward page breaks */
+  .chart-box,
+  .kpi-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .chart-grid {
+    page-break-before: always;
+  }
+
+  .chart-grid {
+    display: block !important;
+  }
+
+  .chart-box {
+    display: block !important;
+    width: 100% !important;
+  }
+  
+  .move-down{
+    margin-top: 5rem;
+  }
+
+  .move-down-alot{
+    margin-top: 15rem;
+  }
+
+  .page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /*Hide dropdowns & date picker automatically*/
+  select,
+  input,
+  button {
+    display: none !important;
+  }
+}
+
+/* =======================
+   PRINT BUTTON
+======================= */
+.print-button-container {
+  display: flex;
+  justify-content: flex-end;
+  margin: 10px 0 20px;
+}
+
+.print-button {
+  background-color: #fafafa;
+  color: #050505;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset, rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset, rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset, rgba(0, 0, 0, 0.06) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px;
+}
+
+.print-button:hover {
+  background-color: #142d5c;
+  color: #ffffff;
+}
+
 
