@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // Import both authFetch and orgFetch
+import axios from "axios";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -31,10 +32,15 @@ interface IncomeCategories {
 
 const BACKEND_URL = `${baseURL}/api`;
 
+const MONTHS = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
+
 const IncomeTrackerPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // Sidebar
+  // ---------------- SIDEBAR ----------------
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -44,24 +50,21 @@ const IncomeTrackerPage: React.FC = () => {
       : document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // Data storage
+  // ---------------- DATA ----------------
   const [categories, setCategories] = useState<IncomeCategories>({});
   const [categoryList, setCategoryList] = useState<string[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<any[]>([]);
 
-  // Helper function to decide which fetch function to use
   const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
     try {
-      // Try to use authFetch first
       return await authFetch(url, options);
     } catch (error) {
       console.log("authFetch failed, falling back to orgFetch");
-      return await orgFetch(url, options); // Fallback to orgFetch
+      return await orgFetch(url, options);
     }
   };
 
-  // Fetch category table using authFetch or orgFetch
   const fetchIncomeCategories = async () => {
     try {
       const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/income_categories`);
@@ -72,7 +75,6 @@ const IncomeTrackerPage: React.FC = () => {
     }
   };
 
-  // Fetch subcategory table using authFetch or orgFetch
   const fetchSubcategories = async () => {
     try {
       const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/income_subcategories`);
@@ -82,7 +84,6 @@ const IncomeTrackerPage: React.FC = () => {
     }
   };
 
-  // Fetch income data and join with status using authFetch or orgFetch
   const fetchIncomeData = async () => {
     try {
       const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/incomes`);
@@ -96,7 +97,7 @@ const IncomeTrackerPage: React.FC = () => {
           amount: Number(item.amount),
           subcategory_name: sub?.name || "Unknown",
           category_name: cat?.name || "Uncategorized",
-          status: item.status || "Pending", // status fetched from backend
+          status: item.status || "Pending",
         };
       });
 
@@ -136,15 +137,55 @@ const IncomeTrackerPage: React.FC = () => {
     }
   }, [subcategories, incomeCategories]);
 
-  // Filter
+  // ---------------- FILTERS ----------------
   const [selectedFilter, setSelectedFilter] = useState("All");
 
-  const filteredCategories = useMemo(() => {
-    if (selectedFilter === "All") return categories;
-    return { [selectedFilter]: categories[selectedFilter] || [] };
-  }, [categories, selectedFilter]);
+  // ---------------- MONTH/YEAR FILTER ----------------
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
 
-  // Approve/Reject Modals
+  const filteredCategories = useMemo(() => {
+    // Filter by category first
+    let filtered: IncomeCategories;
+    if (selectedFilter === "All") filtered = categories;
+    else filtered = { [selectedFilter]: categories[selectedFilter] || [] };
+
+    // Then filter each group by selected month/year
+    const filteredByDate: IncomeCategories = {};
+    Object.entries(filtered).forEach(([catName, groups]) => {
+      filteredByDate[catName] = groups.map((g) => ({
+        ...g,
+        items: g.items.filter((i) => {
+          const d = new Date(i.date);
+          return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+        })
+      }));
+    });
+
+    return filteredByDate;
+  }, [categories, selectedFilter, selectedMonth, selectedYear]);
+
+  // ---------------- KPI totals ----------------
+  const { totalApproved, totalPending, totalRejected } = useMemo(() => {
+    let approved = 0,
+      pending = 0,
+      rejected = 0;
+
+    Object.values(filteredCategories).forEach((groups) =>
+      groups.forEach((g) =>
+        g.items.forEach((item) => {
+          if (item.status === "Approved") approved += item.amount;
+          if (item.status === "Pending") pending += item.amount;
+          if (item.status === "Rejected") rejected += item.amount;
+        })
+      )
+    );
+
+    return { totalApproved: approved, totalPending: pending, totalRejected: rejected };
+  }, [filteredCategories]);
+
+  // ---------------- MODALS / VIEWS ----------------
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"approve" | "reject">("approve");
   const [modalAction, setModalAction] = useState<() => void>(() => {});
@@ -160,7 +201,6 @@ const IncomeTrackerPage: React.FC = () => {
     setModalOpen(false);
   };
 
-  // View Modal
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState<IncomeItem | null>(null);
 
@@ -174,7 +214,6 @@ const IncomeTrackerPage: React.FC = () => {
     setViewModalOpen(false);
   };
 
-  // Update status (Approve/Reject) using authFetch or orgFetch
   const updateStatus = async (
     catName: string,
     groupName: string,
@@ -193,7 +232,6 @@ const IncomeTrackerPage: React.FC = () => {
         body: JSON.stringify({ status }),
       });
 
-      // Update UI locally
       setCategories((prev) => {
         const updated = { ...prev };
         const group = updated[catName]?.find((g) => g.name === groupName);
@@ -205,50 +243,55 @@ const IncomeTrackerPage: React.FC = () => {
     }
   };
 
-  // KPI totals
-  const { totalApproved, totalPending, totalRejected } = useMemo(() => {
-    let approved = 0,
-      pending = 0,
-      rejected = 0;
-
-    Object.values(categories).forEach((groups) =>
-      groups.forEach((g) =>
-        g.items.forEach((item) => {
-          if (item.status === "Approved") approved += item.amount;
-          if (item.status === "Pending") pending += item.amount;
-          if (item.status === "Rejected") rejected += item.amount;
-        })
-      )
-    );
-
-    return { totalApproved: approved, totalPending: pending, totalRejected: rejected };
-  }, [categories]);
-
-  // Create state to track the number of rows per group
+  // ---------------- VISIBLE ROWS ----------------
   const [visibleRows, setVisibleRows] = useState<{ [key: string]: number }>({});
-
   const handleViewMore = (groupKey: string, totalItems: number) => {
-    setVisibleRows((prev) => {
-      const currentRows = prev[groupKey] || 3; // Default to 3 rows
-      const newRows = Math.min(currentRows + 5, totalItems); // Add 5 or limit to total rows
-      return { ...prev, [groupKey]: newRows };
-    });
+    setVisibleRows((prev) => ({ ...prev, [groupKey]: Math.min((prev[groupKey] || 3) + 5, totalItems) }));
   };
-
   const handleViewLess = (groupKey: string) => {
-    setVisibleRows((prev) => {
-      const currentRows = prev[groupKey] || 3;
-      const newRows = Math.max(currentRows - 5, 3); // Don't go below 3 rows
-      return { ...prev, [groupKey]: newRows };
-    });
+    setVisibleRows((prev) => ({ ...prev, [groupKey]: Math.max((prev[groupKey] || 3) - 5, 3) }));
   };
+  const handleViewAll = (groupKey: string, totalItems: number) => setVisibleRows((prev) => ({ ...prev, [groupKey]: totalItems }));
+  const handleBackToInitial = (groupKey: string) => setVisibleRows((prev) => ({ ...prev, [groupKey]: 3 }));
 
-  const handleViewAll = (groupKey: string, totalItems: number) => {
-    setVisibleRows((prev) => ({ ...prev, [groupKey]: totalItems }));
-  };
-
-  const handleBackToInitial = (groupKey: string) => {
-    setVisibleRows((prev) => ({ ...prev, [groupKey]: 3 }));
+  //--------------------DOWNLOAD REPORTS ----------------
+  const downloadFile = async (type: "pdf" | "excel" | "csv") => {
+    try {
+      const response = await axios.get(
+        `${baseURL}/api/reports/incomes/${type}`,
+        {
+          responseType: "blob", // VERY important
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+          params: {
+            organization_id: localStorage.getItem("organization_id"),
+            // status can be added later if needed
+          }
+        }
+      );
+  
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+      link.href = url;
+  
+      const extensionMap = {
+        pdf: "pdf",
+        excel: "xlsx",
+        csv: "csv"
+      };
+  
+      link.download = `incomes_data.${extensionMap[type]}`;
+      document.body.appendChild(link);
+      link.click();
+  
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("File download failed:", error);
+    }
   };
 
   return (
@@ -265,8 +308,8 @@ const IncomeTrackerPage: React.FC = () => {
 
         <h2>FINANCE</h2>
         <a href="/finance/dashboard">Dashboard</a>
-        <a href="/finance/incometracker" className="active">Track Income</a>
-        <a href="/finance/expensetracker">Track Expenses</a>
+        <a href="/finance/incomeDashboard" className="active">Track Income</a>
+        <a href="/finance/expenseDashboard">Track Expenses</a>
         <a href="/finance/budgets">Budget</a>
         <a href="/finance/payroll">Payroll</a>
         <a href="/finance/financeCategory">Finance Categories</a>
@@ -292,51 +335,65 @@ const IncomeTrackerPage: React.FC = () => {
       <div className="dashboard-content">
         <FinanceHeader />
 
-        <br />
-
         <header className="page-header income-header">
           <h1>Church Income Tracker</h1>
           <div>
-            <br /><br />
-            <button
-              className="add-btn"
-              onClick={() => navigate("/finance/incomeDashboard")}
-            >
+            <button className="add-btn" onClick={() => navigate("/finance/incomeDashboard")}>
               View Summary
             </button>
-            &nbsp;
-            <button className="hamburger" onClick={toggleSidebar}>
-              ☰
-            </button>
+
+            <br/><br/>
+
+              <button className="add-btn" onClick={() => downloadFile("pdf")}>
+                📄 Export PDF
+              </button>&emsp;
+
+              <button className="add-btn" onClick={() => downloadFile("excel")}>
+                📊 Export Excel
+              </button>&emsp;
+
+              <button className="add-btn" onClick={() => downloadFile("csv")}>
+                ⬇️ Export CSV
+              </button>
+            
+
+            <button className="hamburger" onClick={toggleSidebar}>☰</button>
           </div>
+          
         </header>
 
-        {/* KPI CARDS */}
+        {/* ---------------- MONTH/YEAR FILTER ---------------- */}
         <div className="kpi-container">
+          <div className="kpi-card">
+            <h3>Filter by Month/Year</h3>
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
+              {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+            </select>&emsp;
+
+            <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+              {Array.from({ length: 11 }).map((_, i) => {
+                const year = now.getFullYear() - i;
+                return <option key={year} value={year}>{year}</option>;
+              })}
+            </select>
+          </div>
+
+          {/* KPI CARDS */}
           <div className="kpi-card kpi-approved">
             <h3>Total Approved Income</h3>
-            <p>${totalApproved.toLocaleString()}</p>
+            <p>ZMW {totalApproved.toLocaleString()}</p>
           </div>
           <div className="kpi-card kpi-pending">
             <h3>Total Pending Income</h3>
-            <p>${totalPending.toLocaleString()}</p>
+            <p>ZMW {totalPending.toLocaleString()}</p>
           </div>
-                    <div className="kpi-card kpi-rejected">
+          <div className="kpi-card kpi-rejected">
             <h3>Total Rejected Income</h3>
-            <p>${totalRejected.toLocaleString()}</p>
+            <p>ZMW {totalRejected.toLocaleString()}</p>
           </div>
         </div>
 
-        {/* Add Income */}
-        <button
-          className="add-btn"
-          onClick={() => navigate("/finance/addIncome")}
-          style={{ margin: "10px 0" }}
-        >
-          + Add Income
-        </button>
-
-        {/* Filter */}
+        {/* ---------------- FILTER BY CATEGORY ---------------- */}
         <div className="income-filter-box">
           <h3>Filter by Category</h3>
           <select
@@ -352,22 +409,21 @@ const IncomeTrackerPage: React.FC = () => {
           </select>
         </div>
 
-        {/* TABLE RENDER */}
+        {/* ---------------- TABLE RENDER ---------------- */}
         {Object.entries(filteredCategories).map(([catName, groups]) => (
-          <>
           <div key={catName}>
             <h2>{catName}</h2>
-
             {groups.length > 0 ? (
               groups.map((group) => {
                 const groupKey = `${catName}-${group.name}`;
-                const visibleCount = visibleRows[groupKey] || 3; // Default to 3 rows
+                const visibleCount = visibleRows[groupKey] || 3;
                 const totalItems = group.items.length;
+
+                if (totalItems === 0) return null; // Don't show empty subcategories
 
                 return (
                   <div key={group.name}>
                     <h3>{group.name}</h3>
-
                     <table className="responsive-table">
                       <thead>
                         <tr>
@@ -383,19 +439,16 @@ const IncomeTrackerPage: React.FC = () => {
                       <tbody>
                         {group.items.slice(0, visibleCount).map((item, idx) => (
                           <tr key={item.id}>
-                            <td>{item.date}</td>
+                            <td>{new Date(item.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                             <td>{item.giver || "N/A"}</td>
                             <td>{item.description}</td>
-                            <td>${item.amount.toLocaleString()}</td>
+                            <td>ZMW {item.amount.toLocaleString()}</td>
                             <td>
                               <span className={`status ${item.status}`}>{item.status}</span>
                             </td>
                             <td>
-                              <button className="add-btn" onClick={() => openViewModal(item)}>
-                                View
-                              </button>
+                              <button className="add-btn" onClick={() => openViewModal(item)}>View</button>
                               &nbsp;&nbsp;
-
                               {item.status === "Pending" && (
                                 <>
                                   <button
@@ -407,7 +460,6 @@ const IncomeTrackerPage: React.FC = () => {
                                     Approve
                                   </button>
                                   &nbsp;&nbsp;
-
                                   <button
                                     className="reject-btn"
                                     onClick={() =>
@@ -424,36 +476,21 @@ const IncomeTrackerPage: React.FC = () => {
                       </tbody>
                     </table>
 
-                    {/* Buttons for View More, View Less, View All */}
+                    {/* Buttons for View More / Less / All */}
                     <div className="table-buttons">
                       {visibleCount < totalItems && (
-                        <>
                         <button className="pagination-btn" onClick={() => handleViewMore(groupKey, totalItems)}>View More</button>
-                        &emsp;
-                        </>
-                      )}
-
+                      )}&emsp;
                       {visibleCount > 3 && (
-                        <>
                         <button className="pagination-btn" onClick={() => handleViewLess(groupKey)}>View Less</button>
-                        &emsp;
-                        </>
-                      )}
-
+                      )}&emsp;
                       {visibleCount !== totalItems && visibleCount > 3 && (
-                        <>
                         <button className="pagination-btn" onClick={() => handleViewAll(groupKey, totalItems)}>View All</button>
-                        &emsp;
-                        </>
-                      )}
-
+                      )}&emsp;
                       {visibleCount === totalItems && (
-                        <>
                         <button className="pagination-btn" onClick={() => handleBackToInitial(groupKey)}>Back to Initial</button>
-                        &emsp;
-                        </>
                       )}
-                    </div>
+                    </div><br/>
                   </div>
                 );
               })
@@ -461,56 +498,32 @@ const IncomeTrackerPage: React.FC = () => {
               <p>No items</p>
             )}
           </div>
-          <br/><br/>
-          </>
         ))}
 
-        {/* Confirmation Modal */}
+        {/* ---------------- CONFIRM MODAL ---------------- */}
         {modalOpen && (
           <div className="expenseModal" style={{ display: "flex" }}>
             <div className="expenseModal-content">
-              <h2>
-                {modalType === "approve" ? "Approve Income?" : "Reject Income?"}
-              </h2>
+              <h2>{modalType === "approve" ? "Approve Income?" : "Reject Income?"}</h2>
               <p>This action cannot be undone.</p>
-
               <div className="expenseModal-buttons">
-                <button
-                  className="expenseModal-cancel"
-                  onClick={() => setModalOpen(false)}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  className={`expenseModal-confirm ${modalType === "reject" ? "reject" : ""}`}
-                  onClick={confirmModal}
-                >
-                  Confirm
-                </button>
+                <button className="expenseModal-cancel" onClick={() => setModalOpen(false)}>Cancel</button>
+                <button className={`expenseModal-confirm ${modalType === "reject" ? "reject" : ""}`} onClick={confirmModal}>Confirm</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* View Modal */}
+        {/* ---------------- VIEW MODAL ---------------- */}
         {viewModalOpen && viewRecord && (
-          <div
-            className="expenseModal"
-            style={{ display: "flex" }}
-            onClick={closeViewModal}
-          >
-            <div
-              className="expenseModal-content"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div className="expenseModal" style={{ display: "flex" }} onClick={closeViewModal}>
+            <div className="expenseModal-content" onClick={(e) => e.stopPropagation()}>
               <h2>Income Details</h2>
-
               <table>
                 <tbody>
                   <tr>
                     <th>Date</th>
-                    <td>{viewRecord.date}</td>
+                    <td>{new Date(viewRecord.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                   </tr>
                   <tr>
                     <th>Source / Giver</th>
@@ -528,7 +541,6 @@ const IncomeTrackerPage: React.FC = () => {
                     <th>Status</th>
                     <td>{viewRecord.status}</td>
                   </tr>
-
                   {viewRecord.attachments && viewRecord.attachments.length > 0 && (
                     <tr>
                       <th>Attachments</th>
@@ -543,13 +555,7 @@ const IncomeTrackerPage: React.FC = () => {
                   )}
                 </tbody>
               </table>
-
-              <button
-                className="expenseModal-cancel"
-                onClick={closeViewModal}
-              >
-                Close
-              </button>
+              <button className="expenseModal-cancel" onClick={closeViewModal}>Close</button>
             </div>
           </div>
         )}
@@ -559,4 +565,3 @@ const IncomeTrackerPage: React.FC = () => {
 };
 
 export default IncomeTrackerPage;
-

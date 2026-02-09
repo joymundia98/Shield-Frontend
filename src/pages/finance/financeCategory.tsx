@@ -400,8 +400,8 @@ const deleteItem = async (group: GroupType, index: number) => {
 
         <h2>FINANCE MANAGER</h2>
         <a href="/finance/dashboard">Dashboard</a>
-        <a href="/finance/incometracker">Track Income</a>
-        <a href="/finance/expensetracker">Track Expenses</a>
+        <a href="/finance/incomeDashboard">Track Income</a>
+        <a href="/finance/expenseDashboard">Track Expenses</a>
         <a href="/finance/budgets">Budget</a>
         <a href="/finance/payroll">Payroll</a>
         <a href="/finance/financeCategory" className="active">Finance Categories</a>

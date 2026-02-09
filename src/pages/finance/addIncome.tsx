@@ -171,8 +171,8 @@ const AddIncome: React.FC = () => {
 
         <h2>FINANCE</h2>
         <a href="/finance/dashboard">Dashboard</a>
-        <a href="/finance/incometracker" className="active">Track Income</a>
-        <a href="/finance/expensetracker">Track Expenses</a>
+        <a href="/finance/incomeDashboard" className="active">Track Income</a>
+        <a href="/finance/expenseDashboard">Track Expenses</a>
         <a href="/finance/budgets">Budget</a>
         <a href="/finance/payroll">Payroll</a>
         <a href="/finance/financeCategory">Finance Categories</a>

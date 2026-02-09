@@ -669,9 +669,9 @@
             color: #1A3D7C; /* deep royal blue */
         }
 
-        .kpi-approved, .kpi-active { background-color: rgba(212, 237, 218, 0.67); color: #155724; }
-        .kpi-pending { background-color: rgb(255, 243, 205, 0.67); color: #856404; }
-        .kpi-rejected, .kpi-inactive { background-color: rgb(248, 215, 218, 0.67); color: #721c24; }
+        .kpi-approved, .kpi-active { background-color: rgba(212, 237, 218, 0.67); color: #155724; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+        .kpi-pending { background-color: rgb(255, 243, 205, 0.67); color: #856404; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+        .kpi-rejected, .kpi-inactive { background-color: rgb(248, 215, 218, 0.67); color: #721c24; display: flex; flex-direction: column; justify-content: center; align-items: center;}
 
         .kpi-change {
             display: flex;

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Bar, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -13,6 +12,8 @@ import {
 } from "chart.js";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api"; // <-- added authFetch import
+
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -84,23 +85,33 @@ const ExpenseDashboardPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
 
+  // ------------------- Auth Fetch Wrapper -------------------
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url);
+    } catch (err) {
+      console.log("authFetch failed, falling back to orgFetch for", url);
+      return await orgFetch(url);
+    }
+  };
+
   // ------------------- Fetch from Backend -------------------
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, subRes, deptRes, expenseRes, budgetRes] = await Promise.all([
-          axios.get(`${BACKEND_URL}/finance/expense_categories`),
-          axios.get(`${BACKEND_URL}/finance/expense_subcategories`),
-          axios.get(`${BACKEND_URL}/departments`),
-          axios.get(`${BACKEND_URL}/finance/expenses`),
-          axios.get(`${BACKEND_URL}/finance/budgets`),
+        const [catData, subData, deptData, expenseData, budgetData] = await Promise.all([
+          fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expense_categories`),
+          fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expense_subcategories`),
+          fetchDataWithAuthFallback(`${BACKEND_URL}/departments`),
+          fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expenses`),
+          fetchDataWithAuthFallback(`${BACKEND_URL}/finance/budgets`)
         ]);
 
-        setCategories(catRes.data);
-        setSubcategories(subRes.data);
-        setDepartments(deptRes.data);
-        setExpenses(expenseRes.data);
-        setBudgets(budgetRes.data);
+        setCategories(catData);
+        setSubcategories(subData);
+        setDepartments(deptData);
+        setExpenses(expenseData);
+        setBudgets(budgetData);
       } catch (err) {
         console.error("Failed to fetch data", err);
       }
@@ -151,6 +162,7 @@ const ExpenseDashboardPage: React.FC = () => {
   }, [budgets, selectedYear, selectedMonth]);
 
   // ------------------- Calculate Total Expenses and Budget -------------------
+  
   const totalExpenses = useMemo(
     () => filteredExpenses.reduce((sum, e) => sum + e.amountNum, 0),
     [filteredExpenses]
@@ -161,10 +173,13 @@ const ExpenseDashboardPage: React.FC = () => {
     [filteredBudgets]
   );
 
+  // ------------------- Reserve Funds -------------------
+  const reserveFunds = totalBudget - totalExpenses; // <-- dynamic based on budget
+
+
   const burnRate = (totalExpenses / new Date().getDate()).toFixed(2); // Example calculation for burn rate
 
-  const reserveFunds = 50000 - totalExpenses; // Example reserve funds
-
+  
   // ------------------- Charts -------------------
   const categoryTotals = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -179,8 +194,16 @@ const ExpenseDashboardPage: React.FC = () => {
     filteredExpenses.forEach((e) => {
       totals[e.department] = (totals[e.department] || 0) + e.amountNum;
     });
-    return totals;
+
+    // Convert to array and sort by amount descending, take top 5
+    const sortedTop5 = Object.entries(totals)
+      .sort(([, a], [, b]) => b - a) // sort descending
+      .slice(0, 5); // top 5
+
+    // Convert back to object for chart
+    return Object.fromEntries(sortedTop5);
   }, [filteredExpenses]);
+
 
   const categoryChartData = {
     labels: Object.keys(categoryTotals),
@@ -197,7 +220,7 @@ const ExpenseDashboardPage: React.FC = () => {
     labels: Object.keys(departmentTotals),
     datasets: [
       {
-        label: "Spend per Department",
+        label: "Top 5 Spend per Department",
         data: Object.values(departmentTotals),
         backgroundColor: [
           "#5C4736", "#817E7A", "#AF907A", "#20262C", "#858796"
@@ -205,6 +228,7 @@ const ExpenseDashboardPage: React.FC = () => {
       },
     ],
   };
+
 
   return (
     <div className="dashboard-wrapper">
@@ -220,8 +244,8 @@ const ExpenseDashboardPage: React.FC = () => {
 
         <h2>FINANCE</h2>
         <a href="/finance/dashboard">Dashboard</a>
-        <a href="/finance/incometracker">Track Income</a>
-        <a href="/finance/expensetracker" className="active">Track Expenses</a>
+        <a href="/finance/incomeDashboard">Track Income</a>
+        <a href="/finance/expenseDashboard" className="active">Track Expenses</a>
         <a href="/finance/budgets">Budget</a>
         <a href="/finance/payroll">Payroll</a>
         <a href="/finance/financeCategory">Finance Categories</a>
@@ -252,13 +276,13 @@ const ExpenseDashboardPage: React.FC = () => {
         <header className="page-header expense-header">
           <h1>Expense Dashboard</h1>
           <div>
-            <br /><br />
+            <br />
             <button
               className="add-btn"
               style={{ marginRight: "10px" }}
               onClick={() => navigate("/finance/expensetracker")}
             >
-              ← Back to Tracker
+              View Expense Data
             </button>
             <button className="hamburger" onClick={toggleSidebar}>
               &#9776;
@@ -272,16 +296,19 @@ const ExpenseDashboardPage: React.FC = () => {
         <div className="expense-filter-box">
           <h3>Filter by Date</h3>
           <div className="expense-filter-select">
-            <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
-              {[2025, 2026].map((year) => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>&emsp;
+            
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
               {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, idx) => (
                 <option key={month} value={idx + 1}>{month}</option>
               ))}
+            </select>&emsp;
+
+            <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+              {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
             </select>
+
           </div>
         </div>
 
@@ -289,15 +316,17 @@ const ExpenseDashboardPage: React.FC = () => {
         <div className="kpi-container">
           <div className="kpi-card">
             <h3>Total Expenses vs Budget</h3>
-            <p>${totalExpenses.toLocaleString()} / ${totalBudget.toLocaleString()}</p>
+            <p>ZMW {totalExpenses.toLocaleString()} / ZMW {totalBudget.toLocaleString()}</p>
           </div>
           <div className="kpi-card">
             <h3>Reserve Funds</h3>
-            <p>${reserveFunds.toLocaleString()}</p>
+            <p>ZMW {reserveFunds.toLocaleString()}</p>
+            <h4>Total Budget -  Total Expenses</h4>
           </div>
+
           <div className="kpi-card">
             <h3>Monthly Burn Rate</h3>
-            <p>${burnRate}/day</p>
+            <p>ZMW {burnRate}/day</p>
           </div>
         </div>
 

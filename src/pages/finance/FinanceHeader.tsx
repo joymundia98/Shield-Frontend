@@ -12,8 +12,8 @@ const FinanceHeader: React.FC = () => {
   const financeLinks = [
     { name: "← Back to Main", href: "/dashboard", permission: "View Main Dashboard" },
     { name: "Dashboard", href: "/finance/dashboard", permission: "View Finance Dashboard" },
-    { name: "Track Income", href: "/finance/incometracker", permission: "Manage Income Tracker" },
-    { name: "Track Expenses", href: "/finance/expensetracker", permission: "Manage Expense Tracker" },
+    { name: "Track Income", href: "/finance/incomeDashboard", permission: "View Income Dashboard" },
+    { name: "Track Expenses", href: "/finance/expenseDashboard", permission: "View Expense Dashboard" },
     { name: "Budget", href: "/finance/budgets", permission: "View Budgets Summary" },
     { name: "Payroll", href: "/finance/payroll", permission: "Manage Payroll" },
     { name: "Finance Categories", href: "/finance/financeCategory", permission: "View Finance Categories" },
