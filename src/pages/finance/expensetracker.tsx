@@ -482,7 +482,7 @@ const ExpenseTrackerPage: React.FC = () => {
                                 onClick={() => window.open(`${baseURL}/api/finance/viewExpense/${item.id}`, "_blank")}
                               >
                                 View
-                              </button>
+                              </button> &emsp;
 
                               {item.status === "Pending" && (
                                 <>
@@ -491,7 +491,7 @@ const ExpenseTrackerPage: React.FC = () => {
                                     onClick={() => openModal(() => updateStatus(deptName, group.name, idx, "Approved"), "approve")}
                                   >
                                     Approve
-                                  </button>
+                                  </button> &emsp;
 
                                   <button
                                     className="reject-btn"
