@@ -95,6 +95,7 @@ const AddExpense: React.FC = () => {
       try {
         const data = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/expense_subcategories`);
         setAllSubcategories(data);
+        console.log("Subcategories raw:", data);
       } catch (err) {
         console.error("Failed to fetch subcategories:", err);
       }
@@ -167,6 +168,8 @@ const AddExpense: React.FC = () => {
       alert("Server error or network issue");
     }
   };
+
+  
 
   return (
     <div className="dashboard-wrapper">

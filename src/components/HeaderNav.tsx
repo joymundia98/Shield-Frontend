@@ -33,7 +33,9 @@ const HeaderNav: React.FC = () => {
       links: [
         { name: "Dashboard", href: "/finance/dashboard", permission: "View Finance Dashboard" },
         { name: "Track Income", href: "/finance/incomeDashboard", permission: "View Income Dashboard" },
-        { name: "Track Expenses", href: "/finance/expensetracker", permission: "Manage Expense Tracker" },
+        { name: "Add Income", href: "/finance/addIncome", permission: "Add Income" },
+        { name: "Track Expenses", href: "/finance/expenseDashboard", permission: "View Expense Dashboard" },
+        { name: "Add Expense", href: "/finance/addExpense", permission: "Add Expense" },
         { name: "Budget", href: "/finance/budgets", permission: "View Budgets Summary" },
         { name: "Payroll", href: "/finance/payroll", permission: "Manage Payroll" },
         { name: "Finance Categories", href: "/finance/financeCategory", permission: "View Finance Categories" },
