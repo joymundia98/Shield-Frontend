@@ -291,6 +291,7 @@ const BudgetsPage: React.FC = () => {
         {/* Header */}
         <header className="page-header">
           <h1>Budget Overview</h1>
+          <button className="add-btn" onClick={() => navigate("/finance/budgetBreakdown")}>Budget Breakdown</button>
           <button className="hamburger" onClick={toggleSidebar}>
             &#9776;
           </button>
