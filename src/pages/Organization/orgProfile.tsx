@@ -149,7 +149,7 @@ const EdittableChurchProfilePage: React.FC = () => {
   });
 
   const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, _setIsEditing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // State to control sidebar visibility
 
   const [showSuccessCard, setShowSuccessCard] = useState(false);
