@@ -294,13 +294,13 @@ const BudgetsPage: React.FC = () => {
           <button className="add-btn" onClick={() => navigate("/finance/budgetBreakdown")}>Budget Breakdown</button>
           <button className="hamburger" onClick={toggleSidebar}>
             &#9776;
+          </button>&emsp;
+          <button className="add-btn" onClick={() => navigate("/finance/setBudget")}>
+            Set Budget
           </button>
         </header>
 
         <br />
-        <button className="add-btn" onClick={() => navigate("/finance/setBudget")}>
-          Set Budget
-        </button>
 
         <br /><br />
 
