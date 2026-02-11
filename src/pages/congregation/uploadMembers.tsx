@@ -8,6 +8,11 @@ import step2 from "../../assets/step2.png";
 import step3 from "../../assets/step3.png";
 import optional from "../../assets/optional.png";
 import step4 from "../../assets/step4.png";
+import step5 from "../../assets/step5_Members.png";
+import step6 from "../../assets/step6_Members.png";
+import step7 from "../../assets/step7_Members.png";
+import step8 from "../../assets/step8_Members.png";
+import step9 from "../../assets/step9_Members.png";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -28,7 +33,7 @@ const UploadMembersGuide: React.FC = () => {
   const dropZoneRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const slidesCount = 6;
+  const slidesCount = 11;
 
   /* ======================
      Carousel Logic
@@ -229,7 +234,9 @@ const UploadMembersGuide: React.FC = () => {
                     Ensure column names <strong>Match</strong> the guide shown.
                   </li>
                   <li>
-                    <strong>date_of_birth</strong> and <strong>date_joined</strong> should be in the <code>Date</code> format.
+                    <strong>date_of_birth</strong> and <strong>date_joined</strong> should be in the <code>Date (yyyy-mm-dd)</code> format.
+                    <br/>
+                    If the date format is not <code>yyyy-mm-dd</code> then go to <strong>step 5</strong>.
                   </li>
                   <li>
                     All other columns can take the <strong> general format</strong>
@@ -354,6 +361,104 @@ const UploadMembersGuide: React.FC = () => {
             </div>
 
             {/* Slide 6 */}
+            <div className="carousel-slide">
+              <div className="carousel-left">
+                <h3>Step 5: Set the Date Format</h3>
+                <ul>
+                  <li>
+                    Select both the <strong>date_of_birth</strong> and <strong>date_joined</strong> columns.
+                  </li>
+                  <li>
+                    You can do so, by holding down the control button after selecting the first column.
+                  </li>
+                </ul>
+              </div>
+              <div className="carousel-right">
+                <img
+                  src={step5}
+                  alt="Remove decimals"
+                  onClick={() => setZoomSrc(step5)}
+                />
+              </div>
+            </div>
+
+            {/* Slide 7 */}
+            <div className="carousel-slide">
+              <div className="carousel-left">
+                <h3>Step 6: Navigating cell formatter</h3>
+                <ul>
+                  <li>
+                    <strong>Right Click</strong> over the highlighted columns and click Format cells.
+                  </li>
+                </ul>
+              </div>
+              <div className="carousel-right">
+                <img
+                  src={step6}
+                  alt="Remove decimals"
+                  onClick={() => setZoomSrc(step6)}
+                />
+              </div>
+            </div>
+
+            {/* Slide 8 */}
+            <div className="carousel-slide">
+              <div className="carousel-left">
+                <h3>Step 7: Navigate to the custom Format</h3>
+                <ul>
+                  <li>
+                    This step may be <strong>optional</strong> if your Data types already includes the <code>yyyy-mm-dd</code> format.
+                  </li>
+                </ul>
+              </div>
+              <div className="carousel-right">
+                <img
+                  src={step7}
+                  alt="Remove decimals"
+                  onClick={() => setZoomSrc(step7)}
+                />
+              </div>
+            </div>
+
+            {/* Slide 9 */}
+            <div className="carousel-slide">
+              <div className="carousel-left">
+                <h3>Step 8: Set the custom date format</h3>
+                <ul>
+                  <li>
+                    Ensure you set the format to <strong><code>yyyy-mm-dd </code></strong> as shown in the image.
+                  </li>
+                </ul>
+              </div>
+              <div className="carousel-right">
+                <img
+                  src={step8}
+                  alt="Remove decimals"
+                  onClick={() => setZoomSrc(step8)}
+                />
+              </div>
+            </div>
+
+            {/* Slide 9 */}
+            <div className="carousel-slide">
+              <div className="carousel-left">
+                <h3>Step 9: Confirm Date format for columns</h3>
+                <ul>
+                  <li>
+                    Ensure <strong>date_of_birth</strong> and <strong>date_joined</strong> columns are in the <strong><code>yyyy-mm-dd </code></strong> format as shown in the image.
+                  </li>
+                </ul>
+              </div>
+              <div className="carousel-right">
+                <img
+                  src={step9}
+                  alt="Remove decimals"
+                  onClick={() => setZoomSrc(step9)}
+                />
+              </div>
+            </div>
+
+            {/* Slide 11 */}
             <div className="carousel-slide">
               <div className="carousel-left">
                 <h3>Final Step: Confirm Format meets requirements</h3>
