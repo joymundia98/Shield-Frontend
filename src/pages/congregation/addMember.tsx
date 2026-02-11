@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+import { authFetch, orgFetch } from "../../utils/api";
+
 
 interface MemberForm {
   photo: string;
@@ -114,57 +116,73 @@ const navigate = useNavigate();
 
 
   // --- Backend submission ---
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // --- Backend submission using authFetch with fallback ---
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    // Map frontend fields to backend-required fields
-    const payload: Record<string, any> = {
-      photo: formData.photo || null,
-      full_name: formData.name || null, // backend expects "full_name"
-      category: formData.category || null, // This is calculated
-      age: formData.age !== "" ? Number(formData.age) : null,
-      gender: formData.gender || null,
-      join_date: formData.joinDate || null, // backend expects "join_date"
-      address: formData.address || null,
-      phone: formData.phone || null,
-      email: formData.email || null,
-      disabled: Boolean(formData.disabled),
-      orphan: Boolean(formData.orphan),
-      widowed: Boolean(formData.widowed),
-      date_of_birth: formData.dateOfBirth || null, // Send calculated dateOfBirth
-    };
+  const payload: Record<string, any> = {
+    photo: formData.photo || null,
+    full_name: formData.name || null,
+    category: formData.category || null,
+    age: formData.age !== "" ? Number(formData.age) : null,
+    gender: formData.gender || null,
+    join_date: formData.joinDate || null,
+    address: formData.address || null,
+    phone: formData.phone || null,
+    email: formData.email || null,
+    disabled: Boolean(formData.disabled),
+    orphan: Boolean(formData.orphan),
+    widowed: Boolean(formData.widowed),
+    date_of_birth: formData.dateOfBirth || null,
+  };
 
-    // Optional adult/minor fields
-    if (isAdult) {
-      payload.nrc = formData.NRC || null;
-    } else if (isAdult === false) {
-      payload.guardian_name = formData.guardianName || null;
-      payload.guardian_phone = formData.guardianPhone || null;
+  if (isAdult) {
+    payload.nrc = formData.NRC || null;
+  } else if (isAdult === false) {
+    payload.guardian_name = formData.guardianName || null;
+    payload.guardian_phone = formData.guardianPhone || null;
+  }
+
+  console.log("Submitting Member Payload:", JSON.stringify(payload, null, 2));
+
+  try {
+    // 🔐 First try authFetch
+    const response = await authFetch(BACKEND_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    if (response && response.data) {
+      alert("Member added successfully!");
+      navigate("/congregation/members");
+    } else {
+      throw new Error("Unexpected response format");
     }
 
-    // DEBUG: log the payload before sending
-    console.log("Submitting Member Payload:", JSON.stringify(payload, null, 2));
+  } catch (err) {
+    console.error("Error submitting with authFetch, falling back to orgFetch:", err);
 
     try {
-      const res = await fetch(BACKEND_URL, {
+      // 🔁 Fallback to orgFetch
+      const response = await orgFetch(BACKEND_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Unknown error" }));
-        alert("Error: " + error.message);
-        return;
+      if (response && response.data) {
+        alert("Member added successfully!");
+        navigate("/congregation/members");
+      } else {
+        throw new Error("Unexpected response format");
       }
 
-      alert("Member added successfully!");
-      navigate("/congregation/members"); // redirect to members overview
-    } catch (err) {
-      console.error("Failed to submit member:", err);
-      alert("Server error. Check console for details.");
+    } catch (error) {
+      console.error("Error submitting with orgFetch:", error);
+      alert("Failed to add member. Please try again.");
     }
-  };
+  }
+};
+
 
   return (
     <div className="dashboard-wrapper members-wrapper">

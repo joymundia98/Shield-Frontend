@@ -1,20 +1,54 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import "../../styles/global.css"; // Assuming global styles are already imported
+import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+import { authFetch, orgFetch } from "../../utils/api";
 
-// Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
-const ViewConvert: React.FC = () => {
-  const { id } = useParams(); // Get the id from URL
-  const navigate = useNavigate();
-  const [convert, setConvert] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+interface Convert {
+  id: number;
+  convert_type: "visitor" | "member";
+  visitor_id?: number | null;
+  member_id?: number | null;
+  name?: string;
+  age?: number;
+  gender?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  convert_date: string;
+  follow_up_status: string;
+  organization_id: string;
+  status?: string;
+}
 
+// Helper to fetch with authFetch fallback
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    const data = await authFetch(url);
+    if (data) return data;
+    throw new Error("No data from authFetch");
+  } catch (err) {
+    console.log("authFetch failed, falling back to orgFetch:", err);
+    try {
+      const data = await orgFetch(url);
+      if (data) return data;
+      throw new Error("No data from orgFetch");
+    } catch (err) {
+      throw new Error("Both authFetch and orgFetch failed");
+    }
+  }
+};
+
+const ViewConvert: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  const [convert, setConvert] = useState<Convert | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ------------------- Sidebar -------------------
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
   useEffect(() => {
@@ -23,54 +57,65 @@ const ViewConvert: React.FC = () => {
   }, [sidebarOpen]);
 
   useEffect(() => {
-    const fetchConvert = async () => {
-      try {
-        const response = await fetch(`${baseURL}/api/converts/${id}`);
-        const data = await response.json();
-
-        if (data) {
-          // Fetch additional information based on convert type
-          let name = "";
-          let additionalData = {};
-
-          if (data.convert_type === "visitor") {
-            const visitorResponse = await fetch(`${baseURL}/api/visitor/${data.visitor_id}`);
-            const visitor = await visitorResponse.json();
-            name = visitor.name;
-            additionalData = {
-              age: visitor.age,
-              gender: visitor.gender,
-              phone: visitor.phone,
-              email: visitor.email,
-              address: visitor.address,
-            };
-          } else if (data.convert_type === "member") {
-            const memberResponse = await fetch(`${baseURL}/api/members/${data.member_id}`);
-            const member = await memberResponse.json();
-            name = member.full_name;
-            additionalData = {
-              age: member.age,
-              gender: member.gender,
-              phone: member.phone,
-              email: member.email,
-              status: member.status,
-            };
-          }
-
-          setConvert({ ...data, name, ...additionalData });
-        } else {
-          setError("Convert not found.");
-        }
-      } catch (error) {
-        setError("Error fetching convert details.");
-        console.error("Error fetching convert details:", error);
-      }
-    };
-
-    if (id) {
-      fetchConvert();
+  const fetchConvert = async () => {
+    if (!id) {
+      setError("Convert ID is missing.");
+      return;
     }
-  }, [id]);
+
+    try {
+      // 1️⃣ Fetch the convert record
+      const convertData: any = await fetchDataWithAuthFallback(`${baseURL}/api/converts/${id}`);
+      if (!convertData) {
+        setError("Convert not found.");
+        return;
+      }
+
+      let demographicData: Partial<Convert> = {};
+
+      if (convertData.convert_type === "visitor" && convertData.visitor_id) {
+        const visitor = await fetchDataWithAuthFallback(`${baseURL}/api/visitor/${convertData.visitor_id}`);
+        console.log("Visitor data:", visitor); // ✅ Debug
+        demographicData = {
+          name: visitor?.name,
+          age: visitor?.age,
+          gender: visitor?.gender,
+          phone: visitor?.phone,
+          email: visitor?.email,
+          address: visitor?.address,
+        };
+      } else if (convertData.convert_type === "member" && convertData.member_id) {
+        const memberResponse: any = await fetchDataWithAuthFallback(
+          `${baseURL}/api/members/${convertData.member_id}`
+        );
+        console.log("Member API response:", memberResponse);
+
+        // The member object is inside `data` key
+        const member = memberResponse?.data ?? null;
+
+        if (member) {
+          demographicData = {
+            name: member.full_name,
+            age: member.age,
+            gender: member.gender,
+            phone: member.phone,
+            email: member.email,
+            status: member.status,
+          };
+        }
+      }
+
+      console.log("Final demographic data:", demographicData); // ✅ Debug
+      setConvert({ ...convertData, ...demographicData });
+    } catch (err: any) {
+      console.error("Error fetching convert details:", err);
+      setError(err.message || "Error fetching convert details.");
+    }
+  };
+
+  fetchConvert();
+}, [id]);
+
 
   if (error) {
     return (
@@ -87,21 +132,12 @@ const ViewConvert: React.FC = () => {
 
   return (
     <div className="dashboard-wrapper">
-      {/* Hamburger */}
-      <button className="hamburger" onClick={toggleSidebar}>
-        &#9776;
-      </button>
+      <button className="hamburger" onClick={toggleSidebar}>&#9776;</button>
 
-      {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
         <div className="close-wrapper">
           <div className="toggle close-btn">
-            <input
-              type="checkbox"
-              id="closeSidebarButton"
-              checked={sidebarOpen}
-              onChange={toggleSidebar}
-            />
+            <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
             <span className="button"></span>
             <span className="label">X</span>
           </div>
@@ -117,42 +153,22 @@ const ViewConvert: React.FC = () => {
 
         <hr className="sidebar-separator" />
         <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
-
-        <a
-          href="/"
-          className="logout-link"
-          onClick={(e) => {
-            e.preventDefault();
-            localStorage.clear();
-            navigate("/"); 
-          }}
-        >
-          ➜ Logout
-        </a>
+        <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}>➜ Logout</a>
       </div>
 
-      {/* Main Content */}
       <div className="dashboard-content">
-
-        <CongregationHeader/><br/>
-        
+        <CongregationHeader /><br />
         <h1>Convert Details</h1>
-
         <br />
-        {/* Back to Converts List Button */}
         <button className="add-btn" onClick={() => navigate("/congregation/convertRecords")}>
           ← &nbsp; Back to Converts List
         </button>
-        <br /><br/>
+        <br /><br />
 
-        {/* Convert Information Table */}
         <h3>Demographic / Basic Info</h3>
         <table className="responsive-table left-aligned-table">
           <tbody>
-            <tr>
-              <td><strong>Name</strong></td>
-              <td>{convert.name}</td>
-            </tr>
+            <tr><td><strong>Name</strong></td><td>{convert.name}</td></tr>
             {convert.age && <tr><td><strong>Age</strong></td><td>{convert.age}</td></tr>}
             {convert.gender && <tr><td><strong>Gender</strong></td><td>{convert.gender}</td></tr>}
           </tbody>
@@ -170,18 +186,9 @@ const ViewConvert: React.FC = () => {
         <h3>Convert Details</h3>
         <table className="responsive-table left-aligned-table">
           <tbody>
-            <tr>
-              <td><strong>Convert Date</strong></td>
-              <td>{new Date(convert.convert_date).toLocaleDateString()}</td>
-            </tr>
-            <tr>
-              <td><strong>Follow-up Status</strong></td>
-              <td>{convert.follow_up_status}</td>
-            </tr>
-            <tr>
-              <td><strong>Organization ID</strong></td>
-              <td>{convert.organization_id}</td>
-            </tr>
+            <tr><td><strong>Convert Date</strong></td><td>{new Date(convert.convert_date).toLocaleDateString()}</td></tr>
+            <tr><td><strong>Follow-up Status</strong></td><td>{convert.follow_up_status}</td></tr>
+            <tr><td><strong>Organization ID</strong></td><td>{convert.organization_id}</td></tr>
             {convert.status && <tr><td><strong>Status</strong></td><td>{convert.status}</td></tr>}
           </tbody>
         </table>

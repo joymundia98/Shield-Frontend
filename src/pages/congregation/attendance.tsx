@@ -15,6 +15,7 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
+import axios from "axios"; //For downloads
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -240,6 +241,46 @@ const AttendancePage: React.FC = () => {
     setRecordsToShow(5);
   };
 
+  //--------------------DOWNLOAD REPORTS ----------------
+    const downloadFile = async (type: "pdf" | "excel" | "csv") => {
+      try {
+        const response = await axios.get(
+          `${baseURL}/api/reports/attendance/${type}`,
+          {
+            responseType: "blob", // VERY important
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`
+            },
+            params: {
+              organization_id: localStorage.getItem("organization_id"),
+              // status can be added later if needed
+            }
+          }
+        );
+    
+        const blob = new Blob([response.data]);
+        const url = window.URL.createObjectURL(blob);
+    
+        const link = document.createElement("a");
+        link.href = url;
+    
+        const extensionMap = {
+          pdf: "pdf",
+          excel: "xlsx",
+          csv: "csv"
+        };
+    
+        link.download = `attendance_data.${extensionMap[type]}`;
+        document.body.appendChild(link);
+        link.click();
+    
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("File download failed:", error);
+      }
+    };
+
   return (
     <div className="dashboard-wrapper">
       {/* HAMBURGER */}
@@ -433,6 +474,22 @@ const AttendancePage: React.FC = () => {
 
         {/* Records Table */}
         <h2 className="records-heading">Records</h2>
+        
+        <br/>
+
+          <button className="add-btn" onClick={() => downloadFile("pdf")}>
+            📄 Export PDF
+          </button>&emsp;
+
+          <button className="add-btn" onClick={() => downloadFile("excel")}>
+            📊 Export Excel
+          </button>&emsp;
+
+          <button className="add-btn" onClick={() => downloadFile("csv")}>
+            ⬇️ Export CSV
+          </button>
+        <br/><br/>
+
         {loading ? (
           <p>Loading records...</p>
         ) : error ? (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+//import axios from "axios";
+import { authFetch, orgFetch } from "../../utils/api";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
 
@@ -74,19 +75,51 @@ const EditMemberPage: React.FC = () => {
   useEffect(() => {
     console.log("Member ID from URL:", memberId); // Add this line to check if memberId is correct
     const fetchMemberData = async () => {
-      try {
-        const res = await axios.get(`${BACKEND_URL}/${memberId}`);
-        const data = res.data;
-        console.log(data); // Check if the response data is correct
+  try {
+    // 🔐 Try authFetch first
+    const response = await authFetch(`${BACKEND_URL}/${memberId}`);
 
-        // Prefill formData with fetched data
+    if (response && response.data) {
+      const data = response.data;
+
+      setFormData({
+        photo: data.photo || "",
+        name: data.full_name || "",
+        category: data.category || "",
+        age: data.age || "",
+        gender: data.gender || "",
+        joinDate: formatDate(data.date_joined) || "",
+        address: data.address || "",
+        phone: data.phone || "",
+        email: data.email || "",
+        disabled: data.disabled || false,
+        orphan: data.orphan || false,
+        widowed: data.widowed || false,
+        NRC: data.nrc || "",
+        guardianName: data.guardian_name || "",
+        guardianPhone: data.guardian_phone || "",
+        dateOfBirth: data.date_of_birth || "",
+      });
+    } else {
+      throw new Error("Unexpected response format");
+    }
+
+  } catch (err) {
+    console.error("authFetch failed, falling back to orgFetch:", err);
+
+    try {
+      const response = await orgFetch(`${BACKEND_URL}/${memberId}`);
+
+      if (response && response.data) {
+        const data = response.data;
+
         setFormData({
           photo: data.photo || "",
           name: data.full_name || "",
           category: data.category || "",
           age: data.age || "",
           gender: data.gender || "",
-          joinDate: formatDate(data.date_joined) || "", // Format joinDate
+          joinDate: formatDate(data.date_joined) || "",
           address: data.address || "",
           phone: data.phone || "",
           email: data.email || "",
@@ -98,11 +131,17 @@ const EditMemberPage: React.FC = () => {
           guardianPhone: data.guardian_phone || "",
           dateOfBirth: data.date_of_birth || "",
         });
-      } catch (err) {
-        console.error("Failed to fetch member data:", err);
-        alert("Error fetching member data");
+      } else {
+        throw new Error("Unexpected response format");
       }
-    };
+
+    } catch (error) {
+      console.error("orgFetch failed:", error);
+      alert("Error fetching member data");
+    }
+  }
+};
+
 
     if (memberId) {
       fetchMemberData();
@@ -122,51 +161,68 @@ const EditMemberPage: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const payload: Record<string, any> = {
-      photo: formData.photo || null,
-      full_name: formData.name || null,
-      category: formData.category || null,
-      age: formData.age !== "" ? Number(formData.age) : null,
-      gender: formData.gender || null,
-      join_date: formData.joinDate || null,
-      address: formData.address || null,
-      phone: formData.phone || null,
-      email: formData.email || null,
-      disabled: Boolean(formData.disabled),
-      orphan: Boolean(formData.orphan),
-      widowed: Boolean(formData.widowed),
-      date_of_birth: formData.dateOfBirth || null,
-    };
+  const payload: Record<string, any> = {
+    photo: formData.photo || null,
+    full_name: formData.name || null,
+    category: formData.category || null,
+    age: formData.age !== "" ? Number(formData.age) : null,
+    gender: formData.gender || null,
+    join_date: formData.joinDate || null,
+    address: formData.address || null,
+    phone: formData.phone || null,
+    email: formData.email || null,
+    disabled: Boolean(formData.disabled),
+    orphan: Boolean(formData.orphan),
+    widowed: Boolean(formData.widowed),
+    date_of_birth: formData.dateOfBirth || null,
+  };
 
-    if (isAdult) {
-      payload.nrc = formData.NRC || null;
-    } else if (isAdult === false) {
-      payload.guardian_name = formData.guardianName || null;
-      payload.guardian_phone = formData.guardianPhone || null;
+  if (isAdult) {
+    payload.nrc = formData.NRC || null;
+  } else if (isAdult === false) {
+    payload.guardian_name = formData.guardianName || null;
+    payload.guardian_phone = formData.guardianPhone || null;
+  }
+
+  try {
+    // 🔐 Try authFetch first
+    const response = await authFetch(`${BACKEND_URL}/${memberId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+
+    if (response && response.data) {
+      alert("Member updated successfully!");
+      navigate("/congregation/members");
+    } else {
+      throw new Error("Unexpected response format");
     }
 
+  } catch (err) {
+    console.error("authFetch PUT failed, falling back to orgFetch:", err);
+
     try {
-      const res = await fetch(`${BACKEND_URL}/${memberId}`, {
-        method: "PUT", // Use PUT method to update
-        headers: { "Content-Type": "application/json" },
+      const response = await orgFetch(`${BACKEND_URL}/${memberId}`, {
+        method: "PUT",
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: "Unknown error" }));
-        alert("Error: " + error.message);
-        return;
+      if (response && response.data) {
+        alert("Member updated successfully!");
+        navigate("/congregation/members");
+      } else {
+        throw new Error("Unexpected response format");
       }
 
-      alert("Member updated successfully!");
-      navigate("/congregation/members"); // Redirect after success
-    } catch (err) {
-      console.error("Failed to submit member update:", err);
-      alert("Server error. Check console for details.");
+    } catch (error) {
+      console.error("orgFetch PUT failed:", error);
+      alert("Failed to update member. Please try again.");
     }
-  };
+  }
+};
+
 
   return (
     <div className="dashboard-wrapper members-wrapper">

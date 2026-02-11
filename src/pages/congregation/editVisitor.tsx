@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+//import axios from "axios";
+import { authFetch, orgFetch } from "../../utils/api";
 import "../../styles/global.css";
 import CongregationHeader from './CongregationHeader';
 
@@ -60,12 +61,17 @@ const EditVisitorPage: React.FC = () => {
   useEffect(() => {
   const fetchVisitor = async () => {
     try {
-      const response = await axios.get(`${baseURL}/api/visitor/${id}`);
-      const visitor = response.data;
+      let response = await authFetch(`${baseURL}/api/visitor/${id}`);
 
-      // Format the visitDate to only include the date part (YYYY-MM-DD)
+      // Handle array or object
+      let visitor = Array.isArray(response)
+        ? response.find((v: any) => v.id === Number(id))
+        : response; // if object, use it directly
+
+      if (!visitor) throw new Error("Visitor not found");
+
       const formattedVisitDate = visitor.visit_date
-        ? new Date(visitor.visit_date).toISOString().split("T")[0]  // Convert to YYYY-MM-DD
+        ? new Date(visitor.visit_date).toISOString().split("T")[0]
         : "";
 
       setFormData({
@@ -78,23 +84,56 @@ const EditVisitorPage: React.FC = () => {
         phone: visitor.phone,
         email: visitor.email,
         invitedBy: visitor.invited_by,
-        serviceAttended: visitor.service_attended || "",
-        foundBy: visitor.found_by || "",
+        serviceAttended: visitor.service_id?.toString() || "",
+        foundBy: visitor.church_find_out || "",
         firstTime: visitor.first_time,
         needsFollowUp: visitor.needs_follow_up,
       });
 
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching visitor:", error);
+    } catch (err) {
+      console.error("authFetch failed, falling back to orgFetch:", err);
+
+      try {
+        let response = await orgFetch(`${baseURL}/api/visitor/${id}`);
+
+        let visitor = Array.isArray(response)
+          ? response.find((v: any) => v.id === Number(id))
+          : response;
+
+        if (!visitor) throw new Error("Visitor not found");
+
+        const formattedVisitDate = visitor.visit_date
+          ? new Date(visitor.visit_date).toISOString().split("T")[0]
+          : "";
+
+        setFormData({
+          photoUrl: visitor.photo_url || "",
+          name: visitor.name,
+          gender: visitor.gender,
+          age: visitor.age,
+          visitDate: formattedVisitDate,
+          address: visitor.address,
+          phone: visitor.phone,
+          email: visitor.email,
+          invitedBy: visitor.invited_by,
+          serviceAttended: visitor.service_id?.toString() || "",
+          foundBy: visitor.church_find_out || "",
+          firstTime: visitor.first_time,
+          needsFollowUp: visitor.needs_follow_up,
+        });
+
+      } catch (error) {
+        console.error("orgFetch failed:", error);
+        alert("Error fetching visitor data");
+      }
+    } finally {
       setLoading(false);
     }
   };
 
-  if (id) {
-    fetchVisitor();
-  }
+  if (id) fetchVisitor();
 }, [id]);
+
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -123,42 +162,68 @@ const EditVisitorPage: React.FC = () => {
   // SUBMIT: Update visitor
   // ---------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const payload = {
-      name: formData.name,
-      gender: formData.gender,
-      age: formData.age || null,
-      visit_date: formData.visitDate,
-      address: formData.address,
-      phone: formData.phone,
-      email: formData.email,
-      invited_by: formData.invitedBy,
-      photo_url:
-        formData.photoUrl ||
-        (formData.photoFile ? formData.photoFile.name : null),
-      first_time: formData.firstTime,
-      needs_follow_up: formData.needsFollowUp,
-    };
+  const payload = {
+    name: formData.name,
+    gender: formData.gender,
+    age: formData.age || null,
+    visit_date: formData.visitDate,
+    address: formData.address,
+    phone: formData.phone,
+    email: formData.email,
+    invited_by: formData.invitedBy,
+    service_id: Number(formData.serviceAttended),
+    church_find_out: formData.foundBy,
+    photo_url:
+      formData.photoUrl ||
+      (formData.photoFile ? formData.photoFile.name : null),
+    first_time: formData.firstTime,
+    needs_follow_up: formData.needsFollowUp,
+  };
+
+  try {
+    // 🔐 Try authFetch first
+    const response = await authFetch(`${baseURL}/api/visitor/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+
+    // Your backend may return:
+    // - updated object
+    // - array
+    // - message
+    // So we just check if response exists
+    if (response) {
+      alert("Visitor updated successfully!");
+      navigate("/congregation/visitors");
+    } else {
+      throw new Error("Unexpected response");
+    }
+
+  } catch (err) {
+    console.error("authFetch PUT failed, falling back to orgFetch:", err);
 
     try {
-      // 1️⃣ UPDATE VISITOR
-      const visitorRes = await axios.put(
-        `${baseURL}/api/visitor/${id}`,
-        payload
-      );
+      const response = await orgFetch(`${baseURL}/api/visitor/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
 
-      const updatedVisitor = visitorRes.data;
+      if (response) {
+        alert("Visitor updated successfully!");
+        navigate("/congregation/visitors");
+      } else {
+        throw new Error("Unexpected response");
+      }
 
-      console.log("Visitor updated:", updatedVisitor);
-
-      alert("Visitor updated successfully!");
-      navigate("/congregation/visitors");  // Navigate to visitors list after success
     } catch (error) {
-      console.error("Error updating visitor:", error);
+      console.error("orgFetch PUT failed:", error);
       alert("Error updating visitor.");
     }
-  };
+  }
+};
+
 
   if (loading) {
     return <div>Loading...</div>;
@@ -337,12 +402,13 @@ const EditVisitorPage: React.FC = () => {
               onChange={handleChange}
             >
               <option value="">Select Option</option>
-              <option value="1">Friend/Family</option>
-              <option value="2">Online Search</option>
-              <option value="3">Social Media</option>
-              <option value="4">Church Event</option>
-              <option value="5">Walk-in</option>
+              <option value="Friend/Family">Friend/Family</option>
+              <option value="Online Search">Online Search</option>
+              <option value="Social Media">Social Media</option>
+              <option value="Church Event">Church Event</option>
+              <option value="Walk-in">Walk-in</option>
             </select>
+
 
             <div className="additional-info">
               <label>
