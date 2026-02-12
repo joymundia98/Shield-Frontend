@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { authFetch, orgFetch } from "../../utils/api";
 import "../../styles/global.css";
-import CongregationHeader from './CongregationHeader';
+import CongregationHeader from "./CongregationHeader";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -54,38 +54,25 @@ const AddVisitorPage: React.FC = () => {
     needsFollowUp: false,
   });
 
-  // Fetch logic with authentication
-  {/*const authFetch = async (url: string) => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("No authentication token found.");
-    const res = await axios.get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return res.data;
-  };
-
-  // Fetch logic without authentication (for non-secure data)
-  const orgFetch = async (url: string) => {
-    const res = await axios.get(url);
-    return res.data;
-  };*/}
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const target = e.target;
     const name = target.name;
 
     if (target instanceof HTMLInputElement) {
-      // Handle different types of inputs (checkbox, number, text)
-      const value = target.type === "checkbox" ? target.checked : target.value;
+      const value =
+        target.type === "checkbox" ? target.checked : target.value;
+
       setFormData((prev) => ({
         ...prev,
         [name]: target.type === "number" ? Number(value) : value,
       }));
     } else if (target instanceof HTMLSelectElement) {
-      // Handle <select> element
-      setFormData((prev) => ({ ...prev, [name]: target.value }));
+      setFormData((prev) => ({
+        ...prev,
+        [name]: target.value,
+      }));
     }
   };
 
@@ -94,7 +81,9 @@ const AddVisitorPage: React.FC = () => {
     setFormData((prev) => ({ ...prev, photoFile: file }));
   };
 
-  // Handle form submission (Create visitor and link to service)
+  // ---------------------------------------------------
+  // SUBMIT: Create Visitor
+  // ---------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -106,7 +95,9 @@ const AddVisitorPage: React.FC = () => {
       address: formData.address,
       phone: formData.phone,
       email: formData.email,
-      invited_by: formData.invitedBy,
+      invited_by: formData.invitedBy || null,
+      service_id: Number(formData.serviceAttended),
+      church_find_out: formData.foundBy || null,
       photo_url:
         formData.photoUrl ||
         (formData.photoFile ? formData.photoFile.name : null),
@@ -115,27 +106,29 @@ const AddVisitorPage: React.FC = () => {
     };
 
     try {
-      // 1️⃣ CREATE VISITOR
-      const visitorRes = await axios.post(`${baseURL}/api/visitor`, payload);
-
-      const newVisitor = visitorRes.data;
-      console.log("Visitor created:", newVisitor);
-
-      // 2️⃣ ADD SERVICE RELATIONSHIP
-      if (formData.serviceAttended) {
-        await axios.post(`${baseURL}/api/visitor-services`, {
-          visitor_id: newVisitor.id, // IMPORTANT
-          service_id: formData.serviceAttended,
-        });
-
-        console.log("Visitor linked to service.");
-      }
+      // 🔐 Try authFetch first
+      await authFetch(`${baseURL}/api/visitor`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
 
       alert("Visitor added successfully!");
       navigate("/congregation/visitorRecords");
-    } catch (error) {
-      console.error("Error saving visitor:", error);
-      alert("Error saving visitor.");
+    } catch (err) {
+      console.error("authFetch POST failed, falling back to orgFetch:", err);
+
+      try {
+        await orgFetch(`${baseURL}/api/visitor`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+
+        alert("Visitor added successfully!");
+        navigate("/congregation/visitorRecords");
+      } catch (error) {
+        console.error("orgFetch POST failed:", error);
+        alert("Error saving visitor.");
+      }
     }
   };
 
@@ -189,8 +182,9 @@ const AddVisitorPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-        <CongregationHeader/><br/>
-        
+        <CongregationHeader />
+        <br />
+
         <header>
           <h1>Add New Visitor</h1>
           <div className="header-buttons" style={{ marginTop: 10 }}>
@@ -318,11 +312,11 @@ const AddVisitorPage: React.FC = () => {
               onChange={handleChange}
             >
               <option value="">Select Option</option>
-              <option value="1">Friend/Family</option>
-              <option value="2">Online Search</option>
-              <option value="3">Social Media</option>
-              <option value="4">Church Event</option>
-              <option value="5">Walk-in</option>
+              <option value="Friend/Family">Friend/Family</option>
+              <option value="Online Search">Online Search</option>
+              <option value="Social Media">Social Media</option>
+              <option value="Church Event">Church Event</option>
+              <option value="Walk-in">Walk-in</option>
             </select>
 
             <div className="additional-info">
@@ -354,7 +348,9 @@ const AddVisitorPage: React.FC = () => {
               <button
                 type="button"
                 className="cancel-btn"
-                onClick={() => navigate("/congregation/visitorRecords")}
+                onClick={() =>
+                  navigate("/congregation/visitorRecords")
+                }
               >
                 Cancel
               </button>
