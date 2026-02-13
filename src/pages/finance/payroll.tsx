@@ -5,7 +5,6 @@ import FinanceHeader from './FinanceHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 import axios from 'axios';
 
-
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface PayrollRecord {
@@ -313,6 +312,45 @@ const FinancePayrollPage: React.FC = () => {
   const kpiPaidCount = payrollThisMonth.filter((p) => p.status === "Paid").length;
   const kpiUnpaidCount = payrollThisMonth.filter((p) => p.status === "Pending" || p.status === "Overdue").length;
 
+  //*-------------------------Download Reports
+  const downloadFile = async (type: "pdf" | "excel" | "csv") => {
+      try {
+        const response = await axios.get(
+          `${baseURL}/api/reports/payroll/${type}`,
+          {
+            responseType: "blob", // VERY important
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`
+            },
+            params: {
+              organization_id: localStorage.getItem("organization_id"),
+              // status can be added later if needed
+            }
+          }
+        );
+    
+        const blob = new Blob([response.data]);
+        const url = window.URL.createObjectURL(blob);
+    
+        const link = document.createElement("a");
+        link.href = url;
+    
+        const extensionMap = {
+          pdf: "pdf",
+          excel: "xlsx",
+          csv: "csv"
+        };
+    
+        link.download = `payroll_data.${extensionMap[type]}`;
+        document.body.appendChild(link);
+        link.click();
+    
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("File download failed:", error);
+      }
+    };
 
   return (
     <div className="dashboard-wrapper">
@@ -368,6 +406,22 @@ const FinancePayrollPage: React.FC = () => {
         <br/>
 
         <h1>Payroll</h1>
+
+          <div style={{ display: "flex", gap: "10px"}}>
+            <button className="add-btn" onClick={() => downloadFile("pdf")}>
+              📄 Export PDF
+            </button>
+
+            <button className="add-btn" onClick={() => downloadFile("excel")}>
+              📊 Export Excel
+            </button>
+
+            {/*<button className="add-btn" onClick={() => downloadFile("csv")}>
+              ⬇️ Export CSV
+            </button>*/}
+          </div>
+
+          <br/>
 
         {/* Search */}
         <div className="table-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

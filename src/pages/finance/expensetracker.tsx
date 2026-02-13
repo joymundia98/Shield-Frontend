@@ -479,7 +479,7 @@ const ExpenseTrackerPage: React.FC = () => {
                             <td>
                               <button
                                 className="add-btn"
-                                onClick={() => window.open(`${baseURL}/api/finance/viewExpense/${item.id}`, "_blank")}
+                                onClick={() => navigate(`/finance/viewExpense/${item.id}`)}
                               >
                                 View
                               </button> &emsp;

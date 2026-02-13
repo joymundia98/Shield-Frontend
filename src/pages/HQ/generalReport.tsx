@@ -136,6 +136,40 @@ const filterByBranch = <T extends { organization_id: number }>(
     : data;
 };
 
+/*========================
+No data helper function
+=========================*/
+const fetchAsArray = async (url: string): Promise<any[]> => {
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+
+    // If backend returns 404 → treat as empty dataset
+    if (res.status === 404) {
+      return [];
+    }
+
+    if (!res.ok) {
+      console.error("Request failed:", res.status);
+      return [];
+    }
+
+    const data = await res.json();
+
+    // If backend returns { message: "..."}
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Network error:", error);
+    return [];
+  }
+};
+
+
 
   /* =======================
      FETCH MEMBERS
@@ -143,17 +177,14 @@ const filterByBranch = <T extends { organization_id: number }>(
   const fetchMembers = async () => {
     if (!authToken || !headquarterId) return;
 
-    const res = await fetch(
-      `${baseURL}/api/headquarters/${headquarterId}/members`,
-      { headers: { Authorization: `Bearer ${authToken}` } }
+    const data = await fetchAsArray(
+      `${baseURL}/api/headquarters/${headquarterId}/members`
     );
 
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      setAllMembers(data);
-      setMembers(data);
-    }
+    setAllMembers(data);
+    setMembers(data);
   };
+
 
   /* =======================
      FETCH VISITORS
@@ -161,17 +192,14 @@ const filterByBranch = <T extends { organization_id: number }>(
   const fetchVisitors = async () => {
     if (!authToken || !headquarterId) return;
 
-    const res = await fetch(
-      `${baseURL}/api/headquarters/${headquarterId}/visitors`,
-      { headers: { Authorization: `Bearer ${authToken}` } }
+    const data = await fetchAsArray(
+      `${baseURL}/api/headquarters/${headquarterId}/visitors`
     );
 
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      setAllVisitors(data);
-      setVisitors(data);
-    }
+    setAllVisitors(data);
+    setVisitors(data);
   };
+
 
   /* =======================
      FETCH CONVERTS
@@ -179,17 +207,14 @@ const filterByBranch = <T extends { organization_id: number }>(
   const fetchConverts = async () => {
     if (!authToken || !headquarterId) return;
 
-    const res = await fetch(
-      `${baseURL}/api/headquarters/${headquarterId}/converts`,
-      { headers: { Authorization: `Bearer ${authToken}` } }
+    const data = await fetchAsArray(
+      `${baseURL}/api/headquarters/${headquarterId}/converts`
     );
 
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      setAllConverts(data);
-      setConverts(data);
-    }
+    setAllConverts(data);
+    setConverts(data);
   };
+
 
   /* =======================
      FETCH BRANCHES
@@ -300,15 +325,10 @@ const genderData: GenderData[] = useMemo(() => {
     if (!authToken || !headquarterId) return;
 
     try {
-      const res = await fetch(
-        `${baseURL}/api/headquarters/${headquarterId}/attendance_records`,
-        {
-          headers: { Authorization: `Bearer ${authToken}` },
-        }
+      const data = await fetchAsArray(
+        `${baseURL}/api/headquarters/${headquarterId}/attendance_records`
       );
 
-      const data = await res.json();
-      if (!Array.isArray(data)) return;
 
       // Filter by selected branch
       // Filter by selected branch AND selected month/year
@@ -797,7 +817,7 @@ const getLast12Months = (endDate: Date) => {
 
 useEffect(() => {
   applyFilters(selectedBranch, selectedDate);
-}, [selectedDate]);
+}, [selectedDate, selectedBranch]);
 
 /* =======================
      KPI CALCULATIONS

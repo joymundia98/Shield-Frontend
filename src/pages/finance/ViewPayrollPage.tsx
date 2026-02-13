@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import FinanceHeader from './FinanceHeader';
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const FinanceViewPayrollPage: React.FC = () => {
   const navigate = useNavigate();
-  const { payrollId } = useParams(); // Extract payrollId from the URL
+  const { payrollId } = useParams();
 
-  const [payrollRecord, setPayrollRecord] = useState<any>(null); // Store the payroll record
-  const [staffData, setStaffData] = useState<any>(null); // Store the staff data
-  const [departmentData, setDepartmentData] = useState<any>(null); // Store department data
-  const [roleData, setRoleData] = useState<any>(null); // Store role data
-
+  const [payrollRecord, setPayrollRecord] = useState<any>(null);
+  const [staffData, setStaffData] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null); // 👈 NEW
+  const [departmentData, setDepartmentData] = useState<any>(null);
+  const [roleData, setRoleData] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ------------------- Sidebar -------------------
@@ -24,20 +26,39 @@ const FinanceViewPayrollPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // Fetch payroll data when the component mounts or payrollId changes
+  // ------------------- Auth Fetch with Fallback -------------------
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url);
+    } catch (error: unknown) {
+      console.log("authFetch failed, falling back to orgFetch", error);
+
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log("Unauthorized, redirecting to login");
+        navigate("/login");
+      }
+
+      return await orgFetch(url);
+    }
+  };
+
+  // ------------------- Fetch Payroll Data -------------------
   useEffect(() => {
-    if (!payrollId) return; // If there's no payrollId, don't fetch data
+    if (!payrollId) return;
 
     const fetchPayrollData = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/payroll/${payrollId}`);
-        const data = await response.json();
-        setPayrollRecord(data); // Store the payroll record data
+        const data = await fetchDataWithAuthFallback(
+          `${baseURL}/api/payroll/${payrollId}`
+        );
 
-        // Fetch staff, department, and role data based on payroll record
-        fetchStaffData(data.staff_id); // Fetch staff data here
+        setPayrollRecord(data);
+
+        // Fetch related data
+        fetchStaffData(data.staff_id);
         fetchDepartmentData(data.department_id);
         fetchRoleData(data.role_id);
+
       } catch (error) {
         console.error("Error fetching payroll data:", error);
       }
@@ -46,42 +67,70 @@ const FinanceViewPayrollPage: React.FC = () => {
     fetchPayrollData();
   }, [payrollId]);
 
-  // Fetch staff data using staff_id from payroll record
+  // ------------------- Fetch Staff Data -------------------
   const fetchStaffData = async (staffId: number) => {
     try {
-      const response = await fetch(`${baseURL}/api/staff/${staffId}`);
-      const data = await response.json();
-      setStaffData(data); // Store the staff data
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/staff/${staffId}`
+      );
+
+      setStaffData(data);
+
+      // 👇 Fetch user using user_id
+      if (data?.user_id) {
+        fetchUserData(data.user_id);
+      }
+
     } catch (error) {
       console.error("Error fetching staff data:", error);
     }
   };
 
-  // Fetch department data using department_id from payroll record
+  // ------------------- Fetch User Data -------------------
+  const fetchUserData = async (userId: number) => {
+    try {
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/users/${userId}`
+      );
+      setUserData(data);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
+  // ------------------- Fetch Department Data -------------------
   const fetchDepartmentData = async (departmentId: number) => {
     try {
-      const response = await fetch(`${baseURL}/api/departments/${departmentId}`);
-      const data = await response.json();
-      setDepartmentData(data); // Store department data
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/departments/${departmentId}`
+      );
+      setDepartmentData(data);
     } catch (error) {
       console.error("Error fetching department data:", error);
     }
   };
 
-  // Fetch role data using role_id from payroll record
+  // ------------------- Fetch Role Data -------------------
   const fetchRoleData = async (roleId: number) => {
     try {
-      const response = await fetch(`${baseURL}/api/roles/${roleId}`);
-      const data = await response.json();
-      setRoleData(data); // Store role data
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/roles/${roleId}`
+      );
+      setRoleData(data);
     } catch (error) {
       console.error("Error fetching role data:", error);
     }
   };
 
   // Ensure that all data is available before rendering the page
-  if (!payrollRecord || !staffData || !departmentData || !roleData) {
-    return <div>Loading...</div>; // Show loading message while fetching data
+  if (
+    !payrollRecord ||
+    !staffData ||
+    !userData ||
+    !departmentData ||
+    !roleData
+  ) {
+    return <div>Loading...</div>;
   }
 
   // Function to convert month number to month name
@@ -90,7 +139,7 @@ const FinanceViewPayrollPage: React.FC = () => {
       "January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"
     ];
-    return months[monthNumber - 1]; // months array is 0-based, so subtract 1 from month number
+    return months[monthNumber - 1];
   };
 
   // Format the payment date using the month and year
@@ -135,7 +184,7 @@ const FinanceViewPayrollPage: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/"); 
+            navigate("/");
           }}
         >
           ➜ Logout
@@ -152,8 +201,9 @@ const FinanceViewPayrollPage: React.FC = () => {
         <h1>Payroll Details</h1>
 
         <br />
-        {/* Back to Payroll List Button */}
-        <button className="add-btn" onClick={() => navigate("/finance/payroll")}>← &nbsp; Back to Payroll List</button>
+        <button className="add-btn" onClick={() => navigate("/finance/payroll")}>
+          ← &nbsp; Back to Payroll List
+        </button>
         <br /><br/>
         
         {/* Employee Information Table */}
@@ -162,15 +212,15 @@ const FinanceViewPayrollPage: React.FC = () => {
           <tbody>
             <tr>
               <td><strong>Staff Name</strong></td>
-              <td>{staffData.staff_name}</td> {/* Display staff name */}
+              <td>{userData.first_name} {userData.last_name}</td>
             </tr>
             <tr>
               <td><strong>Department</strong></td>
-              <td>{departmentData.name}</td> {/* Display department name */}
+              <td>{departmentData.name}</td>
             </tr>
             <tr>
               <td><strong>Role</strong></td>
-              <td>{roleData.name}</td> {/* Display role name */}
+              <td>{roleData.name}</td>
             </tr>
           </tbody>
         </table>
@@ -263,7 +313,7 @@ const FinanceViewPayrollPage: React.FC = () => {
             </tr>
             <tr>
               <td><strong>Payment Date</strong></td>
-              <td>{paymentDate}</td> {/* Display month and year */}
+              <td>{paymentDate}</td>
             </tr>
           </tbody>
         </table>
