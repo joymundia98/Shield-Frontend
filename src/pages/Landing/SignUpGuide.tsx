@@ -105,6 +105,7 @@ const SignUpGuide: React.FC = () => {
               <div>
                 <button
                   onClick={() => window.location.href = '/Register-org'}
+                  className='register-org'
                 >
                   Register Your Organization/Church
                 </button>
@@ -115,28 +116,31 @@ const SignUpGuide: React.FC = () => {
                 </p>
               </div>
 
-               <div>
-                <button
-                  onClick={() => window.location.href = '/login'}
-                >
-                  Login as a User
-                </button>
-                <p>
-                  <a href="/login" className="signUpGuideLinkText">
-                    If you're already a user, login here to access your account.
-                  </a>
-                </p>
-              </div>
 
               <div>
                 <button
                   onClick={() => window.location.href = '/register'}
+                  className='register-user'
                 >
                   Register as a User
                 </button>
                 <p>
                   <a href="/register" className="signUpGuideLinkText">
                     Sign up as a User under an existing organization/church.
+                  </a>
+                </p>
+              </div>
+
+              <div>
+                <button
+                  onClick={() => window.location.href = '/login'}
+                  className='login-user'
+                >
+                  Login as a User
+                </button>
+                <p>
+                  <a href="/login" className="signUpGuideLinkText">
+                    If you're already a user, login here to access your account.
                   </a>
                 </p>
               </div>

@@ -1632,3 +1632,15 @@ footer a:hover {
         align-items: center;
     }
 }
+
+.signUpGuideCard .register-org{
+  background: linear-gradient(180deg, #ffffff 0%, #d3e0ecc1 100%);
+}
+
+.signUpGuideCard .register-user{
+  background: linear-gradient(180deg, #fcfcfc 0%, #d9f9d9cd 100%);
+}
+
+.signUpGuideCard .login-user{
+  background: linear-gradient(180deg, #ffffff 0%, #f2f7ff 100%);
+}
