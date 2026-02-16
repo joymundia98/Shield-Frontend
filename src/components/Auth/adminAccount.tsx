@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import headerLogo from "../../assets/headerlogo.png";
 
+import { useAuth } from "../../hooks/useAuth";
+
 // Importing the orgFetch function to fetch data
 import { orgFetch } from "../../utils/api";
 
@@ -39,6 +41,8 @@ export const AdminAccount = () => {
   const [roleId, setRoleId] = useState<number | null>(null);
   const [roles, setRoles] = useState<any[]>([]); // To store roles fetched from API
   const [permissions, setPermissions] = useState<any[]>([]); // To store all permissions
+
+  const { login } = useAuth(); // Pull login function from AuthContext
 
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -175,7 +179,6 @@ export const AdminAccount = () => {
   }
 
   const onSubmit = async (data: RegisterFormData) => {
-  // Retrieve the token from localStorage
   const token = localStorage.getItem("authToken");
   if (!token) {
     setErrorMessage("No authToken found, please log in.");
@@ -183,24 +186,22 @@ export const AdminAccount = () => {
   }
 
   try {
-    // Submit the admin registration data with the organization_id and role_id
+    // Step 1: Register the admin
     const response = await axios.post(`${baseURL}/api/auth/register`, {
       first_name: data.first_name,
       last_name: data.last_name,
       email: data.email,
       phone: data.phone,
-      position: "System Administrator", // Set position to System Administrator by default
-      role_id: roleId, // Use the dynamic role_id for Administrator
+      position: "System Administrator",
+      role_id: roleId,
       password: data.password,
-      status: "active", // Set status to active
-      organization_id: organizationId, // Pass the organization_id to associate the admin with the organization
+      status: "active",
+      organization_id: organizationId,
     });
 
     if (response.status === 201) {
-      // After successful registration, assign all permissions to the role
-      const allPermissionIds = permissions.map((permission) => permission.id);
-
-      // Assign permissions to the Administrator role
+      // Step 2: Assign permissions
+      const allPermissionIds = permissions.map((p) => p.id);
       const permissionResponse = await orgFetch(`${baseURL}/api/role_permissions/assign`, {
         method: "POST",
         headers: {
@@ -213,39 +214,34 @@ export const AdminAccount = () => {
         }),
       });
 
-      console.log("Permission Assignment Response:", permissionResponse);
+      if (permissionResponse.message === "Permissions successfully assigned to role") {
+        setShowSuccessCard(true);
 
-      // Temporarily comment out the status check
-      /*
-      if (permissionResponse.status === 200 || permissionResponse.status === 201 || permissionResponse.status === 204) {
-        // Check if the message is the one we expect
-        if (permissionResponse.message === "Permissions successfully assigned to role") {
-          // Permissions were successfully assigned
-          setShowSuccessCard(true);
+        // Step 3: Automatically log in the user
+        const loginResponse = await axios.post(`${baseURL}/api/auth/login`, {
+          email: data.email,
+          password: data.password,
+        });
+
+        if (loginResponse.status === 200 && loginResponse.data.accessToken) {
+          // Store the auth token and user info
+          await login(
+            loginResponse.data.accessToken,
+            loginResponse.data.user,
+            loginResponse.data.organization || null,
+            loginResponse.data.headquarters || null
+          );
+          // Redirect to dashboard or desired page
           setTimeout(() => {
             setShowSuccessCard(false);
-            setShowModal(true); // Show modal after success
-          }, 2000);
+            navigate("/dashboard", { state: { organizationID: organizationId } });
+          }, 1500);
         } else {
-          setErrorMessage("Failed to assign permissions.");
+          setErrorMessage("Login failed after registration. Please try logging in manually.");
         }
       } else {
         setErrorMessage("Failed to assign permissions.");
       }
-      */
-
-      // Check if the message matches the expected success message
-      if (permissionResponse.message === "Permissions successfully assigned to role") {
-        // Permissions were successfully assigned
-        setShowSuccessCard(true);
-        setTimeout(() => {
-          setShowSuccessCard(false);
-          setShowModal(true); // Show modal after success
-        }, 2000);
-      } else {
-        setErrorMessage("Failed to assign permissions.");
-      }
-
     }
   } catch (err: any) {
     console.error(err);
