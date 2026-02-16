@@ -8,6 +8,7 @@ const HQHeader: React.FC = () => {
 
   // Define the HQ links
   const HQLinks = [
+    { name: "← Back to Main", href: "/dashboard", permission: "View Main Dashboard" },
     { name: "Branch Directory", href: "/HQ/branchDirectory" },
     { name: "Reports", href: "/HQ/GeneralReport" },
     //{ name: "Admin Accounts", href: "/InProgress" },

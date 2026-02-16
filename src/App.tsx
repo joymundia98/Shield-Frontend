@@ -19,6 +19,9 @@ import  InternalAccountCreation  from "./components/Auth/InternalAccountCreation
 import HQRegister from "./components/Auth/HQRegister";
 import HqLoginForm from "./components/Auth/HQLogin";
 
+//Morphed Organization and HQ
+import RegisterOrganization from "./components/Auth/MorphedRegister";
+
 import NotFoundPage from "./pages/NotFoundPage"; // Import the 404 page
 
 import ForbiddenPage from "./pages/ForbiddenPage";  // Import the custom 403 page
@@ -195,6 +198,11 @@ function App() {
           --------------------------------*/}
           <Route path="/HQ-login" element={<HqLoginForm />} />
           <Route path="/HQ/new_Account" element={<HQRegister />} />
+
+          {/* ------------------------------
+                HQ + ORGANIZATION AUTH PAGES
+          --------------------------------*/}
+          <Route path="/Register-org" element={<RegisterOrganization />} />
 
           {/* ------------------------------
                   MAIN DASHBOARD

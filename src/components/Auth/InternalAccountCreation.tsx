@@ -117,7 +117,7 @@ const InternalAccountCreation = () => {
         phone: data.phone,
         position: data.position,
         role_id: data.role, // Send selected role id
-        status: "pending",  // Set status to "pending" by default
+        status: "active",  // Set status to "pending" by default
         password: data.password,
         organization_id: organizationId, // Include organization_id in the payload
       });

@@ -97,44 +97,14 @@ const SignUpGuide: React.FC = () => {
           <h1>Welcome to the SCI-ELD Portal</h1>
 
           {/* ==================== "HOW WOULD YOU LIKE TO PROCEED?" SECTION ==================== */}
+          
           <div className="signUpGuideCard">
             <h2>How would you like to proceed?</h2>
             <div className="signUpGuideRow">
-              {/* Headquarter Registration/Login */}
+              {/* Headquarter and organization Registration */}
               <div>
                 <button
-                  onClick={() => window.location.href = '/HQ/new_Account'}
-                >
-                  Register Your Headquarters
-                </button>
-                <p>
-                  <a href="/hq-register" className="signUpGuideLinkText">
-                    New to the portal? Click here to register your headquarters.
-                  </a>
-                </p>
-              </div>
-              <div>
-                <button
-                  onClick={() => window.location.href = '/hq-login'}
-                >
-                  Login to Your Headquarters
-                </button>
-                <p>
-                  <a href="/hq-login" className="signUpGuideLinkText">
-                    Already have an account? Login to your headquarters here.
-                  </a>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* ==================== Organization/Church Registration/Login ==================== */}
-          <div className="signUpGuideCard">
-            <h2>For Church Branches or Local Churches:</h2>
-            <div className="signUpGuideRow">
-              <div>
-                <button
-                  onClick={() => window.location.href = '/org-register'}
+                  onClick={() => window.location.href = '/Register-org'}
                 >
                   Register Your Organization/Church
                 </button>
@@ -144,51 +114,36 @@ const SignUpGuide: React.FC = () => {
                   </a>
                 </p>
               </div>
-              <div>
+
+               <div>
                 <button
-                  onClick={() => window.location.href = '/org-login'}
+                  onClick={() => window.location.href = '/login'}
                 >
-                  Login to Your Organization/Church
+                  Login as a User
                 </button>
                 <p>
-                  <a href="/org-login" className="signUpGuideLinkText">
-                    Already have an account? Login to your organization/church here.
+                  <a href="/login" className="signUpGuideLinkText">
+                    If you're already a user, login here to access your account.
                   </a>
                 </p>
               </div>
-            </div>
-          </div>
 
-          {/* ==================== MEMBER REGISTRATION/LOGIN ==================== */}
-          <div className="signUpGuideCard">
-            <h2>Alternatively, you can:</h2>
-            <div className="signUpGuideRow">
               <div>
                 <button
                   onClick={() => window.location.href = '/register'}
                 >
-                  Register as a Member/User
+                  Register as a User
                 </button>
                 <p>
                   <a href="/register" className="signUpGuideLinkText">
-                    Sign up as a member under an existing organization/church.
+                    Sign up as a User under an existing organization/church.
                   </a>
                 </p>
               </div>
-              <div>
-                <button
-                  onClick={() => window.location.href = '/login'}
-                >
-                  Login as a Member/User
-                </button>
-                <p>
-                  <a href="/login" className="signUpGuideLinkText">
-                    If you're already a member, login here to access your account.
-                  </a>
-                </p>
-              </div>
+
             </div>
           </div>
+
         </div>
 
         {/* Footer */}

@@ -19,6 +19,25 @@ const HeaderNav: React.FC = () => {
   const navigate = useNavigate();  // To programmatically navigate after logout
   const navItems: NavItem[] = [
     {
+      label: "HQ",
+      links: [
+        { name: "Branch Directory", href: "/HQ/branchDirectory", permission: "View Branch Directory" },
+        { name: "Reports", href: "/HQ/GeneralReport", permission: "View HQ Reports" },
+      ],
+    },
+    {
+    label: "Control Room",
+      links: [
+        //{ name: "Profile", href: "/Organization/edittableProfile", permission: "Manage Organization Profile" },
+        { name: "The Lobby", href: "/Organization/orgLobby", permission: "Access Organization Lobby" },
+        { name: "Manage Accounts", href: "/Organization/ListedAccounts", permission: "Manage Organization Accounts" },
+        { name: "Roles", href: "/Organization/roles", permission: "Manage Roles" },
+        { name: "Permissions", href: "/Organization/permissions", permission: "Manage Permissions" },
+        { name: "Admin Accounts", href: "/Organization/orgAdminAccounts", permission: "Manage Organization Admins" },
+      ],
+    },
+
+    {
       label: "Congregation",
       links: [
         { name: "Dashboard", href: "/congregation/dashboard", permission: "View Congregation Dashboard" },

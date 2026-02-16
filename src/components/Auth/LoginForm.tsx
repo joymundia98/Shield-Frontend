@@ -29,6 +29,9 @@ export const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [showSuccessCard, setShowSuccessCard] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState<'pending' | 'inactive' | null>(null);
+
 
   const { register, handleSubmit } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -58,32 +61,56 @@ export const LoginForm = () => {
       if (!user) throw new Error("No user object returned from backend");
       localStorage.setItem("user", JSON.stringify(user));
 
+      
+      // 🔐 STATUS CHECK BEFORE ANYTHING ELSE
+        
+        if (user.status !== "active") {
+          setShowSuccessCard(false); // hide success card if visible
+
+          if (user.status === "pending" || user.status === null) {
+            setStatusMessage(
+              "Your account is currently pending activation. Please contact your administrator for approval."
+            );
+            setStatusType('pending');
+          } else if (user.status === "inactive") {
+            setStatusMessage(
+              "This account has been deactivated. Please contact your administrator for assistance."
+            );
+            setStatusType('inactive');
+          }
+
+          return; // stop login flow
+        }
+
       // Log user roles and role_id
-      console.log("User Roles:", user.role);
-      console.log("User role_id:", user.role_id);
+      
+        console.log("User Roles:", user.role);
+        console.log("User role_id:", user.role_id);
 
-      if (!user.role_id) {
-        throw new Error("User role_id is missing");
-      }
+        // Fetch permissions only if role_id exists
+        let permissions: Permission[] = [];
+        if (user.role_id) {
+          const roleId = user.role_id;
+          console.log("Fetching permissions for role ID:", roleId);
+          permissions = await fetchPermissionsForRole(roleId.toString(), token) || [];
+        } else {
+          console.log("User has no role assigned. Assigning default dashboard permission only.");
+        }
 
-      const roleId = user.role_id;
-      console.log("Fetching permissions for role ID:", roleId);
+        // Merge default "View Programs Dashboard" permission
+        const DEFAULT_DASHBOARD_PERMISSION: Permission = {
+          name: 'View Programs Dashboard',
+          path: '/dashboard',
+          method: 'GET',
+        };
 
-      const permissions = await fetchPermissionsForRole(roleId.toString(), token);
+        user.permissions = [
+          DEFAULT_DASHBOARD_PERMISSION,
+          ...permissions
+        ].filter((perm, index, self) => index === self.findIndex(p => p.name === perm.name));
 
-      // Merge default "View Programs Dashboard" permission
-      const DEFAULT_DASHBOARD_PERMISSION: Permission = {
-        name: 'View Programs Dashboard',
-        path: '/dashboard',
-        method: 'GET',
-      };
+        console.log("User permissions after adding default:", user.permissions);
 
-      user.permissions = [
-        DEFAULT_DASHBOARD_PERMISSION,
-        ...(permissions || [])
-      ].filter((perm, index, self) => index === self.findIndex(p => p.name === perm.name));
-
-      console.log("User permissions after adding default:", user.permissions);
 
       // Update context with login
       await login(token, user, response.data.organization, null); 
@@ -97,13 +124,26 @@ export const LoginForm = () => {
       if (firstAccessibleRoute) {
         setTimeout(() => {
           setShowSuccessCard(false);
-          navigate(firstAccessibleRoute[0]);
+
+          // ✅ If Administrator → always go to main dashboard
+          if (user.role === "Administrator") {
+            navigate("/dashboard");
+            return;
+          }
+
+          // Otherwise → go to first accessible route
+          const firstAccessibleRoute = findFirstAccessibleRoute(user.permissions);
+
+          console.log("First accessible route:", firstAccessibleRoute);
+
+          if (firstAccessibleRoute) {
+            navigate(firstAccessibleRoute[0]);
+          } else {
+            navigate("/dashboard");
+          }
+
         }, 2000);
-      } else {
-        setTimeout(() => {
-          setShowSuccessCard(false);
-          navigate('/dashboard');
-        }, 2000);
+
       }
 
       setError('');
@@ -121,7 +161,7 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="login-parent-container">
+    <div className={`login-parent-container ${statusMessage ? 'blurred' : ''}`}>
       <div className="loginContainer">
         <div className="header">
           <img src={headerLogo} alt="Logo" />
@@ -184,6 +224,15 @@ export const LoginForm = () => {
           <p>Redirecting to dashboard...</p>
         </div>
       )}
+
+      {statusMessage && (
+        <div className={`status-card ${statusType}`}>
+          <h3>⚠️ Account Status Notice</h3>
+          <p>{statusMessage}</p>
+        </div>
+      )}
+
+
     </div>
   );
 };

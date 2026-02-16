@@ -8,13 +8,14 @@ const OrganizationHeader: React.FC = () => {
 
   // Define the organization links
   const organizationLinks = [
-    { name: "Profile", href: "/Organization/edittableProfile" },
+    { name: "← Back to Main", href: "/dashboard", permission: "View Main Dashboard" },
+    //{ name: "Profile", href: "/Organization/edittableProfile" },
     { name: "The Lobby", href: "/Organization/orgLobby" },
     { name: "Manage Accounts", href: "/Organization/ListedAccounts" },
     { name: "Roles", href: "/Organization/roles" },
     { name: "Permissions", href: "/Organization/permissions" },
     { name: "Admin Accounts", href: "/Organization/orgAdminAccounts" },
-    { name: "To SCI-ELD ERP", href: "/Organization/to_SCI-ELD_ERP" },
+    //{ name: "To SCI-ELD ERP", href: "/Organization/to_SCI-ELD_ERP" },
     // Add logout link with a special href
     { name: "➜] Logout", href: "#logout" },
   ];

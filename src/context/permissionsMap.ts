@@ -7,6 +7,18 @@ export const permissionsMap: { [key: string]: string[] } = {
   '/org-register': ['View Organization Registration'],
   '/org-dashboard': ['View Organization Dashboard'],*/
 
+  // HQ 
+  '/HQ/branchDirectory': ['View Branch Directory'],
+  '/HQ/GeneralReport': ['View HQ Reports'],
+
+  //Organization Control Room
+  '/Organization/edittableProfile': ['Manage Organization Profile'],
+  '/Organization/orgLobby': ['Access Organization Lobby'],
+  '/Organization/ListedAccounts': ['Manage Organization Accounts'],
+  '/Organization/roles': ['Manage Roles'],
+  '/Organization/permissions': ['Manage Permissions'],
+  '/Organization/orgAdminAccounts': ['Manage Organization Admins'],
+
   // MAIN DASHBOARD
   '/dashboard': ['View Main Dashboard'],
 
