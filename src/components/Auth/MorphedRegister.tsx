@@ -208,7 +208,11 @@ const RegisterOrganization = () => {
       setShowSuccessCard(true);
       setTimeout(() => {
         setShowSuccessCard(false);
-        navigate("/Organization/success", { state: { organizationID, accountID } });
+        navigate("/Organization/success", { state: { 
+            organizationID, 
+            accountID,
+            isHQ   // 👈 pass this
+            }  });
       }, 2000);
 
     } catch (err: any) {
@@ -340,10 +344,14 @@ const RegisterOrganization = () => {
           )}
 
           <br/><br/>
+
           <p>Select an HQ that this Church reports to...(Only If Applicable)</p>
+          
           {/* HQ Dropdown for non-HQ orgs */}
           {!isHQ && hqs.length > 0 && (
+            
             <div className="field input-field select-field">
+                
               <select value={selectedHQ} onChange={(e) => setSelectedHQ(e.target.value)}>
                 <option value="none">Do not report to an HQ</option>
                 {hqs.map(hq => (

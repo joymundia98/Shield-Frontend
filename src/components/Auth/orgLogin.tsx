@@ -95,8 +95,8 @@ const onSubmit = async (data: OrgLoginFormData) => {
       setShowSuccessCard(true);
       setTimeout(() => {
         setShowSuccessCard(false);
-        console.log('➡️ Navigating to /Organization/orgAdminAccounts');
-        navigate('/Organization/orgAdminAccounts');
+        console.log('➡️ Navigating to /Admin/create-account');
+        navigate('/Admin/create-account');
       }, 2000); // Adjust timeout as necessary
     } else {
       setError(response.data.message || 'Invalid credentials.');
