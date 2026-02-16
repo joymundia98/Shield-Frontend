@@ -41,7 +41,8 @@ export const AdminAccount = () => {
   const [roleId, setRoleId] = useState<number | null>(null);
   const [roles, setRoles] = useState<any[]>([]); // To store roles fetched from API
   const [permissions, setPermissions] = useState<any[]>([]); // To store all permissions
-
+  const [organizationType, setOrganizationType] = useState<string>(""); // Org type
+  
   const { login } = useAuth(); // Pull login function from AuthContext
 
   // Sidebar state
@@ -62,6 +63,7 @@ export const AdminAccount = () => {
         const organization = JSON.parse(storedOrganization);
         if (organization?.id) {
           setOrganizationId(organization.id); // Set organization ID
+          setOrganizationType(organization.type); // Set organization type
         } else {
           setErrorMessage("Organization ID not found in local storage.");
         }
@@ -173,11 +175,6 @@ export const AdminAccount = () => {
     }
   }, [roles]);
 
-  // If there's no organization_id or role_id, show an error
-  if (organizationId === null || roleId === null) {
-    return <div>{errorMessage || "Organization ID or Role ID not found. Please log in again."}</div>;
-  }
-
   const onSubmit = async (data: RegisterFormData) => {
   const token = localStorage.getItem("authToken");
   if (!token) {
@@ -186,6 +183,17 @@ export const AdminAccount = () => {
   }
 
   try {
+    // Retrieve the headquarters_id from localStorage
+    const storedOrganization = localStorage.getItem("organization");
+    const organization = storedOrganization ? JSON.parse(storedOrganization) : null;
+
+    const headquarterId = organization?.headquarters_id || null; // Extract the headquarters_id
+
+    if (!headquarterId) {
+      setErrorMessage("Headquarters ID is missing.");
+      return;
+    }
+
     // Step 1: Register the admin
     const response = await axios.post(`${baseURL}/api/auth/register`, {
       first_name: data.first_name,
@@ -197,51 +205,74 @@ export const AdminAccount = () => {
       password: data.password,
       status: "active",
       organization_id: organizationId,
+      headquarter_id: headquarterId, // Pass the correct headquarter_id here
     });
 
     if (response.status === 201) {
       // Step 2: Assign permissions
       const allPermissionIds = permissions.map((p) => p.id);
-      const permissionResponse = await orgFetch(`${baseURL}/api/role_permissions/assign`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          role_id: roleId,
-          permission_ids: allPermissionIds,
-        }),
+
+      // Remove specific permissions if the org_type_name is not "Headquarters / Central Authority"
+      if (organizationType !== "Headquarters / Central Authority") {
+        const viewBranchPermissionId = permissions.find(p => p.name === "View Branch Directory")?.id;
+        const viewHQPermissionId = permissions.find(p => p.name === "View HQ Reports")?.id;
+
+        // Remove permissions by filtering them out
+        const filteredPermissions = allPermissionIds.filter(id => id !== viewBranchPermissionId && id !== viewHQPermissionId);
+
+        // Assign permissions with the filtered list
+        await orgFetch(`${baseURL}/api/role_permissions/assign`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            role_id: roleId,
+            permission_ids: filteredPermissions,
+          }),
+        });
+      } else {
+        // Assign all permissions if it's "Headquarters / Central Authority"
+        await orgFetch(`${baseURL}/api/role_permissions/assign`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            role_id: roleId,
+            permission_ids: allPermissionIds,
+          }),
+        });
+      }
+
+      setShowSuccessCard(true);
+
+      // Step 3: Automatically log in the user
+      const loginResponse = await axios.post(`${baseURL}/api/auth/login`, {
+        email: data.email,
+        password: data.password,
       });
 
-      if (permissionResponse.message === "Permissions successfully assigned to role") {
-        setShowSuccessCard(true);
-
-        // Step 3: Automatically log in the user
-        const loginResponse = await axios.post(`${baseURL}/api/auth/login`, {
-          email: data.email,
-          password: data.password,
-        });
-
-        if (loginResponse.status === 200 && loginResponse.data.accessToken) {
-          // Store the auth token and user info
-          await login(
-            loginResponse.data.accessToken,
-            loginResponse.data.user,
-            loginResponse.data.organization || null,
-            loginResponse.data.headquarters || null
-          );
-          // Redirect to dashboard or desired page
-          setTimeout(() => {
-            setShowSuccessCard(false);
-            navigate("/dashboard", { state: { organizationID: organizationId } });
-          }, 1500);
-        } else {
-          setErrorMessage("Login failed after registration. Please try logging in manually.");
-        }
+      if (loginResponse.status === 200 && loginResponse.data.accessToken) {
+        // Store the auth token and user info
+        await login(
+          loginResponse.data.accessToken,
+          loginResponse.data.user,
+          loginResponse.data.organization || null,
+          loginResponse.data.headquarters || null
+        );
+        // Redirect to dashboard or desired page
+        setTimeout(() => {
+          setShowSuccessCard(false);
+          navigate("/dashboard", { state: { organizationID: organizationId } });
+        }, 1500);
       } else {
-        setErrorMessage("Failed to assign permissions.");
+        setErrorMessage("Login failed after registration. Please try logging in manually.");
       }
+    } else {
+      setErrorMessage("Failed to assign permissions.");
     }
   } catch (err: any) {
     console.error(err);
@@ -260,11 +291,8 @@ export const AdminAccount = () => {
     }
   };
 
-  
-    return (
-
+  return (
     <div className="dashboard-wrapper">
-
       {/* SIDEBAR */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
@@ -289,96 +317,95 @@ export const AdminAccount = () => {
 
       <button className="hamburger" onClick={toggleSidebar}> ☰ </button>
 
-    <div className="login-parent-container">
+      <div className="login-parent-container">
+        <div className="loginContainer">
+          <div className="header">
+            <img src={headerLogo} alt="Logo" />
+          </div>
 
-      <div className="loginContainer">
-        <div className="header">
-          <img src={headerLogo} alt="Logo" />
+          <form onSubmit={handleSubmit(onSubmit)}>
+            {/* First Name */}
+            <div className="field input-field">
+              <input type="text" {...register("first_name")} />
+              <label>First Name</label>
+              {errors.first_name && <p className="form-error">{errors.first_name.message}</p>}
+            </div>
+
+            {/* Last Name */}
+            <div className="field input-field">
+              <input type="text" {...register("last_name")} />
+              <label>Last Name</label>
+              {errors.last_name && <p className="form-error">{errors.last_name.message}</p>}
+            </div>
+
+            {/* Email */}
+            <div className="field input-field">
+              <input type="email" {...register("email")} />
+              <label>Email Address</label>
+              {errors.email && <p className="form-error">{errors.email.message}</p>}
+            </div>
+
+            {/* Phone */}
+            <div className="field input-field">
+              <input type="text" {...register("phone")} />
+              <label>Phone</label>
+              {errors.phone && <p className="form-error">{errors.phone.message}</p>}
+            </div>
+
+            {/* Password */}
+            <div className="field input-field">
+              <input type={showPassword ? "text" : "password"} {...register("password")} />
+              <label>Password</label>
+              <span className="showPassword" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? "👁️" : "🙈"}
+              </span>
+              {errors.password && <p className="form-error">{errors.password.message}</p>}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="field input-field">
+              <input type={showConfirmPassword ? "text" : "password"} {...register("confirm_password")} />
+              <label>Confirm Password</label>
+              <span className="showPassword" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                {showConfirmPassword ? "👁️" : "🙈"}
+              </span>
+              {errors.confirm_password && <p className="form-error">{errors.confirm_password.message}</p>}
+            </div>
+
+            {errorMessage && <p className="form-error">{errorMessage}</p>}
+
+            {/* Submit Button */}
+            <div className="field button-field">
+              <button type="submit">Register</button>
+            </div>
+          </form>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* First Name */}
-          <div className="field input-field">
-            <input type="text" {...register("first_name")} />
-            <label>First Name</label>
-            {errors.first_name && <p className="form-error">{errors.first_name.message}</p>}
+        {/* Success Popup */}
+        {showSuccessCard && (
+          <div className="success-card">
+            <h3>✅ Registration Successful!</h3>
+            <p>Redirecting...</p>
           </div>
+        )}
 
-          {/* Last Name */}
-          <div className="field input-field">
-            <input type="text" {...register("last_name")} />
-            <label>Last Name</label>
-            {errors.last_name && <p className="form-error">{errors.last_name.message}</p>}
-          </div>
-
-          {/* Email */}
-          <div className="field input-field">
-            <input type="email" {...register("email")} />
-            <label>Email Address</label>
-            {errors.email && <p className="form-error">{errors.email.message}</p>}
-          </div>
-
-          {/* Phone */}
-          <div className="field input-field">
-            <input type="text" {...register("phone")} />
-            <label>Phone</label>
-            {errors.phone && <p className="form-error">{errors.phone.message}</p>}
-          </div>
-
-          {/* Password */}
-          <div className="field input-field">
-            <input type={showPassword ? "text" : "password"} {...register("password")} />
-            <label>Password</label>
-            <span className="showPassword" onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? "👁️" : "🙈"}
-            </span>
-            {errors.password && <p className="form-error">{errors.password.message}</p>}
-          </div>
-
-          {/* Confirm Password */}
-          <div className="field input-field">
-            <input type={showConfirmPassword ? "text" : "password"} {...register("confirm_password")} />
-            <label>Confirm Password</label>
-            <span className="showPassword" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-              {showConfirmPassword ? "👁️" : "🙈"}
-            </span>
-            {errors.confirm_password && <p className="form-error">{errors.confirm_password.message}</p>}
-          </div>
-
-          {errorMessage && <p className="form-error">{errorMessage}</p>}
-
-          {/* Submit Button */}
-          <div className="field button-field">
-            <button type="submit">Register</button>
-          </div>
-        </form>
-      </div>
-
-      {/* Success Popup */}
-      {showSuccessCard && (
-        <div className="success-card">
-          <h3>✅ Registration Successful!</h3>
-          <p>Redirecting...</p>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {showModal && (
-        <div className="success-modal-overlay">
-          <div className="success-modal">
-            <h2>You have successfully created an account! How would you like to proceed?</h2>
-            <div className="modal-buttons">
-              <button className="modal-btn" onClick={() => handleRedirect("AdminAccounts")}>
-                Go to Admin Accounts
-              </button>&emsp;
-              <button className="modal-btn" onClick={() => handleRedirect("AdminLogin")}>
-                Login with Admin Account
-              </button>
+        {/* Success Modal */}
+        {showModal && (
+          <div className="success-modal-overlay">
+            <div className="success-modal">
+              <h2>You have successfully created an account! How would you like to proceed?</h2>
+              <div className="modal-buttons">
+                <button className="modal-btn" onClick={() => handleRedirect("AdminAccounts")}>
+                  Go to Admin Accounts
+                </button>&emsp;
+                <button className="modal-btn" onClick={() => handleRedirect("AdminLogin")}>
+                  Login with Admin Account
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  </div>
   );
 };

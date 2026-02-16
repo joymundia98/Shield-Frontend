@@ -59,7 +59,7 @@ const onSubmit = async (data: OrgLoginFormData) => {
         full_name: organization.name,
         email: organization.organization_email || '', // Added optional email
         org_id: organization.id, // ✅ Organization ID for EditableProfile
-        org_type: organization.denomination, // Using denomination or type as org type
+        org_type: organization.org_type_name, // Using org_type_name as org type
         roles: ['organization'],
         role_id: 1,
       };
@@ -68,7 +68,7 @@ const onSubmit = async (data: OrgLoginFormData) => {
       const orgData = {
         id: organization.id,
         name: organization.name,
-        denomination: organization.denomination,
+        denomination: organization.org_type_name, // Use org_type_name for denomination
         address: organization.address,
         region: organization.region,
         district: organization.district,
@@ -80,11 +80,14 @@ const onSubmit = async (data: OrgLoginFormData) => {
       };
 
       // If you have headquarters data (e.g., from localStorage or an API call), use it. 
-      // Otherwise, you can pass null:
       const headquarters = JSON.parse(localStorage.getItem('headquarters') || 'null');
 
       // 🔥 Save JWT + org info via AuthContext (Now passing all four arguments)
       login(accessToken, orgAsUser, orgData, headquarters);
+
+      // 🏢 Save response data (accessToken and organization) to localStorage
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('organization', JSON.stringify(organization));
 
       console.log('✅ Organization login successful');
       console.log('🔐 JWT:', accessToken);
