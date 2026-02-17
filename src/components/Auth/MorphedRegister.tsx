@@ -121,17 +121,29 @@ const RegisterOrganization = () => {
   }, [watchedSubDenom]);
 
   // Fetch organization types
-  useEffect(() => {
-    const fetchOrgTypes = async () => {
-      try {
-        const response = await axios.get(`${baseURL}/api/organization_type`);
-        setOrgTypes(response.data);
-      } catch (error) {
-        console.error("Failed to fetch organization types", error);
-      }
-    };
-    fetchOrgTypes();
-  }, []);
+  // Fetch organization types
+useEffect(() => {
+  const fetchOrgTypes = async () => {
+    try {
+      const response = await axios.get(`${baseURL}/api/organization_type`);
+
+      // Filter out unwanted org types
+      const filteredOrgTypes = response.data.filter(
+        (type: { name: string }) =>
+          type.name !== "Regional / Territorial Level" &&
+          type.name !== "Sub-Local Units (Optional)"
+      );
+
+      setOrgTypes(filteredOrgTypes);
+
+    } catch (error) {
+      console.error("Failed to fetch organization types", error);
+    }
+  };
+
+  fetchOrgTypes();
+}, []);
+
 
   // Fetch HQs for dropdown
   useEffect(() => {
