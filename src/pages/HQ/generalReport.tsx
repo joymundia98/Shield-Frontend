@@ -12,11 +12,21 @@ import "react-datepicker/dist/react-datepicker.css";
    API / AUTH CONFIG
 ======================= */
 const baseURL = import.meta.env.VITE_BASE_URL;
+
+// Grab authToken
 const authToken = localStorage.getItem("authToken");
-const headquartersRaw = localStorage.getItem("headquarters");
-const headquarters = headquartersRaw ? JSON.parse(headquartersRaw) : null;
-const headquarterId = headquarters?.id;
-const hqName = headquarters?.name ?? "Headquarters";
+
+// Determine headquarter info from either user or organization
+const userRaw = localStorage.getItem("user");
+const orgRaw = localStorage.getItem("organization");
+
+const userData = userRaw ? JSON.parse(userRaw) : null;
+const orgData = orgRaw ? JSON.parse(orgRaw) : null;
+
+// Determine HQ ID and Name dynamically
+const headquarterId = userData?.headquarter_id || orgData?.headquarters_id;
+//const hqName = userData?.headquarter_name || orgData?.headquarters_name || "Headquarters";
+
 
 
 /* =======================
@@ -100,6 +110,8 @@ const GeneralReport: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  const [hqName, setHqName] = useState("Headquarters");
 
   const [kpi, setKpi] = useState({
     totalMembers: 0,
@@ -239,12 +251,39 @@ const fetchAsArray = async (url: string): Promise<any[]> => {
     }
   };
 
+// helper to fetch HQ names
+  const fetchHqName = async (id: number) => {
+  try {
+    const res = await fetch(`${baseURL}/api/public/hqs/names`);
+    if (!res.ok) return "Headquarters";
+
+    const data = await res.json();
+    if (!Array.isArray(data)) return "Headquarters";
+
+    const hq = data.find((hq: any) => hq.id === id);
+    return hq ? hq.name : "Headquarters";
+  } catch (error) {
+    console.error("Failed to fetch HQ name:", error);
+    return "Headquarters";
+  }
+};
+
   useEffect(() => {
-    fetchMembers();
-    fetchVisitors();
-    fetchConverts();
-    fetchBranches();
-  }, []);
+  if (!authToken || !headquarterId) {
+    console.error("Missing auth token or headquarters ID.");
+    return;
+  }
+
+  // Fetch HQ name
+  fetchHqName(headquarterId).then(name => setHqName(name));
+
+  // Fetch dashboard data
+  fetchMembers();
+  fetchVisitors();
+  fetchConverts();
+  fetchBranches();
+}, [authToken, headquarterId]);
+
 
   /* =======================
      GENDER BREAKDOWN
@@ -852,7 +891,8 @@ DYNAMIC H1
 ====================*/
 const reportTitle = selectedBranch
   ? `${selectedBranch.name} Report`
-  : hqName;
+  : `${hqName} Report`;
+
 
 
   /* =======================

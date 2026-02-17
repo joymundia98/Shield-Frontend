@@ -29,74 +29,89 @@ const BranchDirectoryPage: React.FC = () => {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   // Fetch headquarters info and auth token from local storage
-  const headquartersInfo = JSON.parse(localStorage.getItem("headquarters") || "{}");
-  const authToken = localStorage.getItem("authToken");
+  //const headquartersInfo = JSON.parse(localStorage.getItem("headquarters") || "{}");
+  //const authToken = localStorage.getItem("authToken");
 
   useEffect(() => {
-    if (!headquartersInfo || !authToken) {
-      setError("Required authentication or headquarters data is missing.");
+  // 1️⃣ Grab data from localStorage
+  const userData = JSON.parse(localStorage.getItem("user") || "null");
+  const orgData = JSON.parse(localStorage.getItem("organization") || "null");
+
+  // 2️⃣ Determine the HQ ID based on who is logged in
+  const headquarterId = userData?.headquarter_id || orgData?.headquarters_id;
+  const authToken = localStorage.getItem("authToken");
+
+  // 3️⃣ If missing data, set error and stop
+  if (!headquarterId || !authToken) {
+    setError("Authentication or headquarters data is missing.");
+    setLoading(false);
+    return;
+  }
+
+  // 4️⃣ Fetch organizations under this HQ
+  const fetchOrganizations = async () => {
+    try {
+      const response = await fetch(
+        `${baseURL}/api/headquarters/organizations/${headquarterId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch organizations");
+
+      const data = await response.json();
+      console.log("Fetched Organization Data:", data);
+      setOrganizationData(data);
       setLoading(false);
-      return;
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load organization data");
+      setLoading(false);
     }
+  };
 
-    // Fetch organization data
-    const fetchOrganizations = async () => {
-      try {
-        const response = await fetch(`${baseURL}/api/headquarters/organizations/${headquartersInfo.id}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        });
+  // 5️⃣ Fetch organization types
+  const fetchOrgTypes = async () => {
+    try {
+      const response = await fetch(`${baseURL}/api/organization_type`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch organizations");
-        }
+      if (!response.ok) throw new Error("Failed to fetch organization types");
 
-        const data = await response.json();
-        console.log("Fetched Organization Data:", data); // Log to verify the organization data
-        setOrganizationData(data);
-        setLoading(false);
-      } catch (err) {
-        setError("Failed to load organization data");
-        setLoading(false);
-      }
-    };
+      const data = await response.json();
+      console.log("Fetched Organization Types:", data);
 
-    // Fetch organization types
-    const fetchOrgTypes = async () => {
-      try {
-        const response = await fetch(`${baseURL}/api/organization_type`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch organization types");
-        }
-
-        const data = await response.json();
-        console.log("Fetched Organization Types:", data); // Log to verify the fetched types
-
-        // Map org_type_id to names
-        const orgTypesMap = data.reduce((acc: Record<number, string>, orgType: { org_type_id: number; name: string }) => {
+      // Map org_type_id → name
+      const orgTypesMap = data.reduce(
+        (acc: Record<number, string>, orgType: { org_type_id: number; name: string }) => {
           acc[orgType.org_type_id] = orgType.name;
           return acc;
-        }, {});
+        },
+        {}
+      );
 
-        setOrgTypes(orgTypesMap);
-      } catch (err) {
-        setError("Failed to load organization types");
-      }
-    };
+      setOrgTypes(orgTypesMap);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load organization types");
+    }
+  };
 
-    fetchOrganizations();
-    fetchOrgTypes();
-  }, [headquartersInfo.id, authToken]);
+  // 6️⃣ Trigger fetches
+  fetchOrganizations();
+  fetchOrgTypes();
+}, []);
+
 
   const filteredOrganizations = useMemo(() => {
     let filtered = organizationData;

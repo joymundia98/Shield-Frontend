@@ -11,6 +11,9 @@ import { useAuth } from "../../hooks/useAuth";
 // Importing the orgFetch function to fetch data
 import { orgFetch } from "../../utils/api";
 
+import { fetchPermissionsForRole } from "../../context/AuthContext";
+
+
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -28,6 +31,7 @@ const registerSchema = z
     message: "Passwords do not match",
     path: ["confirm_password"],
   });
+
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
@@ -183,18 +187,16 @@ export const AdminAccount = () => {
   }
 
   try {
-    // Retrieve the headquarters_id from localStorage
     const storedOrganization = localStorage.getItem("organization");
     const organization = storedOrganization ? JSON.parse(storedOrganization) : null;
-
-    const headquarterId = organization?.headquarters_id || null; // Extract the headquarters_id
+    const headquarterId = organization?.headquarters_id || null;
 
     if (!headquarterId) {
       setErrorMessage("Headquarters ID is missing.");
       return;
     }
 
-    // Step 1: Register the admin
+    // ✅ STEP 1: Register admin
     const response = await axios.post(`${baseURL}/api/auth/register`, {
       first_name: data.first_name,
       last_name: data.last_name,
@@ -205,75 +207,107 @@ export const AdminAccount = () => {
       password: data.password,
       status: "active",
       organization_id: organizationId,
-      headquarter_id: headquarterId, // Pass the correct headquarter_id here
+      headquarter_id: headquarterId,
     });
 
-    if (response.status === 201) {
-      // Step 2: Assign permissions
-      const allPermissionIds = permissions.map((p) => p.id);
-
-      // Remove specific permissions if the org_type_name is not "Headquarters / Central Authority"
-      if (organizationType !== "Headquarters / Central Authority") {
-        const viewBranchPermissionId = permissions.find(p => p.name === "View Branch Directory")?.id;
-        const viewHQPermissionId = permissions.find(p => p.name === "View HQ Reports")?.id;
-
-        // Remove permissions by filtering them out
-        const filteredPermissions = allPermissionIds.filter(id => id !== viewBranchPermissionId && id !== viewHQPermissionId);
-
-        // Assign permissions with the filtered list
-        await orgFetch(`${baseURL}/api/role_permissions/assign`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            role_id: roleId,
-            permission_ids: filteredPermissions,
-          }),
-        });
-      } else {
-        // Assign all permissions if it's "Headquarters / Central Authority"
-        await orgFetch(`${baseURL}/api/role_permissions/assign`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            role_id: roleId,
-            permission_ids: allPermissionIds,
-          }),
-        });
-      }
-
-      setShowSuccessCard(true);
-
-      // Step 3: Automatically log in the user
-      const loginResponse = await axios.post(`${baseURL}/api/auth/login`, {
-        email: data.email,
-        password: data.password,
-      });
-
-      if (loginResponse.status === 200 && loginResponse.data.accessToken) {
-        // Store the auth token and user info
-        await login(
-          loginResponse.data.accessToken,
-          loginResponse.data.user,
-          loginResponse.data.organization || null,
-          loginResponse.data.headquarters || null
-        );
-        // Redirect to dashboard or desired page
-        setTimeout(() => {
-          setShowSuccessCard(false);
-          navigate("/dashboard", { state: { organizationID: organizationId } });
-        }, 1500);
-      } else {
-        setErrorMessage("Login failed after registration. Please try logging in manually.");
-      }
-    } else {
-      setErrorMessage("Failed to assign permissions.");
+    if (response.status !== 201) {
+      setErrorMessage("Registration failed.");
+      return;
     }
+
+    // ✅ STEP 2: Assign role permissions
+    const allPermissionIds = permissions.map((p) => p.id);
+
+    let permissionIdsToAssign = allPermissionIds;
+
+    if (organizationType !== "Headquarters / Central Authority") {
+      const viewBranchPermissionId = permissions.find(
+        p => p.name === "View Branch Directory"
+      )?.id;
+
+      const viewHQPermissionId = permissions.find(
+        p => p.name === "View HQ Reports"
+      )?.id;
+
+      permissionIdsToAssign = allPermissionIds.filter(
+        id => id !== viewBranchPermissionId && id !== viewHQPermissionId
+      );
+    }
+
+    await orgFetch(`${baseURL}/api/role_permissions/assign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        role_id: roleId,
+        permission_ids: permissionIdsToAssign,
+      }),
+    });
+
+    setShowSuccessCard(true);
+
+    // ✅ STEP 3: Auto-login
+    const loginResponse = await axios.post(`${baseURL}/api/auth/login`, {
+      email: data.email,
+      password: data.password,
+    });
+
+    if (loginResponse.status === 200 && loginResponse.data.accessToken) {
+      const newToken = loginResponse.data.accessToken;
+      const user = loginResponse.data.user;
+
+      // 🔐 IMPORTANT: Fetch permissions BEFORE calling login()
+      let fetchedPermissions: Awaited<
+          ReturnType<typeof fetchPermissionsForRole>
+        > = [];
+
+        if (user.role_id) {
+          fetchedPermissions =
+            (await fetchPermissionsForRole(
+              user.role_id.toString(),
+              newToken
+            )) || [];
+        }
+
+
+      // Default dashboard permission (same as LoginForm)
+      const DEFAULT_DASHBOARD_PERMISSION = {
+        name: "View Programs Dashboard",
+        path: "/dashboard",
+        method: "GET",
+      };
+
+      // Merge + remove duplicates
+      user.permissions = [
+        DEFAULT_DASHBOARD_PERMISSION,
+        ...fetchedPermissions,
+      ].filter(
+        (perm, index, self) =>
+          index === self.findIndex(p => p.name === perm.name)
+      );
+
+      // ✅ Now call login with hydrated user
+      await login(
+        newToken,
+        user,
+        loginResponse.data.organization || null,
+        loginResponse.data.headquarters || null
+      );
+
+      setShowSuccessCard(false);
+
+      // ✅ Navigate AFTER login finishes
+      navigate("/dashboard", {
+        state: { organizationID: organizationId },
+      });
+    } else {
+      setErrorMessage(
+        "Login failed after registration. Please try logging in manually."
+      );
+    }
+
   } catch (err: any) {
     console.error(err);
     setErrorMessage(err.response?.data?.message || "Registration failed");
