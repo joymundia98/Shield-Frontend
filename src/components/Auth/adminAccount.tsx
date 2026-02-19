@@ -67,7 +67,7 @@ export const AdminAccount = () => {
         const organization = JSON.parse(storedOrganization);
         if (organization?.id) {
           setOrganizationId(organization.id); // Set organization ID
-          setOrganizationType(organization.type); // Set organization type
+          setOrganizationType(organization.org_type_name);  // Set organization type
         } else {
           setErrorMessage("Organization ID not found in local storage.");
         }

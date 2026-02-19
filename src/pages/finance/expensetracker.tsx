@@ -229,11 +229,17 @@ const ExpenseTrackerPage: React.FC = () => {
 
     if (!item) return;
 
-    await fetch(`${BACKEND_URL}/finance/expenses/${item.id}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
+    await fetchDataWithAuthFallback(
+      `${BACKEND_URL}/finance/expenses/${item.id}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      }
+    );
+
 
     setExpenses((prevExpenses) => {
       return prevExpenses.map((expense) =>
