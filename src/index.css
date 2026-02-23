@@ -66,3 +66,40 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Dark Mode css */
+@media (prefers-color-scheme: dark) {
+
+    /* All inputs, textareas and selects */
+    input,
+    textarea,
+    select,
+    .add-form-styling input, 
+    .add-form-styling select, 
+    .add-form-styling textarea {
+        background-color: #ffffff;
+        color: #000000;
+        border: 1px solid #444;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: #000000;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+        border-color: #2a2a2a;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(77, 163, 255, 0.2);
+    }
+
+    /* Disabled fields */
+    input:disabled,
+    textarea:disabled,
+    select:disabled {
+        background-color: #2a2a2a;
+        color: #070707;
+    }
+}
