@@ -171,7 +171,7 @@ const BranchRegister = () => {
     const statusToSend = data.status || "active";
 
     const response = await axios.post(
-      `${baseURL}/api/headquarters/organizations`,
+      `${baseURL}/api/auth/organizations/register`,
       {
         name: data.name,
         organization_email: data.organization_email,
