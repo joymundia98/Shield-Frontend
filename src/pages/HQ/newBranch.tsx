@@ -149,62 +149,62 @@ const BranchRegister = () => {
   };
 
   const onSubmit = async (data: OrgFormData) => {
-    try {
-        // Retrieve authToken from localStorage
-        const authToken = localStorage.getItem("authToken");
-
-        if (!authToken) {
-        // Handle the case where the auth token is not available
-        setErrorMessage("Authorization token is missing");
-        return;
-        }
-
-        const districtToSend =
-        data.district === "Not Listed" ? data.customDistrict : data.district;
-
-        const subToSend =
-        data.subDenomination === "Not Listed"
-            ? data.customSubDenomination
-            : data.subDenomination;
-
-        const fullDenomination = `${data.mainDenomination}-${subToSend}`;
-        const statusToSend = data.status || "active";
-
-        const response = await axios.post(
-        `${baseURL}/api/headquarters/organizations`,  // Changed to the correct endpoint
-        {
-            name: data.name,
-            organization_email: data.organization_email,
-            password: data.password,
-            org_type_id: Number(data.organizationType),
-            denomination: fullDenomination,
-            address: data.address,
-            region: data.region,
-            district: districtToSend,
-            status: statusToSend
-        },
-        {
-            headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,  // Add the Authorization header
-            },
-        }
-        );
-
-        // Assuming the response contains the organization object as nested data
-        const { id: organizationID, organization_account_id: accountID } = response.data.organization;
-
-        setShowSuccessCard(true);
-        setTimeout(() => {
-        setShowSuccessCard(false);
-        navigate("/HQ/branchDirectory", {
-            state: { organizationID, accountID }
-        });
-        }, 2000);
-    } catch (err: any) {
-        setErrorMessage(err.response?.data?.message || "Organization registration failed");
+  try {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) {
+      setErrorMessage("Authorization token is missing");
+      return;
     }
-    };
+
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const headquartersId = user.headquarter_id; // <--- note spelling
+
+    const districtToSend =
+      data.district === "Not Listed" ? data.customDistrict : data.district;
+
+    const subToSend =
+      data.subDenomination === "Not Listed"
+        ? data.customSubDenomination
+        : data.subDenomination;
+
+    const fullDenomination = `${data.mainDenomination}-${subToSend}`;
+    const statusToSend = data.status || "active";
+
+    const response = await axios.post(
+      `${baseURL}/api/headquarters/organizations`,
+      {
+        name: data.name,
+        organization_email: data.organization_email,
+        password: data.password,
+        org_type_id: Number(data.organizationType),
+        denomination: fullDenomination,
+        address: data.address,
+        region: data.region,
+        district: districtToSend,
+        status: statusToSend,
+        headquarters_id: headquartersId, // <--- send this
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+
+    const { id: organizationID, organization_account_id: accountID } = response.data.organization;
+
+    setShowSuccessCard(true);
+    setTimeout(() => {
+      setShowSuccessCard(false);
+      navigate("/HQ/branchDirectory", {
+        state: { organizationID, accountID },
+      });
+    }, 2000);
+  } catch (err: any) {
+    setErrorMessage(err.response?.data?.message || "Organization registration failed");
+  }
+};
 
 
   return (
