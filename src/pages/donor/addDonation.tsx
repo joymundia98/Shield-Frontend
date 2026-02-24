@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -44,14 +46,37 @@ const AddDonation: React.FC = () => {
     document.body.classList.toggle("sidebar-open", sidebarOpen);
   }, [sidebarOpen]);
 
+  // Helper function to fetch data with auth fallback
+    const fetchDataWithAuthFallback = async (url: string, options?: RequestInit) => {
+      try {
+        return await authFetch(url, options);
+      } catch (error: unknown) {
+        console.log("authFetch failed, falling back to orgFetch", error);
+
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          console.log("Unauthorized, redirecting to login");
+          navigate("/login");
+          return;
+        }
+
+        return await orgFetch(url, options);
+      }
+    };
+
   // ---------------- DONORS FROM DATABASE ----------------
   const [donors, setDonors] = useState<Donor[]>([]);
 
   useEffect(() => {
-    fetch(`${baseURL}/api/donors`)
-      .then((res) => res.json())
-      .then((data) => setDonors(data))
-      .catch((err) => console.error("Failed to load donors", err));
+    const loadDonors = async () => {
+      try {
+        const data = await fetchDataWithAuthFallback(`${baseURL}/api/donors`);
+        setDonors(data);
+      } catch (err) {
+        console.error("Failed to load donors", err);
+      }
+    };
+
+    loadDonors();
   }, []);
 
   // ------------------------------------------------------
@@ -118,13 +143,11 @@ const AddDonation: React.FC = () => {
 
     try {
       // 1️⃣ Submit to Donations table
-      const res = await fetch(`${baseURL}/api/donations`, {
+      await fetchDataWithAuthFallback(`${baseURL}/api/donations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(donationPayload),
       });
-
-      if (!res.ok) throw new Error("Failed to add donation");
 
       // 2️⃣ Submit to Finance table (incomes) in the Donations category
       const user = JSON.parse(localStorage.getItem("user") || "{}");
