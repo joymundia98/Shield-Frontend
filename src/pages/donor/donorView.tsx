@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -42,6 +44,23 @@ const ViewDonorPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  // Helper function to fetch data with auth fallback
+const fetchDataWithAuthFallback = async (url: string, options?: RequestInit) => {
+  try {
+    return await authFetch(url, options);
+  } catch (error: unknown) {
+    console.log("authFetch failed, falling back to orgFetch", error);
+
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      console.log("Unauthorized, redirecting to login");
+      navigate("/login");
+      return;
+    }
+
+    return await orgFetch(url, options);
+  }
+};
+
   // Fetch donor data by ID
   useEffect(() => {
     const fetchDonor = async () => {
@@ -52,10 +71,11 @@ const ViewDonorPage: React.FC = () => {
 
       try {
         setLoading(true);
-        const res = await fetch(`${baseURL}/api/donors/${donorId}`);
-        if (!res.ok) throw new Error("Donor not found");
-        
-        const data: Donor = await res.json();
+        const data: Donor = await fetchDataWithAuthFallback(
+          `${baseURL}/api/donors/${donorId}`
+        );
+
+        if (!data) throw new Error("Donor not found");
         setDonor(data);
 
         // Optional: You can map donor_type_id to donor_type (e.g., Individual, Organization)
@@ -86,13 +106,10 @@ const ViewDonorPage: React.FC = () => {
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this donor?")) {
       try {
-        const res = await fetch(`${baseURL}/api/donors/${donor.id}`, {
-          method: "DELETE",
-        });
-
-        if (!res.ok) {
-          throw new Error("Error deleting donor");
-        }
+        await fetchDataWithAuthFallback(
+            `${baseURL}/api/donors/${donor.id}`,
+            { method: "DELETE" }
+          );
 
         // Redirect back to the donor list after successful deletion
         alert("Donor deleted successfully.");
