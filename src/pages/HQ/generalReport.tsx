@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import "../../styles/global.css";
 import HeaderNav from "./HQHeader";
@@ -26,7 +27,6 @@ const orgData = orgRaw ? JSON.parse(orgRaw) : null;
 // Determine HQ ID and Name dynamically
 const headquarterId = userData?.headquarter_id || orgData?.headquarters_id;
 //const hqName = userData?.headquarter_name || orgData?.headquarters_name || "Headquarters";
-
 
 
 /* =======================
@@ -97,6 +97,9 @@ const AGE_GROUPS = [
    COMPONENT
 ======================= */
 const GeneralReport: React.FC = () => {
+
+  const navigate = useNavigate();
+
   /* ===== STATE ===== */
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -110,6 +113,9 @@ const GeneralReport: React.FC = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const [hqName, setHqName] = useState("Headquarters");
 
@@ -131,6 +137,14 @@ const GeneralReport: React.FC = () => {
   const convertChartRef = useRef<Chart | null>(null);
   const ageChartRef = useRef<Chart | null>(null);
   const convertGenderChartRef = useRef<Chart | null>(null);
+
+  useEffect(() => {
+      if (sidebarOpen) {
+        document.body.classList.add("sidebar-open");
+      } else {
+        document.body.classList.remove("sidebar-open");
+      }
+    }, [sidebarOpen]);
 
 /*=================
 RESUSABLE HELPER
@@ -900,6 +914,61 @@ const reportTitle = selectedBranch
   ======================= */
   return (
     <div className="dashboard-wrapper">
+
+      {/* SIDEBAR */}
+      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>&#9776;</button>
+      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        {/* Sidebar content */}
+        <div className="close-wrapper">
+          <div className="toggle close-btn">
+            <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
+            <span className="button"></span>
+            <span className="label">X</span>
+          </div>
+        </div>
+        
+        <h2>HQ MANAGER</h2>
+        {/* Sidebar links */}
+
+          <a
+            href="/HQ/branchDirectory"
+            className={location.pathname === "/HQ/branchDirectory" ? "active" : ""}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/HQ/branchDirectory");
+              setSidebarOpen(false);
+            }}
+          >
+            Manage Branches
+          </a>
+
+          <a
+            href="/HQ/GeneralReport"
+            className={location.pathname === "/HQ/GeneralReport" ? "active" : ""}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/HQ/GeneralReport");
+              setSidebarOpen(false);
+            }}
+          >
+            Branch Reports
+          </a>
+
+        <hr className="sidebar-separator" />
+        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        <a
+          href="/"
+          className="logout-link"
+          onClick={(e) => {
+            e.preventDefault();
+            localStorage.clear();
+            navigate("/"); 
+          }}
+        >
+          ➜ Logout
+        </a>
+      </div>
+
       <div className="dashboard-content">
         <div className="do-not-print">
           <HeaderNav />

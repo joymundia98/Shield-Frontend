@@ -172,16 +172,36 @@ const BranchDirectoryPage: React.FC = () => {
             <span className="label">X</span>
           </div>
         </div>
-        <h2>ORG MANAGER</h2>
+        
+        <h2>HQ MANAGER</h2>
         {/* Sidebar links */}
-        <a href="/Organization/edittableProfile">Profile</a>
-        <a href="/HQ/orgLobby">The Lobby</a>
-        <a href="/HQ/orgAdminAccounts">Admin Accounts</a>
-        <a href="/HQ/branchDirectory" className="active">Branch Directory</a>
-        <a href="/Organization/roles">Roles</a>
-        <a href="/Organization/permissions">Permissions</a>
+
+          <a
+            href="/HQ/branchDirectory"
+            className={location.pathname === "/HQ/branchDirectory" ? "active" : ""}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/HQ/branchDirectory");
+              setSidebarOpen(false);
+            }}
+          >
+            Manage Branches
+          </a>
+
+          <a
+            href="/HQ/GeneralReport"
+            className={location.pathname === "/HQ/GeneralReport" ? "active" : ""}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/HQ/GeneralReport");
+              setSidebarOpen(false);
+            }}
+          >
+            Branch Reports
+          </a>
+
         <hr className="sidebar-separator" />
-        <a href="/Organization/to_SCI-ELD_ERP" className="return-main">To SCI-ELD ERP</a>
+        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
         <a
           href="/"
           className="logout-link"
