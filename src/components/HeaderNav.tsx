@@ -21,8 +21,8 @@ const HeaderNav: React.FC = () => {
     {
       label: "HQ",
       links: [
-        { name: "Branch Directory", href: "/HQ/branchDirectory", permission: "View Branch Directory" },
-        { name: "Reports", href: "/HQ/GeneralReport", permission: "View HQ Reports" },
+        { name: "Manage Branches", href: "/HQ/branchDirectory", permission: "View Branch Directory" },
+        { name: "Branch Reports", href: "/HQ/GeneralReport", permission: "View HQ Reports" },
       ],
     },
     {
