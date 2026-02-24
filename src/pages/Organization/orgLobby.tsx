@@ -44,13 +44,26 @@ const OrgLobby: React.FC = () => {
   }, []);
 
   // Load organization data from localStorage
-  useEffect(() => {
+  // Old Logic
+  /*useEffect(() => {
     const savedOrg = localStorage.getItem('organization');
     if (savedOrg) {
       const parsedOrg = JSON.parse(savedOrg);
       setOrganization(parsedOrg);
     } else {
       console.log('No organization data found in localStorage.');
+    }
+  }, []);*/
+
+  // Load user data from localStorage
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      setOrganization({ id: parsedUser.organization_id }); 
+    } else {
+      console.log("No user data found in localStorage.");
     }
   }, []);
 
