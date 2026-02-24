@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -50,6 +52,25 @@ const EditDonor: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  // Auth + fallback helper
+const fetchDataWithAuthFallback = async (
+  url: string,
+  options?: RequestInit
+) => {
+  try {
+    return await authFetch(url, options);
+  } catch (error: unknown) {
+    console.log("authFetch failed, trying orgFetch", error);
+
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      navigate("/login");
+      return;
+    }
+
+    return await orgFetch(url, options);
+  }
+};
+
   // Form state for the donor data
   const [form, setForm] = useState<DonorForm>({
     donorTypeId: null,
@@ -75,49 +96,61 @@ const EditDonor: React.FC = () => {
 
   // Fetch donor types
   useEffect(() => {
-    fetch(`${baseURL}/api/donors/donor_types`)
-      .then((res) => res.json())
-      .then((data) => setDonorTypes(data))
-      .catch((err) => {
-        console.error("Failed to load donor types", err);  // log it for debugging
-        setError(`An error occurred: ${err.message || "Unknown error"}`);
-      });
+  const loadDonorTypes = async () => {
+    try {
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/donors/donor_types`
+      );
+      if (data) setDonorTypes(data);
+    } catch (err: any) {
+      console.error("Failed to load donor types", err);
+      setError(`An error occurred: ${err.message || "Unknown error"}`);
+    }
+  };
 
-  }, []);
+  loadDonorTypes();
+}, []);
 
   // Fetch donor data by ID to populate the form
   useEffect(() => {
-    if (!donorId) {
-      setError("Donor ID is missing");
-      return;
-    }
+  if (!donorId) {
+    setError("Donor ID is missing");
+    return;
+  }
 
-    fetch(`${baseURL}/api/donors/${donorId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        // Set the form values with the existing donor data
-        setForm({
-          donorTypeId: data.donor_type_id,
-          donorSubcategoryId: data.donor_subcategory_id,
-          firstName: data.name?.split(" ")[0] || "", // Assuming first name is part of full name
-          lastName: data.name?.split(" ")[1] || "",
-          gender: data.gender || "",
-          email: data.email || "",
-          phone: data.phone || "",
-          preferredContact: data.preferred_contact_method || "",
-          companyName: data.organization_id ? data.name : "", // Organization name
-          orgEmail: data.email || "",
-          orgPhone: data.phone || "",
-          address: data.address || "",
-          notes: data.notes || "",
-        });
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Failed to fetch donor data");
-        setLoading(false);
+  const loadDonor = async () => {
+    try {
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/donors/${donorId}`
+      );
+
+      if (!data) throw new Error("No donor data returned");
+
+      setForm({
+        donorTypeId: data.donor_type_id,
+        donorSubcategoryId: data.donor_subcategory_id,
+        firstName: data.name?.split(" ")[0] || "",
+        lastName: data.name?.split(" ")[1] || "",
+        gender: data.gender || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        preferredContact: data.preferred_contact_method || "",
+        companyName: data.organization_id ? data.name : "",
+        orgEmail: data.email || "",
+        orgPhone: data.phone || "",
+        address: data.address || "",
+        notes: data.notes || "",
       });
-  }, [donorId]);
+
+      setLoading(false);
+    } catch (err) {
+      setError("Failed to fetch donor data");
+      setLoading(false);
+    }
+  };
+
+  loadDonor();
+}, [donorId]);
 
   // Fetch and filter subcategories based on the donor type
   useEffect(() => {

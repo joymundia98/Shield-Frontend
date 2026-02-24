@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -34,6 +36,23 @@ const DonationViewPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
+  // Helper function to fetch data with auth fallback
+const fetchDataWithAuthFallback = async (url: string, options?: RequestInit) => {
+  try {
+    return await authFetch(url, options);
+  } catch (error: unknown) {
+    console.log("authFetch failed, falling back to orgFetch", error);
+
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      console.log("Unauthorized, redirecting to login");
+      navigate("/login");
+      return;
+    }
+
+    return await orgFetch(url, options);
+  }
+};
+
   // Debugging: Check if donationId is being retrieved
   console.log("Donation ID from URL params:", donationId);
 
@@ -50,12 +69,13 @@ const DonationViewPage: React.FC = () => {
         setLoading(true);
         console.log("Fetching donations...");
 
-        const res = await fetch(`${baseURL}/api/donations`);
-        if (!res.ok) {
+        const data: Donation[] = await fetchDataWithAuthFallback(
+          `${baseURL}/api/donations`
+        );
+
+        if (!data) {
           throw new Error("Error fetching donations");
         }
-
-        const data: Donation[] = await res.json();
         console.log("Fetched donations data:", data); // Log the fetched data
 
         // Find the donation with the matching ID
@@ -99,13 +119,10 @@ const DonationViewPage: React.FC = () => {
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this donation?")) {
       try {
-        const res = await fetch(`${baseURL}/api/donations/${donation.id}`, {
-          method: "DELETE",
-        });
-
-        if (!res.ok) {
-          throw new Error("Error deleting donation");
-        }
+        await fetchDataWithAuthFallback(
+          `${baseURL}/api/donations/${donation.id}`,
+          { method: "DELETE" }
+        );
 
         // Redirect back to the donation list after successful deletion
         alert("Donation deleted successfully.");

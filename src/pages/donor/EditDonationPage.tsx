@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -45,15 +47,43 @@ const EditDonation: React.FC = () => {
     document.body.classList.toggle("sidebar-open", sidebarOpen);
   }, [sidebarOpen]);
 
+  // Helper function to handle auth + fallback
+const fetchDataWithAuthFallback = async (
+  url: string,
+  options?: RequestInit
+) => {
+  try {
+    return await authFetch(url, options);
+  } catch (error: unknown) {
+    console.log("authFetch failed, falling back to orgFetch", error);
+
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      console.log("Unauthorized, redirecting to login");
+      navigate("/login");
+      return;
+    }
+
+    return await orgFetch(url, options);
+  }
+};
+
   // ---------------- DONORS FROM DATABASE ----------------
   const [donors, setDonors] = useState<Donor[]>([]);
 
   useEffect(() => {
-    fetch(`${baseURL}/api/donors`)
-      .then((res) => res.json())
-      .then((data) => setDonors(data))
-      .catch((err) => console.error("Failed to load donors", err));
-  }, []);
+  const loadDonors = async () => {
+    try {
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/donors`
+      );
+      if (data) setDonors(data);
+    } catch (err) {
+      console.error("Failed to load donors", err);
+    }
+  };
+
+  loadDonors();
+}, []);
 
   // ---------------- FETCH DONATION DATA ----------------
   const [form, setForm] = useState<DonationForm>({
@@ -80,9 +110,11 @@ const EditDonation: React.FC = () => {
     // Fetch the existing donation details
     const fetchDonation = async () => {
       try {
-        const res = await fetch(`${baseURL}/api/donations/${donationId}`);
-        const data = await res.json();
-        if (res.ok) {
+        const data = await fetchDataWithAuthFallback(
+          `${baseURL}/api/donations/${donationId}`
+        );
+
+        if (data) {
           setForm({
             donorRegistered: data.donor_registered,
             donorType: data.donor_type_id === 1 ? "individual" : "organization",
@@ -93,7 +125,7 @@ const EditDonation: React.FC = () => {
             donorTypeId: data.donor_type_id || null,
             subcategoryId: data.donor_subcategory_id || null,
             subcategory: data.donor_subcategory || "",
-            date: data.date.split("T")[0], // format the date as 'YYYY-MM-DD'
+            date: data.date.split("T")[0],
             amount: parseFloat(data.amount),
             method: data.method,
             purpose: data.purpose_id || "",
