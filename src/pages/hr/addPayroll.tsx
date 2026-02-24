@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HRHeader from "./HRHeader";
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -75,11 +77,27 @@ const Payroll: React.FC = () => {
     document.body.classList.toggle("sidebar-open", sidebarOpen);
   }, [sidebarOpen]);
 
+  // Helper function to fetch data with auth fallback
+const fetchDataWithAuthFallback = async (url: string) => {
+  try {
+    return await authFetch(url);
+  } catch (error: unknown) {
+    console.log("authFetch failed, falling back to orgFetch", error);
+
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      console.log("Unauthorized, redirecting to login");
+      navigate("/login");
+      return;
+    }
+
+    return await orgFetch(url);
+  }
+};
+
   // Fetch departments, roles, and staff names
   useEffect(() => {
     const fetchDepartments = async () => {
-      const response = await fetch(`${baseURL}/api/departments`);
-      const data = await response.json();
+      const data = await fetchDataWithAuthFallback(`${baseURL}/api/departments`);
       setDepartments(data);
 
       // Set default department if none is selected
@@ -89,8 +107,7 @@ const Payroll: React.FC = () => {
     };
 
     const fetchRoles = async () => {
-      const response = await fetch(`${baseURL}/api/roles`);
-      const data = await response.json();
+      const data = await fetchDataWithAuthFallback(`${baseURL}/api/roles`);
       setRoles(data);
 
       // Set default role if none is selected
@@ -100,8 +117,7 @@ const Payroll: React.FC = () => {
     };
 
     const fetchStaffNames = async () => {
-      const response = await fetch(`${baseURL}/api/staff`);
-      const data = await response.json();
+      const data = await fetchDataWithAuthFallback(`${baseURL}/api/staff`);
       setStaffNames(data);
     };
 
@@ -248,18 +264,13 @@ const Payroll: React.FC = () => {
     };
 
     try {
-      const response = await fetch(`${baseURL}/api/payroll`, {
+      await authFetch(`${baseURL}/api/payroll`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(updatedForm),
       });
-
-      const responseData = await response.json();
-      if (!response.ok) {
-        throw new Error(`Failed to submit payroll: ${responseData.message || 'Unknown error'}`);
-      }
 
       alert("Payroll submitted successfully!");
       navigate("/hr/payroll");
