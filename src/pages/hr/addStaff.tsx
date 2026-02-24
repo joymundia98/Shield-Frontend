@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
-import { authFetch } from "../../utils/api";
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 import HRHeader from './HRHeader';
 
 // Declare the base URL here
@@ -56,32 +57,52 @@ const AddStaff: React.FC = () => {
     document.body.classList.toggle("sidebar-open", sidebarOpen);
   }, [sidebarOpen]);
 
+  // Auth + fallback helper
+const fetchWithAuthFallback = async (
+  url: string,
+  options?: RequestInit
+) => {
+  try {
+    return await authFetch(url, options);
+  } catch (error: unknown) {
+    console.error("authFetch failed", error);
+
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.clear();
+      navigate("/");
+      return;
+    }
+
+    // fallback to orgFetch
+    return await orgFetch(url, options);
+  }
+};
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const depRes = await fetch(`${baseURL}/api/departments`);
-        if (!depRes.ok) throw new Error("Failed fetching departments");
-        const depData = await depRes.json();
+  const fetchData = async () => {
+    try {
+      const [depData, userData, roleData] = await Promise.all([
+        fetchWithAuthFallback(`${baseURL}/api/departments`),
+        fetchWithAuthFallback(`${baseURL}/api/users`),
+        fetchWithAuthFallback(`${baseURL}/api/roles`),
+      ]);
 
-        const [userData, roleData] = await Promise.all([
-          authFetch(`${baseURL}/api/users`),
-          authFetch(`${baseURL}/api/roles`),
-        ]);
-
-        setDepartments(depData);
-        setUsers(userData);
-        setRoles(roleData);
-      } catch (err: any) {
-        console.error(err);
-        alert(err.message);
-        if (err.message.includes("JWT") || err.message.includes("token")) {
-          navigate("/");
-        }
+      if (!depData || !userData || !roleData) {
+        throw new Error("Failed to fetch initial data");
       }
-    };
 
-    fetchData();
-  }, [navigate]);
+      setDepartments(depData);
+      setUsers(userData);
+      setRoles(roleData);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to load data");
+    }
+  };
+
+  fetchData();
+}, [navigate]);
 
   const [form, setForm] = useState<Staff>({
     name: "",
@@ -124,8 +145,9 @@ const AddStaff: React.FC = () => {
     console.log("Submitting staff:", form);
 
     try {
-      await authFetch(`${baseURL}/api/staff`, {
+      await fetchWithAuthFallback(`${baseURL}/api/staff`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 

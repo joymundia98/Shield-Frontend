@@ -65,31 +65,41 @@ const StaffDirectoryPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchStaff = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchStaff = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Use the fetchDataWithAuthFallback function
-        const response = await fetchDataWithAuthFallback(`${baseURL}/api/staff`);
-        if (!response.ok) throw new Error("Failed to fetch staff data");
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/staff`
+      );
 
-        const data = await response.json();
-        const mappedData = data.map((s: any) => ({
-          ...s,
-          joinDate: s.join_date,
-          NRC: s.nrc,
-        }));
-        setStaffData(mappedData);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      console.log("DATA:", data);
+
+      if (!Array.isArray(data)) {
+        throw new Error("Staff data is not an array");
       }
-    };
 
-    fetchStaff();
-  }, []);
+      const mappedData = data.map((s: any) => ({
+        ...s,
+        name: s.name || "Unnamed",
+        department: s.department || "Unassigned",
+        status: s.status || "pending",
+        joinDate: s.join_date,
+        NRC: s.nrc,
+      }));
+
+      setStaffData(mappedData);
+    } catch (err: any) {
+      console.error("Fetch error:", err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchStaff();
+}, []);
 
   // ---------------- Filters/Search ----------------
   const [searchQuery, setSearchQuery] = useState("");
