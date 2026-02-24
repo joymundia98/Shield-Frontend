@@ -389,33 +389,49 @@ const PermissionsPage: React.FC = () => {
 
         <h1>Permissions</h1>
 
-        {/* Department Drop-down */}
-        <label htmlFor="department-select">Select a Department:</label>
-        <select id="department-select" value={selectedDepartment || ""} onChange={handleDepartmentChange}>
-          <option value="" disabled>
-            Please select a department
-          </option>
-          {departments.map((department) => (
-            <option key={department.id} value={department.id}>
-              {department.name}
-            </option>
-          ))}
-        </select>
+        {/* Department & Role Row */}
+      
+        <div className="perm-select-row">
 
-        {/* Roles Drop-down */}
-        <label htmlFor="role-select">Select a Role:</label>
-        <select id="role-select" value={selectedRole || ""} onChange={handleRoleChange}>
-          <option value="" disabled>
-            Please select a role
-          </option>
-          {filteredRoles.map((role) => (
-            <option key={role.id} value={role.id}>
-              {role.name}
-            </option>
-          ))}
-        </select>
+          <div className="perm-select-group">
+            <label htmlFor="department-select">Select a Department:</label>
+            <select
+              id="department-select"
+              value={selectedDepartment || ""}
+              onChange={handleDepartmentChange}
+            >
+              <option value="" disabled>
+                Please select a department
+              </option>
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <p>Please select a category to assign permissions</p>
+          <div className="select-group">
+            <label htmlFor="role-select">Select a Role:</label>
+            <select
+              id="role-select"
+              value={selectedRole || ""}
+              onChange={handleRoleChange}
+            >
+              <option value="" disabled>
+                Please select a role
+              </option>
+              {filteredRoles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+        </div>
+
+        <p>Please select a category header e.g Finance, then scroll down to assign permissions</p>
 
         {/* Save Permissions Button */}
         <button className="save-permissions-btn" onClick={handleSavePermissions}>

@@ -86,59 +86,68 @@ const AddLeave: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!form.leave_type || !form.start_date || !form.end_date) {
-      alert("Please fill in all required fields.");
-      return;
+  if (!form.leave_type || !form.start_date || !form.end_date) {
+    alert("Please fill in all required fields.");
+    return;
+  }
+
+  // Validate the status field before submitting
+  const validStatuses = ["pending", "approved", "rejected"];
+  if (!validStatuses.includes(form.status)) {
+    alert("Invalid status value. Please select a valid status.");
+    return;
+  }
+
+  // Create the payload with only the required fields
+  const payload = {
+    staff_id: form.staff_id,
+    leave_type: form.leave_type,
+    start_date: form.start_date,
+    end_date: form.end_date,
+    days: form.days,
+  };
+
+  try {
+    const response = await authFetch(`${baseURL}/api/leave_requests`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload), // Send only the payload
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to submit leave request.");
     }
 
-    // Validate the status field before submitting
-    const validStatuses = ["pending", "approved", "rejected"];
-    if (!validStatuses.includes(form.status)) {
-      alert("Invalid status value. Please select a valid status.");
-      return;
-    }
+    alert("Leave request submitted successfully!");
+    navigate("/hr/leaveApplications");  // Redirect to leave management page
+  } catch (err: any) {
+    alert("Error: " + err.message);
 
+    // Fallback to orgFetch if authFetch fails
     try {
-      const response = await authFetch(`${baseURL}/api/leave_requests`, {
+      const fallbackResponse = await orgFetch(`${baseURL}/api/leave_requests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload), // Send only the payload
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to submit leave request.");
+      if (!fallbackResponse.ok) {
+        throw new Error("Failed to submit leave request (fallback).");
       }
 
-      alert("Leave request submitted successfully!");
-      navigate("/hr/leaveApplications");  // Redirect to leave management page
-    } catch (err: any) {
-      alert("Error: " + err.message);
-
-      // Fallback to orgFetch if authFetch fails
-      try {
-        const fallbackResponse = await orgFetch(`${baseURL}/api/leave_requests`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(form),
-        });
-
-        if (!fallbackResponse.ok) {
-          throw new Error("Failed to submit leave request (fallback).");
-        }
-
-        alert("Leave request submitted successfully (via fallback)!");
-        navigate("/hr/leaveApplications");
-      } catch (fallbackErr: any) {
-        alert("Error with fallback submission: " + fallbackErr.message);
-      }
+      alert("Leave request submitted successfully (via fallback)!");
+      navigate("/hr/leaveApplications");
+    } catch (fallbackErr: any) {
+      alert("Error with fallback submission: " + fallbackErr.message);
     }
-  };
+  }
+};
 
   return (
     <div className="dashboard-wrapper">

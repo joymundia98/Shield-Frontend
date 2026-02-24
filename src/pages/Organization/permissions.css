@@ -3,6 +3,25 @@
       box-sizing: border-box;
     }
 
+    /* Row layout for department + role */
+    .perm-select-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 2rem;
+      flex-wrap: wrap; /* makes it responsive on small screens */
+      width: 100%;
+      margin-bottom: 2rem;
+    }
+
+    /* Each label + select stacked vertically */
+    .perm-select-group {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 350px;
+    }
+
     .permissions-body {
       font-family: "Open Sans", sans-serif;
       accent-color: #AF907A;
@@ -35,6 +54,7 @@
     .permissions-radio-inputs {
       position: relative;
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
       border-top-left-radius: 0.5rem;
       border-top-right-radius: 0.5rem;
@@ -44,6 +64,8 @@
       /*padding: 0.5rem 1.5rem 0 1.5rem;*/
       padding: 1.3rem;
     }
+
+    
 
     /* Hide the radio buttons but keep the checkboxes visible */
     .permissions-radio-inputs .radio input[type="radio"] {
@@ -182,6 +204,7 @@
     }
 
     .permissions-radio-inputs .content > div {
+      position: relative;
       background-color: #e8e8e8;
       border-radius: 0.5rem;
       padding: 1rem;
