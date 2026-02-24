@@ -142,60 +142,52 @@ const AddDonation: React.FC = () => {
     };
 
     try {
-      // 1️⃣ Submit to Donations table
-      await fetchDataWithAuthFallback(`${baseURL}/api/donations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(donationPayload),
-      });
+  // 1️⃣ Submit to Donations table
+  await fetchDataWithAuthFallback(`${baseURL}/api/donations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(donationPayload),
+  });
 
-      // 2️⃣ Submit to Finance table (incomes) in the Donations category
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
+  // 2️⃣ Submit to Finance table (incomes) in the Donations category
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-      // Map payment method to finance subcategory
-      let financeSubcategoryId = 1; // default Online Donations
-      if (form.method === "Cash") financeSubcategoryId = 2;
+  // Map payment method to finance subcategory
+  let financeSubcategoryId = 1; // default Online Donations
+  if (form.method === "Cash") financeSubcategoryId = 2;
 
-      const financePayload = {
-        user_id: user.id,
-        category_id: 1, // Donations
-        subcategory_id: financeSubcategoryId, // Online or Cash Donations
-        date: form.date,
-        giver:
-          form.donorRegistered || form.isAnonymous === "false"
-            ? form.donorName
-            : "Anonymous",
-        description: form.notes || "Donation",
-        amount: form.amount,
-        payment_method: form.method,
-        extra_fields: {
-          registered: form.donorRegistered,
-          donor_type: form.donorType || null,
-          donor_email: form.donorEmail || null,
-        },
-      };
+  const financePayload = {
+    user_id: user.id,
+    category_id: 1, // Donations
+    subcategory_id: financeSubcategoryId, // Online or Cash Donations
+    date: form.date,
+    giver:
+      form.donorRegistered || form.isAnonymous === "false"
+        ? form.donorName
+        : "Anonymous",
+    description: form.notes || "Donation",
+    amount: form.amount,
+    payment_method: form.method,
+    extra_fields: {
+      registered: form.donorRegistered,
+      donor_type: form.donorType || null,
+      donor_email: form.donorEmail || null,
+    },
+  };
 
-      const financeRes = await fetch(
-        `${baseURL}/api/finance/incomes`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(financePayload),
-        }
-      );
+  // ✅ Use authFetch helper here
+  await fetchDataWithAuthFallback(`${baseURL}/api/finance/incomes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(financePayload),
+  });
 
-      if (!financeRes.ok) {
-        alert("Donation added, but failed to record in Finance");
-        navigate("/donor/donations");
-        return;
-      }
-
-      alert("Donation added successfully and recorded in Finance!");
-      navigate("/donor/donations");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to add donation");
-    }
+  alert("Donation added successfully and recorded in Finance!");
+  navigate("/donor/donations");
+} catch (err) {
+  console.error(err);
+  alert("Failed to add donation");
+}
   };
 
   // ------------------------------------------------------
