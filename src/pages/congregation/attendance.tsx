@@ -337,22 +337,6 @@ const AttendancePage: React.FC = () => {
           </button>
         </header>
 
-        {/* KPI Cards */}
-        <div className="kpi-container">
-          <div className="kpi-card">
-            <h3>Overall Attendance</h3>
-            <p>{overallKPI} Congregants</p>
-          </div>
-          <div className="kpi-card">
-            <h3>Female Attendance</h3>
-            <p>{femaleKPI} Congregants</p>
-          </div>
-          <div className="kpi-card">
-            <h3>Male Attendance</h3>
-            <p>{maleKPI} Congregants</p>
-          </div>
-        </div>
-
         {/* Filters */}
         <div className="attendance-filter-box">
           <h3>Filter Attendance</h3>
@@ -387,6 +371,23 @@ const AttendancePage: React.FC = () => {
               </option>
             ))}
           </select>
+        </div>
+        <br/>
+
+        {/* KPI Cards */}
+        <div className="kpi-container">
+          <div className="kpi-card">
+            <h3>Overall Attendance</h3>
+            <p>{overallKPI} Congregants</p>
+          </div>
+          <div className="kpi-card">
+            <h3>Female Attendance</h3>
+            <p>{femaleKPI} Congregants</p>
+          </div>
+          <div className="kpi-card">
+            <h3>Male Attendance</h3>
+            <p>{maleKPI} Congregants</p>
+          </div>
         </div>
 
         {/* Weekly Charts */}
