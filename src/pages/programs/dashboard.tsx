@@ -5,6 +5,8 @@ import Calendar from "./Calendar"; // Import the Calendar component
 import ProgramsHeader from './ProgramsHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // Import the authFetch and orgFetch utilities
 import hourglass from "../../assets/hourglass.png";
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -49,6 +51,7 @@ const fetchDataWithAuthFallback = async (url: string) => {
 
 const ProgramsDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const [events, setEvents] = useState<Event[]>([]);
 
   // Fetch events from backend on component mount
@@ -191,12 +194,13 @@ const ProgramsDashboard: React.FC = () => {
         </div>
 
         <h2>PROGRAM MANAGER</h2>
-        <a href="/programs/dashboard" className="active">Dashboard</a>
-        <a href="/programs/RegisteredPrograms">Registered Programs</a>
-        <a href="/programs/attendeeManagement">Attendee Management</a>
+        {hasPermission("View Programs Dashboard") &&  <a href="/programs/dashboard" className="active">Dashboard</a>}
+        {hasPermission("View Registered Programs") &&  <a href="/programs/RegisteredPrograms">Registered Programs</a>}
+        {hasPermission("Manage Attendees") &&  <a href="/programs/attendeeManagement">Attendee Management</a>}
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a
           href="/"
           className="logout-link"

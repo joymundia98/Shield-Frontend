@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
+//import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;

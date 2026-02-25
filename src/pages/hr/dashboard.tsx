@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import axios from 'axios'; // Import axios for API calls
 import HRHeader from './HRHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -25,6 +26,7 @@ interface LeaveRequest {
 
 const HRDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // New state variables for API data
@@ -198,14 +200,15 @@ const HRDashboard: React.FC = () => {
         </div>
 
         <h2>HR MANAGER</h2>
-        <a href="/hr/dashboard" className="active">Dashboard</a>
-        <a href="/hr/staffDirectory">Staff Directory</a>
-        <a href="/hr/payroll">Payroll</a>
-        <a href="/hr/leave">Leave Management</a>
-        <a href="/hr/leaveApplications">Leave Applications</a>
-        <a href="/hr/departments">Departments</a>
+        {hasPermission("View HR Dashboard") &&  <a href="/hr/dashboard" className="active">Dashboard</a>}
+        {hasPermission("View Staff Directory") &&  <a href="/hr/staffDirectory">Staff Directory</a>}
+        {hasPermission("Manage HR Payroll") &&  <a href="/hr/payroll">Payroll</a>}
+        {hasPermission("Manage Leave") &&  <a href="/hr/leave">Leave Management</a>}
+        {hasPermission("View Leave Applications") &&  <a href="/hr/leaveApplications">Leave Applications</a>}
+        {hasPermission("View Departments") && <a href="/hr/departments">Departments</a>}
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a
           href="/"
           className="logout-link"

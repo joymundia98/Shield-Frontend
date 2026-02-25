@@ -4,6 +4,8 @@ import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
 import { authFetch, orgFetch } from "../../utils/api";
 import axios from "axios";
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -23,6 +25,7 @@ interface Donation {
 const DonationViewPage: React.FC = () => {
   const { id: donationId } = useParams<{ id: string }>(); // Access the donation ID from the route
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [donation, setDonation] = useState<Donation | null>(null);
@@ -155,16 +158,16 @@ const fetchDataWithAuthFallback = async (url: string, options?: RequestInit) => 
         </div>
 
         <h2>DONOR MGMT</h2>
-        <a href="/donor/dashboard">Dashboard</a>
-        <a href="/donor/donors">Donors List</a>
-        <a href="/donor/donations" className="active">
+        {hasPermission("View Donor Dashboard") && <a href="/donor/dashboard">Dashboard</a>}
+        {hasPermission("View All Donors") &&  <a href="/donor/donors">Donors</a>}
+        {hasPermission("View All Donations") &&  <a href="/donor/donations" className="active">
           Donations
-        </a>
-        <a href="/donor/donorCategories">Donor Categories</a>
+        </a>}
+        {hasPermission("View Donor Categories") && <a href="/donor/donorCategories">Donor Categories</a>}
+
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">
-          ← Back to Main Dashboard
-        </a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a
           href="/"
           className="logout-link"

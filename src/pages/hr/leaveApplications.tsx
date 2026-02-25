@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HRHeader from './HRHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -31,6 +32,7 @@ interface Department {
 
 const LeaveApplicationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [leaves, setLeaves] = useState<Leave[]>([]);
@@ -149,15 +151,16 @@ const LeaveApplicationsPage: React.FC = () => {
         </div>
 
         <h2>HR MANAGER</h2>
-        <a href="/hr/dashboard">Dashboard</a>
-        <a href="/hr/staffDirectory">Staff Directory</a>
-        <a href="/hr/payroll">Payroll</a>
-        <a href="/hr/leave">Leave Management</a>
-        <a href="/hr/leaveApplications" className="active">Leave Applications</a>
-        <a href="/hr/departments">Departments</a>
+        {hasPermission("View HR Dashboard") &&  <a href="/hr/dashboard">Dashboard</a>}
+        {hasPermission("View Staff Directory") &&  <a href="/hr/staffDirectory">Staff Directory</a>}
+        {hasPermission("Manage HR Payroll") &&  <a href="/hr/payroll">Payroll</a>}
+        {hasPermission("Manage Leave") &&  <a href="/hr/leave">Leave Management</a>}
+        {hasPermission("View Leave Applications") &&  <a href="/hr/leaveApplications" className="active">Leave Applications</a>}
+        {hasPermission("View Departments") && <a href="/hr/departments">Departments</a>}
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a
           href="/"
           className="logout-link"

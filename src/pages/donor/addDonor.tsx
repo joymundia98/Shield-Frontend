@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -55,6 +57,7 @@ const fetchDataWithAuthFallback = async (url: string, options?: RequestInit) => 
 
 const AddDonor: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
 
   // ---------------- Sidebar ----------------
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -211,23 +214,17 @@ const AddDonor: React.FC = () => {
         </div>
 
         <h2>DONOR MGMT</h2>
-        <a href="#" onClick={() => navigate("/donor/dashboard")}>
-          Dashboard
-        </a>
-        <a href="#" onClick={() => navigate("/donor/donors")} className="active">
-          Donors List
-        </a>
-        <a href="#" onClick={() => navigate("/donor/donations")}>
+        {hasPermission("View Donor Dashboard") && <a href="/donor/dashboard">Dashboard</a>}
+        {hasPermission("View All Donors") &&  <a href="/donor/donors" className="active">Donors</a>}
+        {hasPermission("View All Donations") &&  <a href="/donor/donations">
           Donations
-        </a>
-        <a href="#" onClick={() => navigate("/donor/donorCategories")}>
-          Donor Categories
-        </a>
+        </a>}
+        {hasPermission("View Donor Categories") && <a href="/donor/donorCategories">Donor Categories</a>}
+
 
         <hr className="sidebar-separator" />
-        <a href="#" onClick={() => navigate("/dashboard")} className="return-main">
-          ← Back to Main Dashboard
-        </a>
+       {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
 
         <a
           href="#"

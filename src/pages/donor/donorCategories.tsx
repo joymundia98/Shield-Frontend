@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import DonorsHeader from './DonorsHeader';
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 
 interface DonorType {
@@ -11,6 +12,7 @@ interface DonorType {
 
 const DonorCategoriesPage: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
 
   /* -------------------- Sidebar -------------------- */
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,17 +42,17 @@ const DonorCategoriesPage: React.FC = () => {
         </div>
 
         <h2>DONOR MANAGEMENT</h2>
-        <a href="/donor/dashboard">Dashboard</a>
-        <a href="/donor/donors">Donors</a>
-        <a href="/donor/donations">Donations</a>
-        <a href="/donor/categories" className="active">
-          Donor Categories
-        </a>
+        {hasPermission("View Donor Dashboard") && <a href="/donor/dashboard">Dashboard</a>}
+        {hasPermission("View All Donors") &&  <a href="/donor/donors">Donors</a>}
+        {hasPermission("View All Donations") &&  <a href="/donor/donations">
+          Donations
+        </a>}
+        {hasPermission("View Donor Categories") && <a href="/donor/donorCategories" className="active">Donor Categories</a>}
+
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">
-          ← Back to Main Dashboard
-        </a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a
           href="/"
           className="logout-link"

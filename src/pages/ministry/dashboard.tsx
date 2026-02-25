@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 interface Team {
   id: number;
@@ -16,6 +17,7 @@ interface Member {
 
 const MinistryDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const membersChartRef = useRef<Chart | null>(null);
 
@@ -123,9 +125,8 @@ const MinistryDashboard: React.FC = () => {
         <a href="/ministry/reports">Reports</a>
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">
-          ← Back to Main Dashboard
-        </a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
 
         <a
           href="/"

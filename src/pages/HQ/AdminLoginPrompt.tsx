@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import OrganizationHeader from './HQHeader';
-
+import { useAuth } from "../../hooks/useAuth";
 
 const AdminLoginPromptPage: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -50,7 +51,8 @@ const AdminLoginPromptPage: React.FC = () => {
         <a href="/Organization/roles">Roles</a>
         <a href="/Organization/permissions">Permissions</a>
         <hr className="sidebar-separator" />
-        <a href="/Organization/to_SCI-ELD_ERP" className="return-main">To SCI-ELD ERP</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}> ➜ Logout </a>
       </div>
 

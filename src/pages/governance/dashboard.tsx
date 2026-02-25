@@ -3,9 +3,11 @@ import "../../styles/global.css";
 import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import GovernanceHeader from './GovernanceHeader';
+import { useAuth } from "../../hooks/useAuth";
 
 const GovernanceDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Chart refs
@@ -110,7 +112,8 @@ const GovernanceDashboard: React.FC = () => {
         <a href="/governance/meetings">Meetings</a>
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a
           href="/"
           className="logout-link"

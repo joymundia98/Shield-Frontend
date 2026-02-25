@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from "./FinanceHeader";
 import { authFetch, orgFetch } from "../../utils/api";
+//import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 const BACKEND_URL = `${baseURL}/api`;

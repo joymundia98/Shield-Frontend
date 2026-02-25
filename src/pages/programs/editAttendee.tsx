@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../../styles/global.css"; // Import your styles
 import ProgramsHeader from './ProgramsHeader';
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -29,6 +31,7 @@ interface Attendee {
 
 const EditAttendee: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const { attendeeId } = useParams<{ attendeeId: string }>(); // Getting attendeeId from URL
   const [attendee, setAttendee] = useState<Attendee | null>(null);
   const [event, setEvent] = useState<Event | null>(null);
@@ -180,11 +183,12 @@ const EditAttendee: React.FC = () => {
         </div>
 
         <h2>PROGRAM MANAGER</h2>
-        <a href="/programs/dashboard">Dashboard</a>
-        <a href="/programs/RegisteredPrograms">Registered Programs</a>
-        <a href="/programs/attendeeManagement" className="active">Attendee Management</a>
+        {hasPermission("View Programs Dashboard") &&  <a href="/programs/dashboard">Dashboard</a>}
+        {hasPermission("View Registered Programs") &&  <a href="/programs/RegisteredPrograms">Registered Programs</a>}
+        {hasPermission("Manage Attendees") &&  <a href="/programs/attendeeManagement" className="active">Attendee Management</a>}
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}>➜ Logout</a>
       </div>
 

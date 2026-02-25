@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from "./FinanceHeader";
 import { authFetch, orgFetch } from "../../utils/api";
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -54,6 +55,7 @@ interface GroupedBudgets {
 
 const BudgetBreakdownPage: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
 
   // ---------- Sidebar ----------
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -182,14 +184,18 @@ const BudgetBreakdownPage: React.FC = () => {
           </div>
         </div>
         <h2>FINANCE</h2>
-        <a href="/finance/dashboard">Dashboard</a>
-        <a href="/finance/incomeDashboard">Track Income</a>
-        <a href="/finance/expenseDashboard">Track Expenses</a>
-        <a href="/finance/budgets" className="active">Budget</a>
-        <a href="/finance/payroll">Payroll</a>
-        <a href="/finance/financeCategory">Finance Categories</a>
+        {hasPermission("View Finance Dashboard") && <a href="/finance/dashboard">Dashboard</a>}
+        {hasPermission("View Income Dashboard") && <a href="/finance/incomeDashboard">Track Income</a>}
+        {hasPermission("Add Income") && <a href="/finance/addIncome">Add Income</a>}
+        {hasPermission("View Expense Dashboard") && <a href="/finance/expenseDashboard" className="active">Track Expenses</a>}
+        {hasPermission("Add Expense") && <a href="/finance/addExpense">Add Expense</a>}
+        {hasPermission("View Budgets Summary") && <a href="/finance/budgets" className="active">Budget</a>}
+        {hasPermission("Manage Payroll") && <a href="/finance/payroll">Payroll</a>}
+        {hasPermission("View Finance Categories") && <a href="/finance/financeCategory">Finance Categories</a>}
+
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}>➜ Logout</a>
       </div>
 
