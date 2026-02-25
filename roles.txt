@@ -1,0 +1,446 @@
+Below is a **comprehensive, structured role breakdown** across the departments you listed.
+To keep this readable and usable in your system, roles are grouped by functional area (many corporate departments share similar role structures).
+
+You can directly convert this into CSV or SQL if needed.
+
+---
+
+# 🏢 CORPORATE DEPARTMENTS
+
+---
+
+## IT Department / IT Support Department
+
+**1. IT Director**
+Oversees IT strategy, infrastructure, and technology investments.
+
+**2. IT Manager**
+Manages daily IT operations and support teams.
+
+**3. Systems Administrator**
+Maintains servers, networks, and internal systems.
+
+**4. Network Engineer**
+Designs and manages network infrastructure.
+
+**5. IT Support Specialist**
+Provides technical troubleshooting and end-user support.
+
+**6. Help Desk Technician**
+Handles first-line technical support requests.
+
+**7. Cloud Engineer**
+Manages cloud platforms and deployments.
+
+**8. DevOps Engineer**
+Maintains CI/CD pipelines and deployment workflows.
+
+**9. Database Administrator**
+Manages database performance, backups, and security.
+
+---
+
+## Information Security Department
+
+**1. Chief Information Security Officer (CISO)**
+Leads cybersecurity strategy and risk management.
+
+**2. Security Analyst**
+Monitors systems for threats and vulnerabilities.
+
+**3. Security Engineer**
+Implements security tools and safeguards.
+
+**4. Penetration Tester**
+Conducts ethical hacking and vulnerability testing.
+
+**5. Compliance Security Officer**
+Ensures regulatory security compliance.
+
+---
+
+## Engineering Department
+
+**1. Engineering Director**
+Leads technical development strategy.
+
+**2. Software Engineer**
+Designs and develops software applications.
+
+**3. Frontend Developer**
+Builds user-facing interfaces.
+
+**4. Backend Developer**
+Develops server-side logic and APIs.
+
+**5. QA Engineer**
+Tests software for bugs and quality issues.
+
+**6. Technical Architect**
+Designs system architecture and scalability plans.
+
+---
+
+## Product Management Department
+
+**1. Chief Product Officer**
+Leads product vision and strategy.
+
+**2. Product Manager**
+Defines product roadmap and requirements.
+
+**3. Associate Product Manager**
+Supports feature development and coordination.
+
+**4. Product Analyst**
+Analyzes product performance data.
+
+---
+
+## Research and Development Department
+
+**1. R&D Director**
+Leads innovation and product research.
+
+**2. Research Scientist**
+Conducts experiments and feasibility studies.
+
+**3. Innovation Specialist**
+Explores emerging technologies.
+
+**4. Prototype Engineer**
+Develops product prototypes.
+
+---
+
+## Marketing Department
+
+**1. Marketing Director**
+Leads marketing strategy and campaigns.
+
+**2. Brand Manager**
+Maintains brand positioning.
+
+**3. Digital Marketing Manager**
+Oversees online campaigns and SEO.
+
+**4. Content Strategist**
+Plans content marketing initiatives.
+
+**5. SEO Specialist**
+Optimizes search engine rankings.
+
+**6. Campaign Manager**
+Executes marketing campaigns.
+
+---
+
+## Social Media Department
+
+**1. Social Media Manager**
+Manages social media platforms and engagement.
+
+**2. Community Manager**
+Builds and engages online communities.
+
+**3. Social Media Content Creator**
+Creates platform-specific content.
+
+---
+
+## Sales Department
+
+**1. Sales Director**
+Leads sales strategy and targets.
+
+**2. Sales Manager**
+Manages sales teams.
+
+**3. Account Executive**
+Closes deals and manages client relationships.
+
+**4. Sales Representative**
+Generates leads and sells products.
+
+**5. Business Development Executive**
+Identifies growth opportunities.
+
+---
+
+## Customer Support / Customer Experience
+
+**1. Customer Support Manager**
+Oversees customer service operations.
+
+**2. Customer Support Agent**
+Handles customer inquiries.
+
+**3. Technical Support Specialist**
+Resolves technical product issues.
+
+**4. Customer Success Manager**
+Ensures long-term customer satisfaction.
+
+---
+
+## Finance / Accounting Department
+
+**1. Chief Financial Officer (CFO)**
+Leads financial strategy.
+
+**2. Finance Manager**
+Oversees financial reporting and budgeting.
+
+**3. Accountant**
+Manages financial records.
+
+**4. Accounts Payable Officer**
+Handles outgoing payments.
+
+**5. Accounts Receivable Officer**
+Manages incoming payments.
+
+**6. Financial Analyst**
+Analyzes financial performance.
+
+---
+
+## Human Resources Department
+
+**1. HR Director**
+Leads HR strategy and workforce planning.
+
+**2. HR Manager**
+Oversees recruitment and staff relations.
+
+**3. Recruiter**
+Sources and hires candidates.
+
+**4. HR Officer**
+Handles employee records and compliance.
+
+**5. Training Coordinator**
+Manages employee training programs.
+
+**6. Payroll Officer**
+Handles salary processing.
+
+---
+
+## Legal / Legal Affairs Department
+
+**1. General Counsel**
+Leads legal strategy.
+
+**2. Legal Advisor**
+Provides legal consultation.
+
+**3. Contract Manager**
+Manages contracts and agreements.
+
+**4. Compliance Officer**
+Ensures regulatory adherence.
+
+---
+
+## Operations Department
+
+**1. Operations Director**
+Oversees operational strategy.
+
+**2. Operations Manager**
+Manages day-to-day operations.
+
+**3. Process Improvement Specialist**
+Optimizes workflows.
+
+**4. Operations Analyst**
+Analyzes operational performance.
+
+---
+
+## Logistics / Inventory / Purchasing
+
+**1. Supply Chain Manager**
+Oversees supply chain operations.
+
+**2. Procurement Officer**
+Handles purchasing activities.
+
+**3. Inventory Manager**
+Manages stock control.
+
+**4. Warehouse Supervisor**
+Oversees warehouse staff.
+
+---
+
+## Facilities Department
+
+**1. Facilities Manager**
+Oversees building management.
+
+**2. Maintenance Supervisor**
+Coordinates maintenance staff.
+
+**3. Safety Officer**
+Ensures safety compliance.
+
+---
+
+## Strategy Department
+
+**1. Strategy Director**
+Leads long-term planning.
+
+**2. Strategy Analyst**
+Conducts market and business analysis.
+
+---
+
+## Sustainability Department
+
+**1. Sustainability Manager**
+Leads environmental initiatives.
+
+**2. ESG Analyst**
+Monitors sustainability metrics.
+
+---
+
+# ⛪ CHURCH DEPARTMENTS
+
+---
+
+## Worship / Music Ministry
+
+**1. Worship Pastor / Director**
+Leads worship services.
+
+**2. Choir Director**
+Coordinates choir members.
+
+**3. Worship Leader**
+Leads congregational singing.
+
+**4. Musician**
+Plays instruments during services.
+
+**5. Sound Engineer**
+Manages audio systems.
+
+---
+
+## Youth Ministry
+
+**1. Youth Pastor**
+Leads youth programs.
+
+**2. Youth Coordinator**
+Organizes youth events.
+
+**3. Youth Mentor**
+Guides young members spiritually.
+
+---
+
+## Children’s Ministry
+
+**1. Children’s Pastor**
+Leads children's programs.
+
+**2. Sunday School Teacher**
+Teaches biblical lessons.
+
+**3. Childcare Volunteer**
+Supervises children.
+
+---
+
+## Prayer Ministry
+
+**1. Prayer Coordinator**
+Organizes prayer sessions.
+
+**2. Intercessor**
+Leads prayer support.
+
+---
+
+## Pastoral Care / Counseling
+
+**1. Senior Pastor**
+Provides spiritual oversight.
+
+**2. Associate Pastor**
+Supports pastoral duties.
+
+**3. Pastoral Counselor**
+Offers spiritual counseling.
+
+**4. Care Coordinator**
+Supports members in crisis.
+
+---
+
+## Missions / Outreach / Evangelism
+
+**1. Missions Director**
+Leads mission efforts.
+
+**2. Outreach Coordinator**
+Organizes community outreach.
+
+**3. Evangelism Leader**
+Coordinates evangelism efforts.
+
+---
+
+## Church Administration
+
+**1. Church Administrator**
+Manages church operations.
+
+**2. Administrative Assistant**
+Handles office duties.
+
+**3. Records Clerk**
+Maintains membership records.
+
+---
+
+## Church Finance
+
+**1. Church Treasurer**
+Oversees financial management.
+
+**2. Finance Officer**
+Handles offerings and accounts.
+
+**3. Tithes & Offerings Clerk**
+Records donations.
+
+---
+
+## Volunteer Department
+
+**1. Volunteer Coordinator**
+Recruits and manages volunteers.
+
+**2. Volunteer Supervisor**
+Oversees volunteer teams.
+
+---
+
+## Media Department
+
+**1. Media Director**
+Leads media production.
+
+**2. Video Editor**
+Edits recorded services.
+
+**3. Livestream Technician**
+Manages streaming platforms.
+
+---

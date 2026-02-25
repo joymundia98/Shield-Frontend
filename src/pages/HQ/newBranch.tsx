@@ -7,6 +7,9 @@ import axios from "axios";
 import headerLogo from "../../assets/headerlogo.png";
 import { useNavigate } from "react-router-dom";
 
+import { useAuth } from "../../hooks/useAuth";
+
+
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -81,6 +84,13 @@ const churchMotherBodies = [
 ];
 
 const BranchRegister = () => {
+
+  const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
   const [showSuccessCard, setShowSuccessCard] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedProvince, setSelectedProvince] = useState<string>("");
@@ -93,8 +103,6 @@ const BranchRegister = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [orgTypes, setOrgTypes] = useState<{ org_type_id: number; name: string }[]>([]);
-
-  const navigate = useNavigate();
 
   const {
     register,
@@ -206,9 +214,96 @@ const BranchRegister = () => {
   }
 };
 
+//Side Bar
+useEffect(() => {
+  if (sidebarOpen) {
+    document.body.classList.add("sidebar-open");
+  } else {
+    document.body.classList.remove("sidebar-open");
+  }
+}, [sidebarOpen]);
 
   return (
+    <div className="dashboard-wrapper">
+      
+      {/* SIDEBAR */}
+      <button className="hamburger" onClick={toggleSidebar}>
+        &#9776;
+      </button>
+
+      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+          <div className="close-wrapper">
+            <div className="toggle close-btn">
+              <input
+                type="checkbox"
+                checked={sidebarOpen}
+                onChange={toggleSidebar}
+              />
+              <span className="button"></span>
+              <span className="label">X</span>
+            </div>
+          </div>
+        
+
+        <h2>HQ MANAGER</h2>
+
+        {hasPermission("View Branch Directory") && (
+          <a
+            href="/HQ/branchDirectory"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/HQ/branchDirectory");
+              setSidebarOpen(false);
+            }}
+          >
+            Manage Branches
+          </a>
+        )}
+
+        {hasPermission("View HQ Reports") && (
+          <a
+            href="/HQ/GeneralReport"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/HQ/GeneralReport");
+              setSidebarOpen(false);
+            }}
+          >
+            Branch Reports
+          </a>
+        )}
+
+        <hr className="sidebar-separator" />
+
+        {hasPermission("View Main Dashboard") && (
+          <a
+            href="/dashboard"
+            className="return-main"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/dashboard");
+            }}
+          >
+            ← Back to Main Dashboard
+          </a>
+        )}
+
+        <a
+          href="/"
+          className="logout-link"
+          onClick={(e) => {
+            e.preventDefault();
+            localStorage.clear();
+            navigate("/");
+          }}
+        >
+          ➜ Logout
+        </a>
+      </div>
+    
+  
     <div className="login-parent-container">
+      
       <div className="loginContainer">
         <div className="header">
           <img src={headerLogo} alt="Logo" />
@@ -430,6 +525,7 @@ const BranchRegister = () => {
           <p>Redirecting...</p>
         </div>
       )}
+    </div>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { orgFetch } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import "./permissions.css";
 import OrganizationHeader from './OrganizationHeader';
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -28,6 +29,7 @@ interface Department {
 }
 
 const PermissionsPage: React.FC = () => {
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [rolePermissions, setRolePermissions] = useState<Set<number>>(new Set());
@@ -348,17 +350,25 @@ const PermissionsPage: React.FC = () => {
         </div>
 
         <h2>ORG MANAGER</h2>
-        <a href="/Organization/edittableProfile">Profile</a>
-        <a href="/Organization/orgLobby">The Lobby</a>
-        <a href="/Organization/orgAdminAccounts">Admin Accounts</a>
-        <a href="/Organization/ListedAccounts">Manage Accounts</a>
-        <a href="/Organization/roles">Roles</a>
-        <a href="/Organization/permissions" className="active">
-          Permissions
-        </a>
+        {/*{hasPermission("Manage Organization Profile") && <a href="/Organization/edittableProfile">Profile</a>}*/}
+        {hasPermission("Access Organization Lobby") && <a href="/Organization/orgLobby">The Lobby</a>}
+        {hasPermission("Manage Organization Admins") && <a href="/Organization/orgAdminAccounts">Admin Accounts</a>}
+        {hasPermission("Manage Organization Accounts") && <a href="/Organization/ListedAccounts">Manage Accounts</a>}
+        {hasPermission("Manage Roles") && <a href="/Organization/roles">Roles</a>}
+        {hasPermission("Manage Permissions") && <a href="/Organization/permissions" className="active">Permissions</a>}
         <hr className="sidebar-separator" />
-        <a href="/Organization/to_SCI-ELD_ERP" className="return-main">To SCI-ELD ERP</a>
-        <a
+        {hasPermission("View Main Dashboard") && (
+          <a
+            href="/dashboard"
+            className="return-main"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/dashboard");
+            }}
+          >
+            ← Back to Main Dashboard
+          </a>)}
+          <a
           href="/"
           className="logout-link"
           onClick={(e) => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import HQHeader from './HQHeader';
+import { useAuth } from "../../hooks/useAuth";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -17,6 +18,8 @@ interface Organization {
 
 const BranchDirectoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+
   const [organizationData, setOrganizationData] = useState<Organization[]>([]);
   const [orgTypes, setOrgTypes] = useState<Record<number, string>>({});
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
@@ -172,10 +175,10 @@ const BranchDirectoryPage: React.FC = () => {
             <span className="label">X</span>
           </div>
         </div>
-        
-        <h2>HQ MANAGER</h2>
-        {/* Sidebar links */}
 
+        <h2>HQ MANAGER</h2>
+
+        {hasPermission("View Branch Directory") && (
           <a
             href="/HQ/branchDirectory"
             className={location.pathname === "/HQ/branchDirectory" ? "active" : ""}
@@ -187,7 +190,9 @@ const BranchDirectoryPage: React.FC = () => {
           >
             Manage Branches
           </a>
+        )}
 
+        {hasPermission("View HQ Reports") && (
           <a
             href="/HQ/GeneralReport"
             className={location.pathname === "/HQ/GeneralReport" ? "active" : ""}
@@ -199,20 +204,17 @@ const BranchDirectoryPage: React.FC = () => {
           >
             Branch Reports
           </a>
+        )}
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
-        <a
-          href="/"
-          className="logout-link"
-          onClick={(e) => {
-            e.preventDefault();
-            localStorage.clear();
-            navigate("/"); 
-          }}
-        >
-          ➜ Logout
-        </a>
+
+        {hasPermission("View Main Dashboard") && (
+          <a href="/dashboard" className="return-main">
+            ← Back to Main Dashboard
+          </a>
+        )}
+
+        <a href="/" className="logout-link" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }} > ➜ Logout </a>
       </div>
 
       {/* MAIN CONTENT */}

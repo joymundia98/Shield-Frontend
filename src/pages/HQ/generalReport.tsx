@@ -8,6 +8,7 @@ import femaleImage from "../../assets/female.png";
 import branchImage from "../../assets/branch.png";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useAuth } from "../../hooks/useAuth";
 
 /* =======================
    API / AUTH CONFIG
@@ -99,6 +100,8 @@ const AGE_GROUPS = [
 const GeneralReport: React.FC = () => {
 
   const navigate = useNavigate();
+
+  const { hasPermission } = useAuth();
 
   /* ===== STATE ===== */
   const [allMembers, setAllMembers] = useState<Member[]>([]);
@@ -930,6 +933,7 @@ const reportTitle = selectedBranch
         <h2>HQ MANAGER</h2>
         {/* Sidebar links */}
 
+          {hasPermission("View Branch Directory") && (
           <a
             href="/HQ/branchDirectory"
             className={location.pathname === "/HQ/branchDirectory" ? "active" : ""}
@@ -941,7 +945,9 @@ const reportTitle = selectedBranch
           >
             Manage Branches
           </a>
+        )}
 
+        {hasPermission("View HQ Reports") && (
           <a
             href="/HQ/GeneralReport"
             className={location.pathname === "/HQ/GeneralReport" ? "active" : ""}
@@ -953,9 +959,16 @@ const reportTitle = selectedBranch
           >
             Branch Reports
           </a>
+        )}
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+
+        {hasPermission("View Main Dashboard") && (
+          <a href="/dashboard" className="return-main">
+            ← Back to Main Dashboard
+          </a>
+        )}
+
         <a
           href="/"
           className="logout-link"
