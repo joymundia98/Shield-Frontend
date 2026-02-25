@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import AssetsHeader from './AssetsHeader';
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 interface Maintenance {
     asset: string;
@@ -13,6 +14,7 @@ interface Maintenance {
 
 const MaintenancePage: React.FC = () => {
     const navigate = useNavigate();
+    const { hasPermission } = useAuth(); // Access the hasPermission function
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // ---------------- Mock Data ----------------
@@ -97,14 +99,17 @@ const MaintenancePage: React.FC = () => {
                 </div>
 
                 <h2>ASSET MANAGER</h2>
-                <a href="/assets/dashboard">Dashboard</a>
-                <a href="/assets/assets">Asset Inventory</a>
-                <a href="/assets/depreciation">Depreciation Info</a>
-                <a href="/assets/maintenance" className="active">Maintenance</a>
-                <a href="/assets/categories">Categories</a>
+                {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard">Dashboard</a>}
+                {hasPermission("View CongView All Assets") && <a href="/assets/assets">
+                Asset Inventory
+                </a>}
+                {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
+                {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance" className="active">Maintenance</a>}
+                {hasPermission("View Categories") && <a href="/assets/categories">Categories</a>}
 
                 <hr className="sidebar-separator" />
-                <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+                {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
 
                 <a
                     href="/"

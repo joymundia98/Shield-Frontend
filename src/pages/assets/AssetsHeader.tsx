@@ -1,36 +1,43 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ReusableHeader from '../../components/reusableHeader';
+import { useAuth } from '../../hooks/useAuth'; // Import useAuth
 
 const AssetsHeader: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();  // Get the current location
+  const location = useLocation();
+  const { hasPermission } = useAuth(); // Access permission checker
 
-  // Define the Assets links
+  // Define links with required permissions
   const assetsLinks = [
-    { name: "← Back to Main", href: "/dashboard" },
-    { name: "Dashboard", href: "/assets/dashboard" },
-    { name: "Assets", href: "/assets/assets" },
-    { name: "Depreciation Info", href: "/assets/depreciation" },
-    { name: "Maintenance", href: "/assets/maintenance" },
-    { name: "Categories", href: "/assets/categories" },
-    // Add logout link with a special href
-    { name: "➜] Logout", href: "#logout" },
+    { name: "← Back to Main", href: "/dashboard", permission: "View Main Dashboard" },
+    { name: "Dashboard", href: "/assets/dashboard", permission: "View Asset Dashboard" },
+    { name: "Assets", href: "/assets/assets", permission: "View All Assets" },
+    { name: "Depreciation Info", href: "/assets/depreciation", permission: "View Asset Depreciation" },
+    { name: "Maintenance", href: "/assets/maintenance", permission: "Manage Asset Maintenance" },
+    { name: "Categories", href: "/assets/categories", permission: "View Categories" },
+    { name: "➜] Logout", href: "#logout", permission: "logout" }, // Special case
   ];
 
+  // Handle logout
   const handleLogout = (e: React.MouseEvent) => {
-    e.preventDefault();  // Prevent default anchor behavior
-    localStorage.clear(); // Clear localStorage (or any other logout logic)
-    navigate('/'); // Navigate to the LandingPage ("/")
+    e.preventDefault();
+    localStorage.clear();
+    navigate('/');
   };
+
+  // Filter links based on permissions
+  const filteredLinks = assetsLinks.filter(link => {
+    if (link.permission === "logout") return true; // Always show logout
+    return hasPermission(link.permission);
+  });
 
   return (
     <div className="assets-header">
-      {/* Pass assetsLinks, location, and logout handler to ReusableHeader */}
       <ReusableHeader
-        links={assetsLinks}
-        location={location}  // Pass location to check for active link
-        onLogout={handleLogout}  // Pass handleLogout as a prop
+        links={filteredLinks}
+        location={location}
+        onLogout={handleLogout}
       />
     </div>
   );

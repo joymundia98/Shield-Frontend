@@ -4,6 +4,7 @@ import "../../styles/global.css";
 import AssetsHeader from "./AssetsHeader";
 import { authFetch, orgFetch } from "../../utils/api";
 import axios from "axios";
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -45,6 +46,7 @@ interface Department {
 
 const AssetsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inventory, setInventory] = useState<Asset[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -206,18 +208,17 @@ const AssetsPage: React.FC = () => {
         </div>
 
         <h2>ASSET MANAGER</h2>
-        <a href="/assets/dashboard">Dashboard</a>
-        <a href="/assets/assets" className="active">
+        {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard">Dashboard</a>}
+        {hasPermission("View All Assets") && <a href="/assets/assets" className="active">
           Asset Inventory
-        </a>
-        <a href="/assets/depreciation">Depreciation Info</a>
-        <a href="/assets/maintenance">Maintenance</a>
-        <a href="/assets/categories">Categories</a>
+        </a>}
+        {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
+        {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance">Maintenance</a>}
+        {hasPermission("View Categories") && <a href="/assets/categories">Categories</a>}
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">
-          ← Back to Main Dashboard
-        </a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a
           href="/"
           className="logout-link"

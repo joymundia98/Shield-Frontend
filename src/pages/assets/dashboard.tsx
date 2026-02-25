@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import "../../styles/global.css";
 import AssetsHeader from './AssetsHeader';
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 interface Asset {
   id: number;
@@ -28,6 +29,7 @@ interface Maintenance {
 
 const AssetDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const categoryChartRef = useRef<Chart | null>(null);
   const conditionChartRef = useRef<Chart | null>(null);
@@ -129,14 +131,16 @@ const AssetDashboard: React.FC = () => {
 
         <h2>ASSET MANAGER</h2>
     
-        <Link to="/assets/dashboard" className="active">Dashboard</Link>
-        <Link to="/assets/assets">Asset Inventory</Link>
-        <Link to="/assets/depreciation">Depreciation Info</Link>
-        <Link to="/assets/maintenance">Maintenance</Link>
-        <Link to="/assets/categories">Categories</Link>
+        {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard" className="active">Dashboard</a>}
+        {hasPermission("View CongView All Assets") && <a href="/assets/assets" className="active">
+          Asset Inventory
+        </a>}
+        {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
+        {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance">Maintenance</a>}
+        {hasPermission("View Categories") && <a href="/assets/categories">Categories</a>}
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
 
         <a
           href="/"

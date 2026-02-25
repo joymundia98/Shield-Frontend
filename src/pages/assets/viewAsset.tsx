@@ -4,6 +4,7 @@ import "../../styles/global.css";
 import AssetsHeader from "./AssetsHeader";
 import { authFetch, orgFetch } from "../../utils/api";
 import axios from "axios";
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -44,11 +45,11 @@ interface Department {
 
 const ViewAssetPage: React.FC = () => {
   const { search } = useLocation();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
   const queryParams = new URLSearchParams(search);
   const assetId = queryParams.get("id");
   const navigate = useNavigate();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [asset, setAsset] = useState<Asset | null>(null);
   const [categoryName, setCategoryName] = useState<string>("Loading...");
   const [locationName, setLocationName] = useState<string>("Loading...");
@@ -57,10 +58,17 @@ const ViewAssetPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (sidebarOpen) document.body.classList.add("sidebar-open");
-    else document.body.classList.remove("sidebar-open");
-  }, [sidebarOpen]);
+ // ---------------- Sidebar ----------------
+   const [sidebarOpen, setSidebarOpen] = useState(false);
+   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+ 
+   useEffect(() => {
+     if (sidebarOpen) {
+       document.body.classList.add("sidebar-open");
+     } else {
+       document.body.classList.remove("sidebar-open");
+     }
+   }, [sidebarOpen]);
 
   // ---------------- AUTH FETCH WITH FALLBACK ----------------
   const fetchDataWithAuthFallback = async (url: string) => {
@@ -157,17 +165,34 @@ const ViewAssetPage: React.FC = () => {
 
   return (
     <div className="dashboard-wrapper">
-      <button
-        className="hamburger"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
+      <button className="hamburger" onClick={toggleSidebar}>
         &#9776;
       </button>
 
-      <div
-        className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}
-        id="sidebar"
-      ></div>
+      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        <h2>ASSET MANAGER</h2>
+        {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard">Dashboard</a>}
+        {hasPermission("View CongView All Assets") && <a href="/assets/assets" className="active">
+          Asset Inventory
+        </a>}
+        {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
+        {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance">Maintenance</a>}
+        {hasPermission("View Categories") && <a href="/assets/categories">Categories</a>}
+
+        <hr className="sidebar-separator" />
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
+        <a
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            localStorage.clear();
+            navigate("/");
+          }}
+        >
+          ➜ Logout
+        </a>
+      </div>
 
       <div className="dashboard-content">
         <AssetsHeader />

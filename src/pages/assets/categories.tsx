@@ -4,6 +4,8 @@ import "../../styles/global.css";
 import AssetsHeader from "./AssetsHeader";
 import { authFetch, orgFetch } from "../../utils/api";
 import axios from "axios";
+import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -21,6 +23,7 @@ interface Asset {
 
 const CategoriesPage: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth(); // Access the hasPermission function
 
   // ---------------- Sidebar ----------------
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -199,17 +202,30 @@ const CategoriesPage: React.FC = () => {
       </button>
 
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        <div className="close-wrapper">
+          <div className="toggle close-btn">
+            <input
+              type="checkbox"
+              id="closeSidebarButton"
+              checked={sidebarOpen}
+              onChange={toggleSidebar}
+            />
+            <span className="button"></span>
+            <span className="label">X</span>
+          </div>
+        </div>
         <h2>ASSET MANAGER</h2>
-        <a href="/assets/dashboard">Dashboard</a>
-        <a href="/assets/assets">Asset Inventory</a>
-        <a href="/assets/depreciation">Depreciation Info</a>
-        <a href="/assets/maintenance">Maintenance</a>
-        <a href="/assets/categories" className="active">
-          Categories
-        </a>
+        {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard">Dashboard</a>}
+        {hasPermission("View CongView All Assets") && <a href="/assets/assets">
+          Asset Inventory
+        </a>}
+        {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
+        {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance">Maintenance</a>}
+        {hasPermission("View Categories") && <a href="/assets/categories" className="active">Categories</a>}
 
-        <hr />
-        <a href="/dashboard">← Back to Main Dashboard</a>
+        <hr className="sidebar-separator" />
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
         <a
           href="/"
           onClick={(e) => {
