@@ -311,6 +311,14 @@ const PermissionsPage: React.FC = () => {
 
   // Filter out unwanted categories
   const categoriesToRemove = ["pastoral", "ministry", "governance", "class"];
+
+  if (
+    !hasPermission("View Branch Directory") &&
+    !hasPermission("View HQ Reports")
+  ) {
+    categoriesToRemove.push("hq");
+  }
+  
   const filteredPermissions: { [key: string]: Permission[] } = Object.keys(groupedPermissions)
     .filter((category) => !categoriesToRemove.includes(category.toLowerCase()))
     .reduce((obj, key) => {

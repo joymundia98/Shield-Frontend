@@ -73,13 +73,11 @@ const NewAttendees: React.FC = () => {
 
     console.log("Received event response:", eventResponse);  // Debugging log
 
-    if (!eventResponse || !eventResponse.status || eventResponse.status !== 200) {
-      // Handle error if response is not OK or status code is not 200
-      console.error("Failed to fetch event details:", eventResponse);
-      throw new Error(`Failed to fetch event details. Status: ${eventResponse?.status}`);
+    if (!eventResponse) {
+      throw new Error("No event data received.");
     }
 
-    const fetchedEvent = eventResponse.data;  // Assuming data is nested in `data` property, adjust as needed
+    const fetchedEvent = eventResponse;  // Assuming data is nested in `data` property, adjust as needed
 
     console.log("Fetched event details:", fetchedEvent);  // Debugging log
 
@@ -164,7 +162,7 @@ const NewAttendees: React.FC = () => {
           });
         }
 
-        if (attendeeResponse.ok) {
+        if (attendeeResponse) {
           alert("Attendee registered successfully!");
           navigate(`/programs/attendeeManagement`); // Navigate to attendee management
         } else {

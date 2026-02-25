@@ -6,8 +6,6 @@ import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and o
 import axios from 'axios';
 import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
-
-
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface PayrollRecord {

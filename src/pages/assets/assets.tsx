@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
-import AssetsHeader from './AssetsHeader';
+import AssetsHeader from "./AssetsHeader";
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
 
-// Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
-// Interfaces for Asset, Category, Location, and Department
+// Interfaces
 interface Asset {
   asset_id: number;
   name: string;
@@ -47,14 +48,8 @@ const AssetsPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inventory, setInventory] = useState<Asset[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [_locations, setLocations] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [showLocationColumn, _setShowLocationColumn] = useState(false);
-  const [_filter, _setFilter] = useState({
-    condition: "",
-    category: "",
-    maintenance: "",
-  });
 
   // ---------------- Sidebar ----------------
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -64,30 +59,66 @@ const AssetsPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // Fetch data functions
+  // ---------------- AUTH FETCH WITH FALLBACK ----------------
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url);
+    } catch (error: unknown) {
+      console.log("authFetch failed, falling back to orgFetch", error);
+
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log("Unauthorized, redirecting to login");
+        navigate("/login");
+      }
+
+      return await orgFetch(url);
+    }
+  };
+
+  // ---------------- Fetch Data ----------------
   useEffect(() => {
     const fetchAssets = async () => {
-      const response = await fetch(`${baseURL}/api/assets`);
-      const data: Asset[] = await response.json();
-      setInventory(data);
+      try {
+        const data: Asset[] = await fetchDataWithAuthFallback(
+          `${baseURL}/api/assets`
+        );
+        setInventory(data);
+      } catch (error) {
+        console.error("Error fetching assets:", error);
+      }
     };
 
     const fetchCategories = async () => {
-      const response = await fetch(`${baseURL}/api/assets/categories`);
-      const data: Category[] = await response.json();
-      setCategories(data);
+      try {
+        const data: Category[] = await fetchDataWithAuthFallback(
+          `${baseURL}/api/assets/categories`
+        );
+        setCategories(data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
     };
 
     const fetchLocations = async () => {
-      const response = await fetch("${baseURL}/api/asset_locations");
-      const data: Location[] = await response.json();
-      setLocations(data);
+      try {
+        const data: Location[] = await fetchDataWithAuthFallback(
+          `${baseURL}/api/asset_locations`
+        );
+        setLocations(data);
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+      }
     };
 
     const fetchDepartments = async () => {
-      const response = await fetch(`${baseURL}/api/departments`);
-      const data: Department[] = await response.json();
-      setDepartments(data);
+      try {
+        const data: Department[] = await fetchDataWithAuthFallback(
+          `${baseURL}/api/departments`
+        );
+        setDepartments(data);
+      } catch (error) {
+        console.error("Error fetching departments:", error);
+      }
     };
 
     fetchAssets();
@@ -96,7 +127,7 @@ const AssetsPage: React.FC = () => {
     fetchDepartments();
   }, []);
 
-  // Group assets by category
+  // ---------------- Group By Category ----------------
   const groupByCategory = (assets: Asset[]) => {
     return assets.reduce((acc: Record<string, Asset[]>, asset) => {
       const category = asset.category_id.toString();
@@ -108,44 +139,59 @@ const AssetsPage: React.FC = () => {
 
   const groupedAssets = useMemo(() => groupByCategory(inventory), [inventory]);
 
-  // Action Handlers
+  // ---------------- Actions ----------------
   const handleAdd = () => {
     navigate("/assets/addAsset", { state: { addAssetCallback: setInventory } });
   };
 
   const handleEdit = (id: string) => navigate(`/assets/edit/${id}`);
-  const handleDelete = (id: string) => {
+
+  const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this asset?")) {
-      setInventory((prev) => prev.filter((a) => a.asset_id !== Number(id)));
+      try {
+        await fetchDataWithAuthFallback(
+          `${baseURL}/api/assets/${id}`
+        );
+        setInventory((prev) =>
+          prev.filter((a) => a.asset_id !== Number(id))
+        );
+      } catch (error) {
+        console.error("Error deleting asset:", error);
+      }
     }
   };
 
   const handleView = (id: string) => {
-    // Construct URL for viewAsset page
     const url = `/assets/viewAsset?id=${id}`;
-    // Open in a new tab
     window.open(url, "_blank");
   };
 
-  // Helper functions
-  const getLocationName = (locationId: number) => {
-    const location = locations.find((loc) => loc.location_id === locationId);
+  // ---------------- Helpers ----------------
+  {/*const getLocationName = (locationId: number) => {
+    const location = locations.find(
+      (loc) => loc.location_id === locationId
+    );
     return location ? location.name : "Unknown Location";
-  };
+  };*/}
 
   const getDepartmentName = (departmentId: number) => {
-    const department = departments.find((dep) => dep.id === departmentId);
+    const department = departments.find(
+      (dep) => dep.id === departmentId
+    );
     return department ? department.name : "Unknown Department";
   };
 
   return (
     <div className="dashboard-wrapper">
       {/* Sidebar */}
-      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+      <button className="hamburger" onClick={toggleSidebar}>
         &#9776;
       </button>
 
-      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
+      <div
+        className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}
+        id="sidebar"
+      >
         <div className="close-wrapper">
           <div className="toggle close-btn">
             <input
@@ -161,13 +207,17 @@ const AssetsPage: React.FC = () => {
 
         <h2>ASSET MANAGER</h2>
         <a href="/assets/dashboard">Dashboard</a>
-        <a href="/assets/assets" className="active">Asset Inventory</a>
+        <a href="/assets/assets" className="active">
+          Asset Inventory
+        </a>
         <a href="/assets/depreciation">Depreciation Info</a>
         <a href="/assets/maintenance">Maintenance</a>
         <a href="/assets/categories">Categories</a>
 
         <hr className="sidebar-separator" />
-        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
+        <a href="/dashboard" className="return-main">
+          ← Back to Main Dashboard
+        </a>
         <a
           href="/"
           className="logout-link"
@@ -177,28 +227,35 @@ const AssetsPage: React.FC = () => {
             navigate("/");
           }}
         >
-          ➜] Logout
+          ➜ Logout
         </a>
       </div>
 
       {/* Main Content */}
       <div className="dashboard-content">
-
-        <AssetsHeader/><br/>
+        <AssetsHeader />
+        <br />
 
         <h1>Asset Inventory</h1>
 
-        {/* Add + Filter Buttons */}
-        <div className="table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button className="add-btn" onClick={handleAdd}>+ &nbsp; Add New Asset</button>
-          {/*<button className="filter-btn" onClick={() => setFilter({ ...filter })}>📂 Filter</button>*/}
+        <div
+          className="table-header"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <button className="add-btn" onClick={handleAdd}>
+            + &nbsp; Add New Asset
+          </button>
         </div>
 
-        {/* Asset Tables Grouped by Category */}
         {Object.keys(groupedAssets).map((categoryId) => {
           const categoryName = categories.find(
             (cat) => cat.category_id === Number(categoryId)
           )?.name;
+
           return (
             <div key={categoryId}>
               <h2>{categoryName}</h2>
@@ -207,7 +264,6 @@ const AssetsPage: React.FC = () => {
                   <tr>
                     <th>Asset ID</th>
                     <th>Asset Name</th>
-                    {showLocationColumn && <th>Location</th>}
                     <th>Condition</th>
                     <th>Status</th>
                     <th>Current Value ($)</th>
@@ -218,19 +274,43 @@ const AssetsPage: React.FC = () => {
                 <tbody>
                   {groupedAssets[categoryId].map((asset) => (
                     <tr key={asset.asset_id}>
-                      <td data-title="Asset ID">{asset.asset_id}</td>
-                      <td data-title="Asset Name">{asset.name}</td>
-                      {showLocationColumn && (
-                        <td data-title="Location">{getLocationName(asset.location_id)}</td>
-                      )}
-                      <td data-title="Condition">{asset.condition_status}</td>
-                      <td data-title="Status">{asset.status}</td>
-                      <td data-title="Current Value ($)">{parseFloat(asset.current_value).toFixed(2)}</td>
-                      <td data-title="Assigned To">{getDepartmentName(asset.department_id)}</td>
-                      <td className="actions" data-title="Actions">
-                        <button className="add-btn" onClick={() => handleView(asset.asset_id.toString())}>View</button>&nbsp;
-                        <button className="edit-btn" onClick={() => handleEdit(asset.asset_id.toString())}>Edit</button>&nbsp;
-                        <button className="delete-btn" onClick={() => handleDelete(asset.asset_id.toString())}>Delete</button>
+                      <td>{asset.asset_id}</td>
+                      <td>{asset.name}</td>
+                      <td>{asset.condition_status}</td>
+                      <td>{asset.status}</td>
+                      <td>
+                        {parseFloat(asset.current_value).toFixed(2)}
+                      </td>
+                      <td>
+                        {getDepartmentName(asset.department_id)}
+                      </td>
+                      <td>
+                        <button
+                          className="add-btn"
+                          onClick={() =>
+                            handleView(asset.asset_id.toString())
+                          }
+                        >
+                          View
+                        </button>
+                        &nbsp;
+                        <button
+                          className="edit-btn"
+                          onClick={() =>
+                            handleEdit(asset.asset_id.toString())
+                          }
+                        >
+                          Edit
+                        </button>
+                        &nbsp;
+                        <button
+                          className="delete-btn"
+                          onClick={() =>
+                            handleDelete(asset.asset_id.toString())
+                          }
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}

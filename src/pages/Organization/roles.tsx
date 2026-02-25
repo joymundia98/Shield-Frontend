@@ -417,8 +417,8 @@ const handleAddDepartment = async () => {
 
         {/* Church Departments */}
         <h1>Church Departments</h1>
+        <p>Please ensure to go through all departments before creating a new department...</p>
         <div className="department-grid">
-
           {churchDepartments.slice(0, visibleChurchCount).map((dept) => (
             <div key={dept.id} className="department-card">
               <div className="department-card-header">
@@ -516,6 +516,7 @@ const handleAddDepartment = async () => {
         {/* Corporate Departments */}
 
         <h1>Corporate Departments</h1>
+        <p>Please ensure to go through all departments before creating a new department...</p>
         <div className="department-grid">
           {corporateDepartments.slice(0, visibleCorporateCount).map((dept) => (
             <div key={dept.id} className="department-card">
