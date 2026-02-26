@@ -42,9 +42,20 @@ const SetBudgetsPage: React.FC = () => {
 
   // ---------------- Budget State ----------------
   const [budgets, setBudgets] = useState<Budgets>({});
-  const [selectedMonth, setSelectedMonth] = useState<string>("01"); // Default to January
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString()); // Default to current year
-  const [budgetTitle, setBudgetTitle] = useState<string>("June 2026 Budget"); // New state for Budget Title
+  // ---- Get next month + correct year ----
+  // ---- Auto-Generate Default Budget Title (Next Month + Current Year) ---
+    const today = new Date();
+    const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+    const defaultMonth = String(nextMonthDate.getMonth() + 1).padStart(2, "0");
+    const defaultYear = nextMonthDate.getFullYear().toString();
+
+    const monthName = nextMonthDate.toLocaleString("default", { month: "long" });
+    const defaultTitle = `${monthName} ${defaultYear} Budget`;
+
+    const [selectedMonth, setSelectedMonth] = useState<string>(defaultMonth);
+    const [selectedYear, setSelectedYear] = useState<string>(defaultYear);
+    const [budgetTitle, setBudgetTitle] = useState<string>(defaultTitle);
 
   // ---------------- Fetch Categories and Existing Budgets ----------------
   useEffect(() => {
@@ -54,21 +65,33 @@ const SetBudgetsPage: React.FC = () => {
         const categories: { [category: string]: string[] } = {};
         const categoryIdsMap: { [category: string]: number } = {};
         
+        const hiddenCategories = ["Office Supplies", "Salaries"];
+
+        // Hide Specific Expense Categories
         res.forEach((category: any) => {
-          categories[category.name] = []; // Initialize empty array for subcategories
-          categoryIdsMap[category.name] = category.id; // Store category_id
+          if (!hiddenCategories.includes(category.name)) {
+            categories[category.name] = [];
+            categoryIdsMap[category.name] = category.id;
+          }
         });
 
         // Fetch expense subcategories and group by category
         const subCategoriesRes = await fetchDataWithAuthFallback(`${baseURL}/api/finance/expense_subcategories`);
         
         const subcategoryIdsMap: { [subCategory: string]: number } = {};
-        subCategoriesRes.forEach((subCategory: any) => {
-          const categoryName = res.find((cat: any) => cat.id === subCategory.category_id)?.name;
-          if (categoryName) {
-            categories[categoryName].push(subCategory.name);
-            subcategoryIdsMap[subCategory.name] = subCategory.id; // Map subcategory name to ID
-          } else {
+        const hiddenSubcategories = ["Software Licenses", "Utilities", "Stationery"];
+
+          subCategoriesRes.forEach((subCategory: any) => {
+            const categoryName = res.find((cat: any) => cat.id === subCategory.category_id)?.name;
+
+            if (
+              categoryName &&
+              categories[categoryName] && // ensure category wasn't filtered out
+              !hiddenSubcategories.includes(subCategory.name)
+            ) {
+              categories[categoryName].push(subCategory.name);
+              subcategoryIdsMap[subCategory.name] = subCategory.id;
+            } else {
             console.error(`No category found for subcategory: ${subCategory.name}`);
           }
         });
