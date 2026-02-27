@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import axios from "axios";
 
@@ -17,6 +18,8 @@ import step9 from "../../assets/step9_Members.png";
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const UploadMembersGuide: React.FC = () => {
+  const navigate = useNavigate();
+  
   const [acknowledged, setAcknowledged] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [zoomSrc, setZoomSrc] = useState<string | null>(null);
@@ -106,39 +109,26 @@ const UploadMembersGuide: React.FC = () => {
     setUploadProgress(0);
     setUploadMessage("");
 
-    const res = await axios.post(
-      `${baseURL}/api/uploads`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    const res = await axios.post(`${baseURL}/api/uploads`, formData, {
+      headers: { Authorization: `Bearer ${token}` },
+      onUploadProgress: (progressEvent) => {
+        if (!progressEvent.total) return;
+        const rawPercent = (progressEvent.loaded * 100) / progressEvent.total;
+        const cappedPercent = Math.min(Math.round(rawPercent * 0.9), 90);
+        setUploadProgress(cappedPercent);
+      },
+    });
 
-        onUploadProgress: (progressEvent) => {
-          if (!progressEvent.total) return;
-
-          const rawPercent =
-            (progressEvent.loaded * 100) / progressEvent.total;
-
-          // Cap at 90% while uploading
-          const cappedPercent = Math.min(Math.round(rawPercent * 0.9), 90);
-
-          setUploadProgress(cappedPercent);
-        },
-
-      }
-    );
     setUploadProgress(100);
-
-    setUploadMessage(
-      `${res.data.count} rows uploaded successfully to members table.`
-    );
+    setUploadMessage(`${res.data.count} rows uploaded successfully to members table.`);
     setFiles([]);
+
+    // ✅ Redirect after success
+    navigate("/congregation/memberRecords");
+
   } catch (error: any) {
     console.error("Upload failed:", error);
-    setUploadMessage(
-      error?.response?.data?.error || "Upload failed"
-    );
+    setUploadMessage(error?.response?.data?.error || "Upload failed");
   } finally {
     setIsUploading(false);
   }
