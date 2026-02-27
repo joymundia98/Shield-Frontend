@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import axios from "axios";
 
@@ -12,6 +13,7 @@ import step4 from "../../assets/step4.png";
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const UploadUsersGuide: React.FC = () => {
+  const navigate = useNavigate();
   const [acknowledged, setAcknowledged] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [zoomSrc, setZoomSrc] = useState<string | null>(null);
@@ -108,27 +110,31 @@ const UploadUsersGuide: React.FC = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-
         onUploadProgress: (progressEvent) => {
           if (!progressEvent.total) return;
 
           const rawPercent =
             (progressEvent.loaded * 100) / progressEvent.total;
 
-          // Cap at 90% while uploading
           const cappedPercent = Math.min(Math.round(rawPercent * 0.9), 90);
-
           setUploadProgress(cappedPercent);
         },
-
       }
     );
+
     setUploadProgress(100);
 
     setUploadMessage(
       `${res.data.count} rows uploaded successfully to users table.`
     );
+
     setFiles([]);
+
+    // ✅ Redirect after short delay (optional but recommended)
+    setTimeout(() => {
+      navigate("/Organization/ListedAccounts");
+    }, 1500);
+    
   } catch (error: any) {
     console.error("Upload failed:", error);
     setUploadMessage(

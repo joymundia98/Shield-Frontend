@@ -151,16 +151,13 @@ const AddDonor: React.FC = () => {
         payload.organization_id = 1; // adjust if needed
       }
 
-      const res = await fetchDataWithAuthFallback(`${baseURL}/api/donors`, {
+      const data = await fetchDataWithAuthFallback(`${baseURL}/api/donors`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      // Assuming the response is already in the required format, no need for res.json().
-      if (!res.ok) {
-        throw new Error(res.message || "Failed to add donor");
-      }
+      console.log("Created donor:", data);
 
       // Show success card for 2 seconds before resetting and redirecting
       setShowSuccessCard(true);

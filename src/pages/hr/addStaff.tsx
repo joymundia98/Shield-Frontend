@@ -38,11 +38,18 @@ interface User {
   id: number;
   first_name: string;
   last_name: string;
+  email?: string;
+  phone?: string;
+  position?: string;
+  role_id?: number;
 }
 
 interface Role {
   id: number;
   name: string;
+  description?: string;
+  organization_id?: number | null;
+  department_id?: number | null;
 }
 
 const AddStaff: React.FC = () => {
@@ -160,6 +167,13 @@ const fetchWithAuthFallback = async (
     }
   };
 
+  //Sort Users
+    const sortedUsers = [...users].sort((a, b) => {
+    const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+    const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+
   return (
     <div className="dashboard-wrapper">
       {/* Sidebar */}
@@ -221,15 +235,32 @@ const fetchWithAuthFallback = async (
               onChange={(e) => {
                 const selectedUserId = Number(e.target.value);
                 const selectedUser = users.find(u => u.id === selectedUserId);
-                setForm({
-                  ...form,
+
+                if (!selectedUser) return;
+
+                // Find role using role_id
+                const matchedRole = roles.find(r => r.id === selectedUser.role_id);
+
+                // Find department using role.department_id
+                const matchedDepartment = matchedRole
+                  ? departments.find(d => d.id === matchedRole.department_id)
+                  : undefined;
+
+                setForm(prev => ({
+                  ...prev,
                   user_id: selectedUserId,
-                  name: selectedUser ? `${selectedUser.first_name} ${selectedUser.last_name}` : "",
-                });
+                  name: `${selectedUser.first_name} ${selectedUser.last_name}`,
+                  email: selectedUser.email || "",
+                  phone: selectedUser.phone || "",
+                  position: selectedUser.position || "",
+                  role: matchedRole?.name || "",
+                  department_id: matchedDepartment?.id,
+                  department: matchedDepartment?.name || "",
+                }));
               }}
             >
               <option value="">-- Select User --</option>
-              {users.map(u => (
+              {sortedUsers.map(u => (
                 <option key={u.id} value={u.id}>
                   {u.first_name} {u.last_name}
                 </option>
