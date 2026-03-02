@@ -3040,3 +3040,9 @@
   background-color: #142d5c;
   color: #ffffff;
 }
+
+/*=================TOUR GUIDE CSS===========================*/
+.reactour__tooltip {
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
