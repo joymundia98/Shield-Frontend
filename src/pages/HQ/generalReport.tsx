@@ -15,20 +15,6 @@ import { useAuth } from "../../hooks/useAuth";
 ======================= */
 const baseURL = import.meta.env.VITE_BASE_URL;
 
-// Grab authToken
-const authToken = localStorage.getItem("authToken");
-
-// Determine headquarter info from either user or organization
-const userRaw = localStorage.getItem("user");
-const orgRaw = localStorage.getItem("organization");
-
-const userData = userRaw ? JSON.parse(userRaw) : null;
-const orgData = orgRaw ? JSON.parse(orgRaw) : null;
-
-// Determine HQ ID and Name dynamically
-const headquarterId = userData?.headquarter_id || orgData?.headquarters_id;
-//const hqName = userData?.headquarter_name || orgData?.headquarters_name || "Headquarters";
-
 
 /* =======================
    TYPES
@@ -103,6 +89,9 @@ const GeneralReport: React.FC = () => {
 
   const { hasPermission } = useAuth();
 
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [headquarterId, setHeadquarterId] = useState<number | null>(null);
+
   /* ===== STATE ===== */
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -148,6 +137,24 @@ const GeneralReport: React.FC = () => {
         document.body.classList.remove("sidebar-open");
       }
     }, [sidebarOpen]);
+
+/*=============
+Ensure Data Loads on page landing
+================*/
+useEffect(() => {
+  const token = localStorage.getItem("authToken");
+  const userRaw = localStorage.getItem("user");
+  const orgRaw = localStorage.getItem("organization");
+
+  const userData = userRaw ? JSON.parse(userRaw) : null;
+  const orgData = orgRaw ? JSON.parse(orgRaw) : null;
+
+  const hqId =
+    userData?.headquarter_id || orgData?.headquarters_id || null;
+
+  setAuthToken(token);
+  setHeadquarterId(hqId);
+}, []);
 
 /*=================
 RESUSABLE HELPER
@@ -311,6 +318,7 @@ const fetchAsArray = async (url: string): Promise<any[]> => {
 const genderData: GenderData[] = useMemo(() => {
   const genders: ("Male" | "Female")[] = ["Male", "Female"];
 
+  //Counting only Active Members to reflect actual Growth
   const membersUpToDate = filterByBranch(allMembers, selectedBranch).filter(
     m => isUpToSelectedDate(m.date_joined, selectedDate) && m.status === "Active"
   );
@@ -909,7 +917,6 @@ DYNAMIC H1
 const reportTitle = selectedBranch
   ? `${selectedBranch.name} Report`
   : `${hqName} Report`;
-
 
 
   /* =======================

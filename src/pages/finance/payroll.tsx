@@ -386,7 +386,6 @@ const FinancePayrollPage: React.FC = () => {
         {hasPermission("Manage Payroll") && <a href="/finance/payroll" className="active">Payroll</a>}
         {hasPermission("View Finance Categories") && <a href="/finance/financeCategory">Finance Categories</a>}
 
-
         <hr className="sidebar-separator" />
         {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
 
