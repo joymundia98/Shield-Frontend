@@ -24,7 +24,7 @@ interface Organization {
 const tourSteps = [
   {
     selector: "#tour-hamburger",
-    content: "Use this button to open the HQ sidebar menu.",
+    content: "Use this button to open the HQ sidebar menu as an alternative to the navigation header. On smaller screens, this is the primary way to access navigation.",
   },
   {
     selector: "#tour-new-branch",
@@ -49,6 +49,10 @@ const tourSteps = [
   {
     selector: "#tour-table",
     content: "Branches are grouped by Region and District here.",
+  },
+  {
+    selector: "#tour-view-branch",
+    content: "Click the View button to see detailed information about a specific branch, including its location, total members, and account creation date.",
   },
 ];
 
@@ -586,6 +590,7 @@ const BranchDirectoryPage: React.FC = () => {
                                   onClick={() =>
                                     openViewOrganization()
                                   }
+                                  id="tour-view-branch"
                                 >
                                   View
                                 </button>

@@ -9,6 +9,7 @@ import branchImage from "../../assets/branch.png";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useAuth } from "../../hooks/useAuth";
+import { TourProvider, useTour } from "@reactour/tour";
 
 /* =======================
    API / AUTH CONFIG
@@ -79,6 +80,242 @@ const AGE_GROUPS = [
   { label: "60+", min: 61, max: 150 },
 ];
 
+/*======================
+TOUR STEPS
+=======================*/
+const reportTourSteps = [
+  {
+    selector: "#tour-hamburger",
+    content: (
+      <>
+        <h3>Navigation Menu</h3>
+        <p>
+          Access the HQ management sidebar from here. Use this menu to move
+          between branch management, reports, and your main dashboard.
+        </p>
+        <p>
+          On smaller screens, this becomes your primary navigation tool.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-branch-select",
+    content: (
+      <>
+        <h3>Branch Filter</h3>
+        <p>
+          Select a specific branch to generate a detailed performance report.
+        </p>
+        <p>
+          Leaving this set to <strong>All Branches</strong> provides a
+          consolidated Headquarters overview.
+        </p>
+        <p>
+          All charts and KPIs will automatically update based on your
+          selection.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-date-select",
+    content: (
+      <>
+        <h3>Reporting Period</h3>
+        <p>
+          Choose a month and year to analyze performance trends for a specific
+          reporting period.
+        </p>
+        <p>
+          Key metrics such as Visitors and Converts reflect the selected month,
+          while Membership totals represent cumulative growth up to that date.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-kpi-section",
+    content: (
+      <>
+        <h3>Key Performance Indicators</h3>
+        <p>
+          This section highlights the most important metrics at a glance:
+        </p>
+        <ul>
+          <li>Total Active Members</li>
+          <li>Total Visitors (Selected Month)</li>
+          <li>Total Converts (Selected Month)</li>
+          <li>Total Branches (HQ View)</li>
+        </ul>
+        <p>
+          These figures provide a quick snapshot of health and growth.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-member-breakdown",
+    content: (
+      <>
+        <h3>Member Demographics</h3>
+        <p>
+          Analyze the gender distribution and age composition of active
+          members.
+        </p>
+        <p>
+          This insight helps leadership understand generational engagement and
+          identify areas for strategic outreach or ministry focus.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-convert-chart",
+    content: (
+      <>
+        <h3>Conversion Insights</h3>
+        <p>
+          This chart illustrates the source of new converts — whether they
+          originated as Visitors or transitioned from existing Members.
+        </p>
+        <p>
+          Monitoring this trend helps evaluate outreach effectiveness and
+          assimilation strategies.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-attendance-chart",
+    content: (
+      <>
+        <h3>Attendance Trends</h3>
+        <p>
+          Weekly attendance for the selected month is displayed here.
+        </p>
+        <p>
+          Consistent growth patterns may indicate healthy engagement, while
+          fluctuations can signal seasonal or operational factors.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-growth-chart",
+    content: (
+      <>
+        <h3>Church Growth (12-Month View)</h3>
+        <p>
+          This chart tracks new member growth over the past 12 months.
+        </p>
+        <p>
+          It provides leadership with a strategic, long-term perspective on
+          expansion and retention momentum.
+        </p>
+      </>
+    ),
+  },
+];
+
+//Custom Close
+const CustomClose: React.FC<{ onClick?: () => void; disabled?: boolean }> = ({
+  onClick,
+  disabled,
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: "red",
+      color: "#fff",
+      border: "none",
+      borderRadius: "50%",
+      width: 32,
+      height: 32,
+      fontWeight: "bold",
+      cursor: disabled ? "not‑allowed" : "pointer",
+      display: "flex",           // ✅ Use flex to center the X
+      alignItems: "center",      // ✅ Vertical centering
+      justifyContent: "center",  // ✅ Horizontal centering
+      fontSize: 16,
+      position: "absolute",
+      top: -9,                     // Adjust as needed
+      right: -10,                   // Adjust as needed
+      padding: 0,
+    }}
+  >
+    ✕
+  </button>
+);
+
+// Custom navigation with dots
+const CustomNavigation = () => {
+  const { currentStep, steps, setCurrentStep, setIsOpen } = useTour();
+
+  const goNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {/* Step dots */}
+      <div style={{ textAlign: "center", marginBottom: 5 }}>
+        {steps.map((_, idx) => (
+          <span
+            key={idx}
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              margin: "0 4px",
+              background: idx === currentStep ? "#007bff" : "#ccc",
+              cursor: "pointer",
+            }}
+            onClick={() => setCurrentStep(idx)}
+          />
+        ))}
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <button
+          onClick={goPrev}
+          disabled={currentStep === 0}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: currentStep === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          ← Prev
+        </button>
+        <button
+          onClick={goNext}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          {currentStep === steps.length - 1 ? "End Tour" : "Next →"}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 /* =======================
    COMPONENT
@@ -918,6 +1155,20 @@ const reportTitle = selectedBranch
   ? `${selectedBranch.name} Report`
   : `${hqName} Report`;
 
+/*=====================
+TOUR GUIDE 
+======================*/
+const { setIsOpen, setCurrentStep } = useTour();
+
+useEffect(() => {
+  const hasSeenTour = localStorage.getItem("generalReportTourSeen");
+
+  if (!hasSeenTour) {
+    setIsOpen(true);
+    localStorage.setItem("generalReportTourSeen", "true");
+  }
+}, [setIsOpen]);
+
 
   /* =======================
      RENDER
@@ -926,7 +1177,12 @@ const reportTitle = selectedBranch
     <div className="dashboard-wrapper">
 
       {/* SIDEBAR */}
-      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>&#9776;</button>
+      <button
+        className="hamburger"
+        id="tour-hamburger"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        >&#9776;
+      </button>
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         {/* Sidebar content */}
         <div className="close-wrapper">
@@ -995,11 +1251,23 @@ const reportTitle = selectedBranch
         </div>
         <div className="do-not-print print-button-container">
         <button
+          className="add-btn"
+          style={{ marginLeft: "10px"}}
+          onClick={() => {
+            setCurrentStep(0);
+            setIsOpen(true);
+          }}
+        >
+          🎥 Take a Tour
+        </button>&emsp;
+
+        <button
           className="print-button"
           onClick={() => window.print()}
         >
           🖨️ Print Report
         </button>
+        
       </div>
 
         <br />
@@ -1014,9 +1282,10 @@ const reportTitle = selectedBranch
             <div className="branch-dropdown">
               <img src={branchImage} alt="Branch" width={35} />
               <select
-                value={selectedBranch?.branch_id ?? "all"}
-                onChange={handleBranchChange}
-              >
+                  id="tour-branch-select"
+                  value={selectedBranch?.branch_id ?? "all"}
+                  onChange={handleBranchChange}
+                >
                 <option value="all">All Branches (HQ)</option>
                 {branches.map(branch => (
                   <option key={branch.branch_id} value={branch.branch_id}>
@@ -1029,19 +1298,20 @@ const reportTitle = selectedBranch
 
           <div className="kpi-card">
             <h3>Select a Date</h3>
-            <DatePicker
-              selected={selectedDate}
-              onChange={(date: Date | null) => date && setSelectedDate(date)}
-              dateFormat="MMMM yyyy"
-              showMonthYearPicker
-              showFullMonthYearPicker
-              placeholderText="Select month and year"
-            />
+            <div id="tour-date-select">
+              <DatePicker
+                selected={selectedDate}
+                onChange={(date: Date | null) => date && setSelectedDate(date)}
+                dateFormat="MMMM yyyy"
+                showMonthYearPicker
+                showFullMonthYearPicker
+              />
+            </div>
 
           </div>
         </div>
 
-        <div className="kpi-container">
+        <div className="kpi-container" id="tour-kpi-section">
           {/** Conditionally render the Total branches KPI depending on whether a branch is selected **/}
           {!selectedBranch && (
             <div className="kpi-card">
@@ -1056,7 +1326,7 @@ const reportTitle = selectedBranch
           {/*<div className="kpi-card"><h3>Monthly Giving</h3><p>ZMW {kpi.monthlyGiving.toLocaleString()}</p></div>*/}
         </div>
 
-        <div className="chart-box">
+        <div className="chart-box" id="tour-member-breakdown">
           <h3 className="generalReportH3">Member Breakdown</h3>
           <div className="gender-breakdown">
             {genderData.map((gender, i) => (
@@ -1103,7 +1373,7 @@ const reportTitle = selectedBranch
 
         <br/>
 
-        <div className="chart-grid">
+        <div className="chart-grid" id="tour-convert-chart">
           <div className="chart-box">
             <h3>Convert Breakdown</h3>
             <canvas id="convertChart" />
@@ -1133,11 +1403,11 @@ const reportTitle = selectedBranch
         <br/>
 
         <div className="chart-grid">
-          <div className="chart-box move-down-alot">
+          <div className="chart-box move-down-alot" id="tour-attendance-chart">
             <h3>Attendance Trends (Last 4 weeks)</h3>
             <canvas id="attendanceChart" />
           </div>
-          <div className="chart-box">
+          <div className="chart-box" id="tour-growth-chart">
             <h3>Church Growth (Last 12 Months)</h3>
             <canvas id="growthChart" />
           </div>
@@ -1148,4 +1418,17 @@ const reportTitle = selectedBranch
   );
 };
 
-export default GeneralReport;
+export default function GeneralReportWithTour() {
+  return (
+    <TourProvider
+      steps={reportTourSteps}
+      scrollSmooth={true}
+      components={{
+        Navigation: CustomNavigation,
+        Close: CustomClose,  // ✅ Custom close button
+      }}
+    >
+      <GeneralReport />
+    </TourProvider>
+  );
+}

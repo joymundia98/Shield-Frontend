@@ -1,5 +1,0 @@
----------HR---------
-The Departments Total Memebers needs to be addressed to calculate Memebers
-The View, Edit and Filter Logic does not work on staff Directory
-Dashboard needs to be updated
-Apply for leave functionality and view previous applications not built for regular users

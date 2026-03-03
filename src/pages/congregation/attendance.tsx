@@ -18,7 +18,6 @@ import CongregationHeader from './CongregationHeader';
 import axios from "axios"; //For downloads
 import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
 
-
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -75,9 +74,9 @@ const AttendancePage: React.FC = () => {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const [selectedCategory, setSelectedCategory] = useState<"All" | "Youth" | "Adults">("All");
-  const [selectedMonth, setSelectedMonth] = useState<string>("All");
-  const [selectedYear, setSelectedYear] = useState<string>("All");
   const [selectedService, setSelectedService] = useState<string>("All");
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
@@ -90,12 +89,12 @@ const AttendancePage: React.FC = () => {
   const [showAll, setShowAll] = useState<boolean>(false);
 
   /* ---------------- SIDEBAR LOGIC ---------------- */
-    useEffect(() => {
-      if (sidebarOpen) document.body.classList.add("sidebar-open");
-      else document.body.classList.remove("sidebar-open");
-  
-      return () => document.body.classList.remove("sidebar-open");
-    }, [sidebarOpen]);
+  useEffect(() => {
+    if (sidebarOpen) document.body.classList.add("sidebar-open");
+    else document.body.classList.remove("sidebar-open");
+
+    return () => document.body.classList.remove("sidebar-open");
+  }, [sidebarOpen]);
 
   /* ---------------- AUTH FETCH FUNCTION ---------------- */
   const authFetch = async (url: string) => {
@@ -142,6 +141,23 @@ const AttendancePage: React.FC = () => {
         setAttendanceRecords(attendanceRes);
         setMembers(membersRes.data);
         setVisitors(visitorsRes);
+
+        if (attendanceRes.length > 0) {
+          const sorted = [...attendanceRes].sort(
+            (a, b) =>
+              new Date(b.attendance_date).getTime() -
+              new Date(a.attendance_date).getTime()
+          );
+
+          const latestDate = new Date(sorted[0].attendance_date)
+            .toISOString()
+            .split("T")[0];
+          setSelectedDate(latestDate);
+
+          // ✅ Set default service to last recorded service
+          setSelectedService(sorted[0].service_id.toString());
+        }
+
       } catch (err) {
         setError("Error fetching data: " + (err as Error).message);
       } finally {
@@ -176,12 +192,18 @@ const AttendancePage: React.FC = () => {
   // Filter records based on selected filters
   const filteredAttendance = useMemo(() => {
     return mergedAttendanceData.filter((record) => {
-      const date = new Date(record.attendance_date);
-      const monthCheck = selectedMonth === "All" || date.getMonth().toString() === selectedMonth;
-      const yearCheck = selectedYear === "All" || date.getFullYear().toString() === selectedYear;
-      const serviceCheck = selectedService === "All" || record.service_id.toString() === selectedService;
+      const recordDate = new Date(record.attendance_date)
+        .toISOString()
+        .split("T")[0];
+
+      const dateCheck = !selectedDate || recordDate === selectedDate;
+
+      const serviceCheck =
+        selectedService === "All" ||
+        record.service_id.toString() === selectedService;
 
       let categoryCheck = true;
+
       if (selectedCategory === "Youth" && record.person?.age !== undefined) {
         categoryCheck = record.person.age <= 30;
       }
@@ -190,44 +212,63 @@ const AttendancePage: React.FC = () => {
         categoryCheck = record.person.age > 30;
       }
 
-      return monthCheck && yearCheck && categoryCheck && serviceCheck;
+      return dateCheck && categoryCheck && serviceCheck;
     });
-  }, [mergedAttendanceData, selectedCategory, selectedMonth, selectedYear, selectedService]);
+  }, [mergedAttendanceData, selectedCategory, selectedDate, selectedService]);
 
-  // Weekly data for charts
+  /* -------------------- WEEK CALCULATION ---------------- */
+  const getLast4Weeks = (dateStr: string) => {
+    const selected = new Date(dateStr);
+    const weeks: { start: Date; end: Date }[] = [];
+    for (let i = 3; i >= 0; i--) {
+      const start = new Date(selected);
+      start.setDate(selected.getDate() - selected.getDay() - (i * 7) + 1);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      weeks.push({ start, end });
+    }
+    return weeks;
+  };
+
+  /* -------------------- WEEKLY DATA FOR CHARTS ---------------- */
   const weeklyData = useMemo(() => {
-    const weeks = [0, 0, 0, 0];
-    const maleWeeks = [0, 0, 0, 0];
-    const femaleWeeks = [0, 0, 0, 0];
-    const maleMembers = [0, 0, 0, 0];
-    const femaleMembers = [0, 0, 0, 0];
-    const maleVisitors = [0, 0, 0, 0];
-    const femaleVisitors = [0, 0, 0, 0];
+    if (!selectedDate) return { weeks: [0,0,0,0], maleWeeks: [0,0,0,0], femaleWeeks: [0,0,0,0], maleMembers:[0,0,0,0], femaleMembers:[0,0,0,0], maleVisitors:[0,0,0,0], femaleVisitors:[0,0,0,0], weekLabels: ["","","",""] };
 
-    filteredAttendance.forEach((record) => {
-      const week = Math.min(Math.floor(new Date(record.attendance_date).getDate() / 7), 3);
+    const weeks = getLast4Weeks(selectedDate);
+    const weekLabels = weeks.map(w => `${w.start.toLocaleDateString()} - ${w.end.toLocaleDateString()}`);
 
-      // Count overall attendees
-      weeks[week]++;
+    const data = {
+      weeks: [0,0,0,0],
+      maleWeeks: [0,0,0,0],
+      femaleWeeks: [0,0,0,0],
+      maleMembers: [0,0,0,0],
+      femaleMembers: [0,0,0,0],
+      maleVisitors: [0,0,0,0],
+      femaleVisitors: [0,0,0,0],
+      weekLabels
+    };
 
-      // Gender counts
-      if (record.person?.gender === "Male") maleWeeks[week]++;
-      if (record.person?.gender === "Female") femaleWeeks[week]++;
-
-      // Member and visitor counts
-      if (record.member_id) {
-        if (record.person?.gender === "Male") maleMembers[week]++;
-        if (record.person?.gender === "Female") femaleMembers[week]++;
-      }
-
-      if (record.visitor_id) {
-        if (record.person?.gender === "Male") maleVisitors[week]++;
-        if (record.person?.gender === "Female") femaleVisitors[week]++;
-      }
+    filteredAttendance.forEach(record => {
+      const recordDate = new Date(record.attendance_date);
+      weeks.forEach((week, idx) => {
+        if (recordDate >= week.start && recordDate <= week.end) {
+          data.weeks[idx]++;
+          if (record.person?.gender === "Male") data.maleWeeks[idx]++;
+          if (record.person?.gender === "Female") data.femaleWeeks[idx]++;
+          if (record.member_id) {
+            if (record.person?.gender === "Male") data.maleMembers[idx]++;
+            if (record.person?.gender === "Female") data.femaleMembers[idx]++;
+          }
+          if (record.visitor_id) {
+            if (record.person?.gender === "Male") data.maleVisitors[idx]++;
+            if (record.person?.gender === "Female") data.femaleVisitors[idx]++;
+          }
+        }
+      });
     });
 
-    return { weeks, maleWeeks, femaleWeeks, maleMembers, femaleMembers, maleVisitors, femaleVisitors };
-  }, [filteredAttendance]);
+    return data;
+  }, [filteredAttendance, selectedDate]);
 
   // KPI Data
   const overallKPI = filteredAttendance.length;
@@ -246,44 +287,43 @@ const AttendancePage: React.FC = () => {
   };
 
   //--------------------DOWNLOAD REPORTS ----------------
-    const downloadFile = async (type: "pdf" | "excel" | "csv") => {
-      try {
-        const response = await axios.get(
-          `${baseURL}/api/reports/attendance/${type}`,
-          {
-            responseType: "blob", // VERY important
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`
-            },
-            params: {
-              organization_id: localStorage.getItem("organization_id"),
-              // status can be added later if needed
-            }
+  const downloadFile = async (type: "pdf" | "excel" | "csv") => {
+    try {
+      const response = await axios.get(
+        `${baseURL}/api/reports/attendance/${type}`,
+        {
+          responseType: "blob", // VERY important
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+          params: {
+            organization_id: localStorage.getItem("organization_id"),
           }
-        );
-    
-        const blob = new Blob([response.data]);
-        const url = window.URL.createObjectURL(blob);
-    
-        const link = document.createElement("a");
-        link.href = url;
-    
-        const extensionMap = {
-          pdf: "pdf",
-          excel: "xlsx",
-          csv: "csv"
-        };
-    
-        link.download = `attendance_data.${extensionMap[type]}`;
-        document.body.appendChild(link);
-        link.click();
-    
-        link.remove();
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error("File download failed:", error);
-      }
-    };
+        }
+      );
+
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+
+      const extensionMap = {
+        pdf: "pdf",
+        excel: "xlsx",
+        csv: "csv"
+      };
+
+      link.download = `attendance_data.${extensionMap[type]}`;
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("File download failed:", error);
+    }
+  };
 
   return (
     <div className="dashboard-wrapper">
@@ -303,7 +343,6 @@ const AttendancePage: React.FC = () => {
         </div>
 
         <h2>CONGREGATION</h2>
-        {/* Conditional Sidebar Links Based on Permissions */}
         {hasPermission("View Congregation Dashboard") && <a href="/congregation/dashboard">Dashboard</a>}
         {hasPermission("View Members Summary") && <a href="/congregation/members">Members</a>}
         {hasPermission("Record Congregation Attendance") && <a href="/congregation/attendance" className="active">Attendance</a>}
@@ -346,21 +385,12 @@ const AttendancePage: React.FC = () => {
             <option value="Adults">Adults (&gt;30)</option>
           </select>&emsp;
 
-          <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-            <option value="All">All Months</option>
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i} value={i}>
-                {new Date(0, i).toLocaleString("default", { month: "long" })}
-              </option>
-            ))}
-          </select>&emsp;
-
-          <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-            <option value="All">All Years</option>
-            <option value="2025">2025</option>
-            <option value="2026">2026</option>
-            <option value="2027">2027</option>
-          </select>&emsp;
+          {/* Date Picker */}
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+          />&emsp;
 
           {/* Service Filter */}
           <select value={selectedService} onChange={(e) => setSelectedService(e.target.value)}>
@@ -397,7 +427,7 @@ const AttendancePage: React.FC = () => {
             <h3>Weekly Overall Attendance</h3>
             <Line
               data={{
-                labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+                labels: weeklyData.weekLabels,
                 datasets: [
                   {
                     label: "Present Congregants",
@@ -433,7 +463,7 @@ const AttendancePage: React.FC = () => {
             <h3>Weekly Attendance by Gender</h3>
             <Bar
               data={{
-                labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+                labels: weeklyData.weekLabels,
                 datasets: [
                   {
                     label: "Male",
@@ -485,17 +515,17 @@ const AttendancePage: React.FC = () => {
         
         <br/>
 
-          <button className="add-btn" onClick={() => downloadFile("pdf")}>
-            📄 Export PDF
-          </button>&emsp;
+        <button className="add-btn" onClick={() => downloadFile("pdf")}>
+          📄 Export PDF
+        </button>&emsp;
 
-          <button className="add-btn" onClick={() => downloadFile("excel")}>
-            📊 Export Excel
-          </button>&emsp;
+        <button className="add-btn" onClick={() => downloadFile("excel")}>
+          📊 Export Excel
+        </button>&emsp;
 
-          <button className="add-btn" onClick={() => downloadFile("csv")}>
-            ⬇️ Export CSV
-          </button>
+        <button className="add-btn" onClick={() => downloadFile("csv")}>
+          ⬇️ Export CSV
+        </button>
         <br/><br/>
 
         {loading ? (
