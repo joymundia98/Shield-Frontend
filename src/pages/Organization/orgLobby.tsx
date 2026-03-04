@@ -5,6 +5,7 @@ import profile_icon from '../../assets/profile_icon.png';
 import "./OrgLobby.css";
 import OrganizationHeader from './OrganizationHeader';
 import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+import { TourProvider, useTour } from "@reactour/tour";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -16,6 +17,205 @@ interface LobbyUser {
   status: string | null;
 }
 
+/*======================
+TOUR STEPS
+=======================*/
+const lobbyTourSteps = [
+  {
+    selector: "#tour-hamburger",
+    content: (
+      <>
+        <h3>Navigation Menu</h3>
+        <p>
+          Open the Organization Manager sidebar from here.
+        </p>
+        <p>
+          Use it to manage roles, admins, permissions,
+          and return to the main dashboard.
+        </p>
+        <p>
+          On smaller screens, this becomes your primary navigation tool.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-start",
+    content: (
+      <>
+        <h3>Restart This Tour</h3>
+        <p>
+          Click here anytime to relaunch this guided walkthrough.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-lobby-guide",
+    content: (
+      <>
+        <h3>The Lobby Overview</h3>
+        <p>
+          The Lobby displays users waiting for approval
+          to join your organization.
+        </p>
+        <p>
+          Review each registration carefully before confirming access.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-lobby-cards",
+    content: (
+      <>
+        <h3>Pending User Cards</h3>
+        <p>
+          Each card represents a user with a
+          <strong> pending</strong> or <strong>unverified</strong> status.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-approve",
+    content: (
+      <>
+        <h3>Approve User</h3>
+        <p>
+          Approving activates the account and grants system access.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-reject",
+    content: (
+      <>
+        <h3>Reject User</h3>
+        <p>
+          Rejecting marks the account inactive.
+        </p>
+        <p>
+          This action will deactivate the account.
+          It can later be reactivated in the Manage Accounts tab.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-confirmation-modal",
+    content: (
+      <>
+        <h3>Confirmation Required</h3>
+        <p>
+          Every approval or rejection must be confirmed here
+          before being finalized.
+        </p>
+      </>
+    ),
+  },
+];
+
+//Custom Close
+const CustomClose: React.FC<{ onClick?: () => void; disabled?: boolean }> = ({
+  onClick,
+  disabled,
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: "red",
+      color: "#fff",
+      border: "none",
+      borderRadius: "50%",
+      width: 32,
+      height: 32,
+      fontWeight: "bold",
+      cursor: disabled ? "not‑allowed" : "pointer",
+      display: "flex",           // ✅ Use flex to center the X
+      alignItems: "center",      // ✅ Vertical centering
+      justifyContent: "center",  // ✅ Horizontal centering
+      fontSize: 16,
+      position: "absolute",
+      top: -9,                     // Adjust as needed
+      right: -10,                   // Adjust as needed
+      padding: 0,
+    }}
+  >
+    ✕
+  </button>
+);
+
+// Custom navigation with dots
+const CustomNavigation = () => {
+  const { currentStep, steps, setCurrentStep, setIsOpen } = useTour();
+
+  const goNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {/* Step dots */}
+      <div style={{ textAlign: "center", marginBottom: 5 }}>
+        {steps.map((_, idx) => (
+          <span
+            key={idx}
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              margin: "0 4px",
+              background: idx === currentStep ? "#007bff" : "#ccc",
+              cursor: "pointer",
+            }}
+            onClick={() => setCurrentStep(idx)}
+          />
+        ))}
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <button
+          onClick={goPrev}
+          disabled={currentStep === 0}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: currentStep === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          ← Prev
+        </button>
+        <button
+          onClick={goNext}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          {currentStep === steps.length - 1 ? "End Tour" : "Next →"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const OrgLobby: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth(); // Access the hasPermission function
@@ -24,6 +224,9 @@ const OrgLobby: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [organization, setOrganization] = useState<any | null>(null);
+
+  //Tour
+  const { setIsOpen, setCurrentStep } = useTour();
 
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,6 +237,40 @@ const OrgLobby: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<LobbyUser | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
+
+  //Automatically Open the modal during the tour
+  const { currentStep, isOpen } = useTour();
+  const [modalAutoOpened, setModalAutoOpened] = useState(false);
+
+  // Auto-open modal when reaching the confirmation step
+  useEffect(() => {
+  const confirmationStepIndex = 6;
+
+  if (
+    currentStep === confirmationStepIndex &&
+    filteredUsers.length > 0 &&
+    !modalOpen &&
+    !modalAutoOpened &&
+    isOpen // ✅ only auto-open if the tour is still open
+  ) {
+    const firstUser = filteredUsers[0];
+    setSelectedUser(firstUser);
+    setActionType("approve"); // or "reject"
+    setModalOpen(true);
+    setModalAutoOpened(true); // mark as auto-opened
+  }
+}, [currentStep, filteredUsers, modalOpen, modalAutoOpened, isOpen]);
+
+  // Close modal when moving away from the confirmation step
+  // Close modal when leaving the confirmation step or when the tour ends
+  useEffect(() => {
+  const confirmationStepIndex = 6;
+
+  if ((currentStep !== confirmationStepIndex || !isOpen) && modalOpen && modalAutoOpened) {
+    setModalOpen(false);
+    setModalAutoOpened(false); // reset flag
+  }
+}, [currentStep, isOpen, modalOpen, modalAutoOpened]);
 
   // Fetch token from localStorage on mount
   useEffect(() => {
@@ -224,11 +461,22 @@ const OrgLobby: React.FC = () => {
 
         <header className="page-header">
           <h1>The Lobby</h1>
-          <button className="hamburger" onClick={toggleSidebar}> ☰ </button>
+          <button className="hamburger" onClick={toggleSidebar} id="tour-hamburger"> ☰ </button>
+            <button
+              className="add-btn"
+              id="tour-start"
+              style={{ background: "#ffffff", color: "#000000", marginLeft: "10px"}}
+              onClick={() => {
+                setCurrentStep(0);
+                setIsOpen(true);
+              }}
+            >
+              🎥 Take a Tour
+          </button>
         </header>
 
         {/* Lobby Guide */}
-        <h3 className="lobby-guide">
+        <h3 className="lobby-guide" id="tour-lobby-guide">
           <br />
           {organization ? (
             <>
@@ -251,21 +499,49 @@ const OrgLobby: React.FC = () => {
         )}
 
         {/* User Lobby Cards */}
-        <div className="lobbyContainer">
+        <div className="lobbyContainer" id="tour-lobby-cards">
           {error && <div className="error">{error}</div>}
 
           {loading ? (
             <p>Loading users...</p>
           ) : filteredUsers.length > 0 ? (
-            filteredUsers.map((user, _index) => (
-              <div key={user.id} className="lobbyCard"> {/* Use user.id as key for better reconciliation */}
-                <img src={user.imageSrc} alt={user.altText} className="lobbyCard-image" />
+            filteredUsers.map((user, index) => (
+              <div key={user.id} className="lobbyCard">
+                {/* Use user.id as key for better reconciliation */}
+                <img
+                  src={user.imageSrc}
+                  alt={user.altText}
+                  className="lobbyCard-image"
+                />
+
                 <div className="lobbyCard-content">
                   <h3 className="lobbyCard-name">{user.name}</h3>
+
                   <div className="lobbyCard-buttons">
-                    <button className="approve-btn" onClick={() => handleApprove(user)}>Approve</button>
-                    <button className="reject-btn" onClick={() => handleReject(user)}>Reject</button>
-                    <button className="add-btn" onClick={() => openViewUser(user.id)}>View</button>
+                    {/* Tour IDs only applied to first card for Reactour targeting */}
+                    <button
+                      id={index === 0 ? "tour-approve" : undefined}
+                      className="approve-btn"
+                      onClick={() => handleApprove(user)}
+                    >
+                      Approve
+                    </button>
+
+                    <button
+                      id={index === 0 ? "tour-reject" : undefined}
+                      className="reject-btn"
+                      onClick={() => handleReject(user)}
+                    >
+                      Reject
+                    </button>
+
+                    <button
+                      id={index === 0 ? "tour-view" : undefined}
+                      className="add-btn"
+                      onClick={() => openViewUser(user.id)}
+                    >
+                      View
+                    </button>
                   </div>
                 </div>
               </div>
@@ -287,7 +563,17 @@ const OrgLobby: React.FC = () => {
                   onClick={async () => {
                     await handleStatusUpdate(selectedUser, actionType);
                   }}
-                  className={actionType === "approve" ? "approve-btn" : "reject-btn"}
+                  style={{
+                    backgroundColor: actionType === "approve" ? "#28a745" : "#dc3545",
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 16px",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                    fontSize: 14,
+                    boxShadow: "rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset"
+                  }}
                 >
                   {actionType === "approve" ? "Approve" : "Reject"}
                 </button>
@@ -300,4 +586,17 @@ const OrgLobby: React.FC = () => {
   );
 };
 
-export default OrgLobby;
+export default function OrgLobbyWithTour() {
+  return (
+    <TourProvider
+      steps={lobbyTourSteps}
+      scrollSmooth={true}
+      components={{
+        Navigation: CustomNavigation,
+        Close: CustomClose,  // ✅ Custom close button
+      }}
+    >
+      <OrgLobby />
+    </TourProvider>
+  );
+}

@@ -4,6 +4,7 @@ import "./roles.css";
 import { authFetch, orgFetch } from "../../utils/api"; // Importing authFetch and orgFetch
 import OrganizationHeader from './OrganizationHeader';
 import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+import { TourProvider, useTour } from "@reactour/tour";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -22,12 +23,266 @@ interface Role {
   department_id: number;
 }
 
+/*======================
+TOUR STEPS
+=======================*/
+const RolesPageSteps = [
+  {
+    selector: "#tour-hamburger",
+    content: (
+      <>
+        <h3>Navigation Menu</h3>
+        <p>Access the Organization Manager sidebar here.</p>
+        <p>The hamburger menu offers an alternative navigation to the header.</p>
+        <p>Quick access to roles, permissions, admin accounts, and the dashboard.</p>
+        <p>On small screens, it becomes the primary navigation method for all sections.</p>
+        {/*<p>
+          After creating roles:
+        </p>
+        <ol>
+          <li>Go to <strong> Permissions</strong> to assign access rights.</li>
+          <li>Assign roles to users in <strong>Manage Accounts</strong>.</li>
+        </ol>
+        <p>
+          Full RBAC Flow:
+        </p>
+        <p>
+          <strong>User → Role → Permission → System Access</strong>
+        </p>*/}
+      </>
+    ),
+  },
+  {
+    selector: "#tour-start",
+    content: (
+      <>
+        <h3>Restart This Tour</h3>
+        <p>
+          Click here anytime to review how RBAC works.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-roles-title",
+    content: (
+      <>
+        <h3>Role-Based Access Control (RBAC)</h3>
+        <p>
+          This page manages <strong>Roles</strong> within your organization.
+        </p>
+        <p>
+          In RBAC, permissions are not assigned directly to users.
+        </p>
+        <p>
+          Instead: <strong>Users → Roles → Permissions</strong>.
+        </p>
+        <p>
+          This ensures scalable, secure, and maintainable access control.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-church-section",
+    content: (
+      <>
+        <h3>Departments Group Roles</h3>
+        <p>
+          Roles are grouped inside Departments.
+        </p>
+        <p>
+          Departments help logically organize responsibilities
+          (e.g., Finance, Media, HR, Operations).
+        </p>
+        <p>
+          This structure keeps large organizations manageable.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-department-card",
+    content: (
+      <>
+        <h3>Department Card</h3>
+        <p>
+          Each department contains multiple roles.
+        </p>
+        <p>
+          A department does NOT grant access —
+          roles inside it define access.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-role-card",
+    content: (
+      <>
+        <h3>Role</h3>
+        <p>
+          A Role represents a responsibility or position.
+        </p>
+        <p>
+          Example:
+        </p>
+        <ul>
+          <li>Finance Manager</li>
+          <li>Content Editor</li>
+          <li>HR Officer</li>
+        </ul>
+        <p>
+          Roles are later linked to specific permissions.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-add-role",
+    content: (
+      <>
+        <h3>Create a Role</h3>
+        <p>
+          Add new roles inside a department.
+        </p>
+        <p>
+          After creating a role, you must assign permissions
+          in the Permissions section.
+        </p>
+        <p>
+          ⚠ A role without permissions grants no access.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-add-department",
+    content: (
+      <>
+        <h3>Create a Department</h3>
+        <p>
+          Create a department only when necessary.
+        </p>
+        <p>
+          Avoid duplication — reuse existing departments where possible.
+        </p>
+        <p>
+          Departments improve structure but do not control access directly.
+        </p>
+      </>
+    ),
+  },
+];
+
+//Custom Close
+const CustomClose: React.FC<{ onClick?: () => void; disabled?: boolean }> = ({
+  onClick,
+  disabled,
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: "red",
+      color: "#fff",
+      border: "none",
+      borderRadius: "50%",
+      width: 32,
+      height: 32,
+      fontWeight: "bold",
+      cursor: disabled ? "not‑allowed" : "pointer",
+      display: "flex",           // ✅ Use flex to center the X
+      alignItems: "center",      // ✅ Vertical centering
+      justifyContent: "center",  // ✅ Horizontal centering
+      fontSize: 16,
+      position: "absolute",
+      top: -9,                     // Adjust as needed
+      right: -10,                   // Adjust as needed
+      padding: 0,
+    }}
+  >
+    ✕
+  </button>
+);
+
+// Custom navigation with dots
+const CustomNavigation = () => {
+  const { currentStep, steps, setCurrentStep, setIsOpen } = useTour();
+
+  const goNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {/* Step dots */}
+      <div style={{ textAlign: "center", marginBottom: 5 }}>
+        {steps.map((_, idx) => (
+          <span
+            key={idx}
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              margin: "0 4px",
+              background: idx === currentStep ? "#007bff" : "#ccc",
+              cursor: "pointer",
+            }}
+            onClick={() => setCurrentStep(idx)}
+          />
+        ))}
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <button
+          onClick={goPrev}
+          disabled={currentStep === 0}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: currentStep === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          ← Prev
+        </button>
+        <button
+          onClick={goNext}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          {currentStep === steps.length - 1 ? "End Tour" : "Next →"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const RolesPage: React.FC = () => {
   const { hasPermission } = useAuth(); // Access the hasPermission function
   const [churchDepartments, setChurchDepartments] = useState<Department[]>([]);
   const [corporateDepartments, setCorporateDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  //Tour
+    const { setIsOpen, setCurrentStep } = useTour();
 
   // State for success message
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -376,7 +631,7 @@ const handleAddDepartment = async () => {
         <h2>ORG MANAGER</h2>
         {/*{hasPermission("Manage Organization Profile") && <a href="/Organization/edittableProfile">Profile</a>}*/}
         {hasPermission("Access Organization Lobby") && <a href="/Organization/orgLobby">The Lobby</a>}
-        {hasPermission("Manage Organization Admins") && <a href="/Organization/orgAdminAccounts">Admin Accounts</a>}
+        {hasPermission("Manage Organization Admins") && <a href="/Organization/orgRolesPage">Admin Accounts</a>}
         {hasPermission("Manage Organization Accounts") && <a href="/Organization/ListedAccounts">Manage Accounts</a>}
         {hasPermission("Manage Roles") && <a href="/Organization/roles" className="active">Roles</a>}
         {hasPermission("Manage Permissions") && <a href="/Organization/permissions">Permissions</a>}
@@ -411,25 +666,42 @@ const handleAddDepartment = async () => {
         <OrganizationHeader/><br/>
 
         <header className="page-header">
-          <h1>Roles</h1>
-          <button className="hamburger" onClick={toggleSidebar}> ☰ </button>
+          <h1 id="tour-roles-title">Roles</h1>
+          <button
+            id="tour-start"
+            className="add-btn"
+            style={{background: "#ffffff", color: "#000000", marginLeft: "10px"}}
+            onClick={() => {
+              setCurrentStep(0);
+              setIsOpen(true);
+            }}
+          >
+            🎥 Take a Tour
+          </button>
+          <button id="tour-hamburger" className="hamburger" onClick={toggleSidebar}> ☰ </button>
         </header>
 
         {/* Church Departments */}
-        <h1>Church Departments</h1>
+        <h1 id="tour-church-section">Church Departments</h1>
         <p>Please ensure to go through all departments before creating a new department...</p>
         <div className="department-grid">
-          {churchDepartments.slice(0, visibleChurchCount).map((dept) => (
-            <div key={dept.id} className="department-card">
+          {churchDepartments.slice(0, visibleChurchCount).map((dept, index) => (
+            <div
+              key={dept.id}
+              className="department-card"
+              id={index === 0 ? "tour-department-card" : undefined}
+            >
               <div className="department-card-header">
                 <h3>{dept.name}</h3>
               </div>
 
               <div className="department-card-body">
-                {dept.roles
-                  .slice(0, 3) // Show the first 3 roles
-                  .map((role) => (
-                    <div key={role.id} className="role-card">
+                {dept.roles.slice(0, 3).map((role, index) => (
+                  <div
+                    key={role.id}
+                    className="role-card"
+                    id={index === 0 ? "tour-role-card" : undefined}
+                  >
                       <div className="role-card-header">
                         <h4>{role.name}</h4>
                       </div>
@@ -472,6 +744,7 @@ const handleAddDepartment = async () => {
 
                 {/* Add New Role Button */}
                 <button
+                  id="tour-add-role"
                   className="button-30 role-add"
                   onClick={() => openModal(dept.id)}
                 >
@@ -483,7 +756,7 @@ const handleAddDepartment = async () => {
 
             {/* Conditionally show the "Add Department" card */}
             {(churchDepartments.length === 0 || visibleChurchCount === churchDepartments.length || churchDepartments.length > 0) && (
-            <div className="department-card add-department-card" onClick={() => openDepartmentModal("church")}>
+            <div id="tour-add-department" className="department-card add-department-card" onClick={() => openDepartmentModal("church")}>
               <div className="add-department-content">
                 <span className="add-icon">+</span>
                 <p>Add Department</p>
@@ -664,4 +937,25 @@ const handleAddDepartment = async () => {
   );
 };
 
-export default RolesPage;
+export default function RolesPageWithTour() {
+  return (
+    <TourProvider
+      steps={RolesPageSteps}
+      scrollSmooth={true}
+      components={{
+        Navigation: CustomNavigation,
+        Close: CustomClose,  // ✅ Custom close button
+      }}
+      /*styles={{
+        popover: (base) => ({
+          ...base,
+          maxHeight: "80vh",      // limit height
+          overflowY: "auto",      // enable vertical scroll
+          paddingRight: "10px",   // avoid scrollbar overlap
+        }),
+      }}*/
+    >
+      <RolesPage />
+    </TourProvider>
+  );
+}

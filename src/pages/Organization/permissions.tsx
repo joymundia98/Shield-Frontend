@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "./permissions.css";
 import OrganizationHeader from './OrganizationHeader';
 import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+import { TourProvider, useTour } from "@reactour/tour";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -28,6 +29,228 @@ interface Department {
   category: string;
 }
 
+/*======================
+TOUR STEPS
+=======================*/
+const PermissionsPageSteps = [
+  {
+    selector: "#tour-hamburger",
+    content: (
+      <>
+        <h3>Navigation Menu</h3>
+        <p>Access the Organization Manager sidebar here.</p>
+        <p>
+          From here you can move between:
+        </p>
+        <ul>
+          <li>Roles</li>
+          <li>Permissions</li>
+          <li>Admin Accounts</li>
+          <li>Main Dashboard</li>
+        </ul>
+        <p>
+          On smaller screens, this becomes the primary navigation method.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-start",
+    content: (
+      <>
+        <h3>Restart This Tour</h3>
+        <p>Click here anytime to review how Permission Assignment works.</p>
+        <p>
+          This page completes the RBAC structure.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#department-select",
+    content: (
+      <>
+        <h3>Select Department</h3>
+        <p>
+          First, choose a <strong>Department</strong>.
+        </p>
+        <p>
+          Departments organize roles logically
+          (Finance, HR, Media, Operations).
+        </p>
+        <p>
+          Departments do NOT grant access directly —
+          they simply group related roles.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#role-select",
+    content: (
+      <>
+        <h3>Select Role</h3>
+        <p>
+          After selecting a department, choose a <strong>Role</strong>.
+        </p>
+        <p>
+          A role represents a responsibility or position.
+        </p>
+        <p>
+          Example:
+        </p>
+        <ul>
+          <li>Finance Manager</li>
+          <li>HR Officer</li>
+          <li>Content Editor</li>
+        </ul>
+        <p>
+          Permissions are assigned to roles — not directly to users.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-permissions-container",
+    content: (
+      <>
+        <h3>Assign Permissions</h3>
+        <p>
+          This section displays all available system permissions.
+        </p>
+        <p>
+          Permissions are grouped by system modules (e.g., Finance, Organization).
+        </p>
+        <p>
+          Checking a box grants that role access to that specific feature.
+        </p>
+        <p>
+          ⚠ Be careful — permissions control system access.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-save-permissions",
+    content: (
+      <>
+        <h3>Save Permissions</h3>
+        <p>
+          After selecting permissions, click here to apply changes.
+        </p>
+        <p>
+          The selected role will immediately receive the updated access rights.
+        </p>
+        <p>
+          Full RBAC Flow:
+        </p>
+        <p>
+          <strong>User → Role → Permission → System Access</strong>
+        </p>
+      </>
+    ),
+  },
+];
+
+//Custom Close
+const CustomClose: React.FC<{ onClick?: () => void; disabled?: boolean }> = ({
+  onClick,
+  disabled,
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: "red",
+      color: "#fff",
+      border: "none",
+      borderRadius: "50%",
+      width: 32,
+      height: 32,
+      fontWeight: "bold",
+      cursor: disabled ? "not‑allowed" : "pointer",
+      display: "flex",           // ✅ Use flex to center the X
+      alignItems: "center",      // ✅ Vertical centering
+      justifyContent: "center",  // ✅ Horizontal centering
+      fontSize: 16,
+      position: "absolute",
+      top: -9,                     // Adjust as needed
+      right: -10,                   // Adjust as needed
+      padding: 0,
+    }}
+  >
+    ✕
+  </button>
+);
+
+// Custom navigation with dots
+const CustomNavigation = () => {
+  const { currentStep, steps, setCurrentStep, setIsOpen } = useTour();
+
+  const goNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {/* Step dots */}
+      <div style={{ textAlign: "center", marginBottom: 5 }}>
+        {steps.map((_, idx) => (
+          <span
+            key={idx}
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              margin: "0 4px",
+              background: idx === currentStep ? "#007bff" : "#ccc",
+              cursor: "pointer",
+            }}
+            onClick={() => setCurrentStep(idx)}
+          />
+        ))}
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <button
+          onClick={goPrev}
+          disabled={currentStep === 0}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: currentStep === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          ← Prev
+        </button>
+        <button
+          onClick={goNext}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          {currentStep === steps.length - 1 ? "End Tour" : "Next →"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const PermissionsPage: React.FC = () => {
   const { hasPermission } = useAuth(); // Access the hasPermission function
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -41,6 +264,9 @@ const PermissionsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSuccessCard, setShowSuccessCard] = useState(false);
   const navigate = useNavigate();
+
+  //Tour
+    const { setIsOpen, setCurrentStep } = useTour();
 
   //const [successMessage, _setSuccessMessage] = useState<string | null>(null);
 
@@ -344,7 +570,7 @@ const PermissionsPage: React.FC = () => {
   return (
     <div className="permissions-body">
       {/* SIDEBAR */}
-      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+      <button id="tour-hamburger" className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
         &#9776;
       </button>
 
@@ -360,7 +586,7 @@ const PermissionsPage: React.FC = () => {
         <h2>ORG MANAGER</h2>
         {/*{hasPermission("Manage Organization Profile") && <a href="/Organization/edittableProfile">Profile</a>}*/}
         {hasPermission("Access Organization Lobby") && <a href="/Organization/orgLobby">The Lobby</a>}
-        {hasPermission("Manage Organization Admins") && <a href="/Organization/orgAdminAccounts">Admin Accounts</a>}
+        {hasPermission("Manage Organization Admins") && <a href="/Organization/orgPermissionsPage">Admin Accounts</a>}
         {hasPermission("Manage Organization Accounts") && <a href="/Organization/ListedAccounts">Manage Accounts</a>}
         {hasPermission("Manage Roles") && <a href="/Organization/roles">Roles</a>}
         {hasPermission("Manage Permissions") && <a href="/Organization/permissions" className="active">Permissions</a>}
@@ -406,12 +632,24 @@ const PermissionsPage: React.FC = () => {
         <OrganizationHeader/><br/><br/>
 
         <h1>Permissions</h1>
+        <button
+            id="tour-start"
+            className="add-btn"
+            style={{background: "#ffffff", color: "#000000", marginLeft: "10px", marginBottom: "2rem"}}
+            onClick={() => {
+              setCurrentStep(0);
+              setIsOpen(true);
+            }}
+          >
+            🎥 Take a Tour
+          </button>
 
         {/* Department & Role Row */}
       
         <div className="perm-select-row">
 
           <div className="perm-select-group">
+            
             <label htmlFor="department-select">Select a Department:</label>
             <select
               id="department-select"
@@ -452,12 +690,12 @@ const PermissionsPage: React.FC = () => {
         <p>Please select a category header e.g Finance, then scroll down to assign permissions</p>
 
         {/* Save Permissions Button */}
-        <button className="save-permissions-btn" onClick={handleSavePermissions}>
+        <button id="tour-save-permissions" className="save-permissions-btn" onClick={handleSavePermissions}>
           Save Permissions
         </button>
 
         {/* Permissions Categories */}
-        <div className="permissions-radio-inputs">
+        <div id="tour-permissions-container" className="permissions-radio-inputs">
           {Object.keys(filteredPermissions).map((category) => (
             <label key={category} className="radio">
               <input type="radio" name="radio" />
@@ -498,4 +736,17 @@ const PermissionsPage: React.FC = () => {
   );
 };
 
-export default PermissionsPage;
+export default function PermissionsPageWithTour() {
+  return (
+    <TourProvider
+      steps={PermissionsPageSteps}
+      scrollSmooth={true}
+      components={{
+        Navigation: CustomNavigation,
+        Close: CustomClose,  // ✅ Custom close button
+      }}
+    >
+      <PermissionsPage />
+    </TourProvider>
+  );
+}

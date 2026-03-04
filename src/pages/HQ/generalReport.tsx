@@ -1252,7 +1252,7 @@ useEffect(() => {
         <div className="do-not-print print-button-container">
         <button
           className="add-btn"
-          style={{ marginLeft: "10px"}}
+          style={{background: "#ffffff", color: "#000000", marginLeft: "10px"}}
           onClick={() => {
             setCurrentStep(0);
             setIsOpen(true);

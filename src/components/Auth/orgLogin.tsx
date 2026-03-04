@@ -165,7 +165,7 @@ const onSubmit = async (data: OrgLoginFormData) => {
           {/* Registration Link */}
           <div className="form-link sign-up">
             <span>Register Organization instead?</span>
-            <a href="/org-register"> Register now!</a>
+            <a href="/Register-org"> Register now!</a>
           </div>
         </form>
       </div>

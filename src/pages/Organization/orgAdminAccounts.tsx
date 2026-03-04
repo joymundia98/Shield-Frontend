@@ -5,6 +5,7 @@ import profile_icon from "../../assets/profile_icon.png"; // Profile image for t
 import "./OrgLobby.css"; // Import the OrgLobby styles
 import OrganizationHeader from './OrganizationHeader';
 import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+import { TourProvider, useTour } from "@reactour/tour";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -14,6 +15,189 @@ interface AdminAccount {
   status: string;
 }
 
+/*======================
+TOUR STEPS
+=======================*/
+const AdminAccountsSteps = [
+  {
+    selector: "#tour-hamburger",
+    content: (
+      <>
+        <h3>Navigation Menu</h3>
+        <p>Access the Organization Manager sidebar here.</p>
+        <p>The hamburger menu offers an alternative navigation to the header.</p>
+        <p>Quick access to roles, permissions, admin accounts, and the dashboard.</p>
+        <p>On small screens, it becomes the primary navigation method for all sections.</p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-start",
+    content: (
+      <>
+        <h3>Restart This Tour</h3>
+        <p>
+          Click here anytime to relaunch this walkthrough.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-create-admin",
+    content: (
+      <>
+        <h3>Create Administrator Account</h3>
+        <p>
+          Use this button to create a new Administrator account.
+        </p>
+        <p>
+          Administrators have <strong>complete system access</strong>, including:
+        </p>
+        <ul>
+          <li>Managing all organization users</li>
+          <li>Creating and editing roles</li>
+          <li>Assigning permissions</li>
+          <li>Accessing all dashboards and modules</li>
+        </ul>
+        <p>
+          Only grant this role to highly trusted users.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-admin-container",
+    content: (
+      <>
+        <h3>Administrator Accounts</h3>
+        <p>
+          This section displays all users assigned the <strong>Administrator</strong> role.
+        </p>
+        <p>
+          Administrator accounts have <strong>full access to the entire system</strong>.
+        </p>
+        <p>
+          They can manage users, roles, permissions, organization settings,
+          and access all dashboards and system features.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-admin-card",
+    content: (
+      <>
+        <h3>Admin Account Card</h3>
+        <p>
+          Each card shows the administrator’s email address.
+        </p>
+        <p>
+          Click <strong>View</strong> to open that user’s full profile in a new tab.
+        </p>
+      </>
+    ),
+  },
+];
+
+//Custom Close
+const CustomClose: React.FC<{ onClick?: () => void; disabled?: boolean }> = ({
+  onClick,
+  disabled,
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: "red",
+      color: "#fff",
+      border: "none",
+      borderRadius: "50%",
+      width: 32,
+      height: 32,
+      fontWeight: "bold",
+      cursor: disabled ? "not‑allowed" : "pointer",
+      display: "flex",           // ✅ Use flex to center the X
+      alignItems: "center",      // ✅ Vertical centering
+      justifyContent: "center",  // ✅ Horizontal centering
+      fontSize: 16,
+      position: "absolute",
+      top: -9,                     // Adjust as needed
+      right: -10,                   // Adjust as needed
+      padding: 0,
+    }}
+  >
+    ✕
+  </button>
+);
+
+// Custom navigation with dots
+const CustomNavigation = () => {
+  const { currentStep, steps, setCurrentStep, setIsOpen } = useTour();
+
+  const goNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {/* Step dots */}
+      <div style={{ textAlign: "center", marginBottom: 5 }}>
+        {steps.map((_, idx) => (
+          <span
+            key={idx}
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              margin: "0 4px",
+              background: idx === currentStep ? "#007bff" : "#ccc",
+              cursor: "pointer",
+            }}
+            onClick={() => setCurrentStep(idx)}
+          />
+        ))}
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <button
+          onClick={goPrev}
+          disabled={currentStep === 0}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: currentStep === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          ← Prev
+        </button>
+        <button
+          onClick={goNext}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          {currentStep === steps.length - 1 ? "End Tour" : "Next →"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const AdminAccounts: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth(); // Access the hasPermission function
@@ -21,6 +205,9 @@ const AdminAccounts: React.FC = () => {
   const [organization, setOrganization] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [adminRoleId, setAdminRoleId] = useState<number | null>(null); // Store the Administrator role id
+
+  //Tour
+  const { setIsOpen, setCurrentStep } = useTour();
 
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -93,13 +280,14 @@ const AdminAccounts: React.FC = () => {
 
 
   useEffect(() => {
-    const savedOrg = localStorage.getItem("organization");
-    if (savedOrg) {
-      const parsedOrg = JSON.parse(savedOrg);
-      setOrganization(parsedOrg);
-      fetchRoles(); // Fetch roles first
+    const savedUser = localStorage.getItem("user");
+
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      setOrganization({ id: parsedUser.organization_id });
+      fetchRoles();
     } else {
-      setError("Organization data not found.");
+      setError("User data not found.");
     }
   }, []);
 
@@ -171,11 +359,23 @@ const AdminAccounts: React.FC = () => {
         <header className="page-header">
           <h1>Admin Accounts for {organization?.name}</h1>
           {/* Create Admin Account button moved here */}
-          <button onClick={handleCreateAdminAccount} className="create-admin-account-btn">
+          <button
+              className="add-btn"
+              id="tour-start"
+              style={{background: "#ffffff", color: "#000000", marginLeft: "10px"}}
+              onClick={() => {
+                setCurrentStep(0);
+                setIsOpen(true);
+              }}
+            >
+              🎥 Take a Tour
+            </button> &emsp;
+
+          <button onClick={handleCreateAdminAccount} className="create-admin-account-btn" id="tour-create-admin">
             + &nbsp; Create Admin Account
           </button>
           {/* Hamburger menu */}
-          <button className="hamburger" onClick={toggleSidebar}> ☰ </button>
+          <button id="tour-hamburger" className="hamburger" onClick={toggleSidebar}> ☰ </button>
         </header>
 
         {error && <div className="form-error">{error}</div>}
@@ -194,9 +394,13 @@ const AdminAccounts: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="lobbyContainer">
-              {adminAccounts.map((account) => (
-                <div key={account.id} className="lobbyCard">
+            <div className="lobbyContainer" id="tour-admin-container">
+              {adminAccounts.map((account, index) => (
+                <div
+                  key={account.id}
+                  className="lobbyCard"
+                  id={index === 0 ? "tour-admin-card" : undefined}
+                >
                   <img src={profile_icon} alt="Profile" className="lobbyCard-image" />
                   <div className="lobbyCard-content">
                     <h3>{account.email}</h3>
@@ -216,4 +420,18 @@ const AdminAccounts: React.FC = () => {
   );
 };
 
-export default AdminAccounts;
+
+export default function AdminAccountsWithTour() {
+  return (
+    <TourProvider
+      steps={AdminAccountsSteps}
+      scrollSmooth={true}
+      components={{
+        Navigation: CustomNavigation,
+        Close: CustomClose,  // ✅ Custom close button
+      }}
+    >
+      <AdminAccounts />
+    </TourProvider>
+  );
+}

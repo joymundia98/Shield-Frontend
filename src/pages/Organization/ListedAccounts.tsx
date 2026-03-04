@@ -4,6 +4,7 @@ import { orgFetch } from "../../utils/api";
 import "../../styles/global.css";
 import OrganizationHeader from './OrganizationHeader';
 import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+import { TourProvider, useTour } from "@reactour/tour";
 interface User {
   id: number;
   first_name: string;
@@ -24,6 +25,202 @@ interface Role {
 }
 
 const baseURL = import.meta.env.VITE_BASE_URL;
+
+/*======================
+TOUR STEPS
+=======================*/
+const UserTrackerPageSteps = [
+  {
+    selector: "#tour-hamburger",
+    content: (
+      <>
+        <h3>Navigation Menu</h3>
+        <p>Access the Organization Manager sidebar here.</p>
+        <p>The hamburger menu offers an alternative navigation to the header.</p>
+        <p>Quick access to roles, permissions, admin accounts, and the dashboard.</p>
+        <p>On small screens, it becomes the primary navigation method for all sections.</p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-start",
+    content: (
+      <>
+        <h3>Restart This Tour</h3>
+        <p>
+          Click here anytime to relaunch this walkthrough.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-search-filter",
+    content: (
+      <>
+        <h3>Search & Filter</h3>
+        <p>
+          Search users by name or filter them by status:
+          Active, Pending, or Inactive.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-user-table",
+    content: (
+      <>
+        <h3>User Table</h3>
+        <p>
+          This table displays all users grouped by status.
+        </p>
+        <p>
+          You can view details, change status, and assign roles here.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-status-button",
+    content: (
+      <>
+        <h3>Change User Status</h3>
+        <p>
+          Quickly update a user’s account to Active, Pending, or Inactive.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-role-dropdown",
+    content: (
+      <>
+        <h3>User Roles & Access</h3>
+        <p>
+          A user’s <strong>role</strong> determines their level of access 
+          within the system.
+        </p>
+        <p>
+          If the existing roles are not sufficient, you can create 
+          <strong> custom roles</strong> in the Roles tab.
+        </p>
+        <p>
+          You can then assign specific <strong>permissions</strong> to those 
+          roles in the Permissions tab to fully customize access control.
+        </p>
+      </>
+    ),
+  },
+  {
+    selector: "#tour-role-modal",
+    content: (
+      <>
+        <h3>Role Confirmation</h3>
+        <p>
+          Confirm the role assignment before it is saved.
+        </p>
+      </>
+    ),
+  },
+];
+
+//Custom Close
+const CustomClose: React.FC<{ onClick?: () => void; disabled?: boolean }> = ({
+  onClick,
+  disabled,
+}) => (
+  <button
+    onClick={onClick}
+    style={{
+      background: "red",
+      color: "#fff",
+      border: "none",
+      borderRadius: "50%",
+      width: 32,
+      height: 32,
+      fontWeight: "bold",
+      cursor: disabled ? "not‑allowed" : "pointer",
+      display: "flex",           // ✅ Use flex to center the X
+      alignItems: "center",      // ✅ Vertical centering
+      justifyContent: "center",  // ✅ Horizontal centering
+      fontSize: 16,
+      position: "absolute",
+      top: -9,                     // Adjust as needed
+      right: -10,                   // Adjust as needed
+      padding: 0,
+    }}
+  >
+    ✕
+  </button>
+);
+
+// Custom navigation with dots
+const CustomNavigation = () => {
+  const { currentStep, steps, setCurrentStep, setIsOpen } = useTour();
+
+  const goNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      setIsOpen(false);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {/* Step dots */}
+      <div style={{ textAlign: "center", marginBottom: 5 }}>
+        {steps.map((_, idx) => (
+          <span
+            key={idx}
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              margin: "0 4px",
+              background: idx === currentStep ? "#007bff" : "#ccc",
+              cursor: "pointer",
+            }}
+            onClick={() => setCurrentStep(idx)}
+          />
+        ))}
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <button
+          onClick={goPrev}
+          disabled={currentStep === 0}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: currentStep === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          ← Prev
+        </button>
+        <button
+          onClick={goNext}
+          style={{
+            backgroundColor: "#ccc",
+            border: "none",
+            padding: "6px 12px",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          {currentStep === steps.length - 1 ? "End Tour" : "Next →"}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const UserTrackerPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,6 +243,9 @@ const UserTrackerPage: React.FC = () => {
 
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState(""); // Search query state
+
+  //Tour
+  const { setIsOpen, setCurrentStep } = useTour();
 
   // Pagination states
   const [recordsToShow, setRecordsToShow] = useState<number>(5);
@@ -330,7 +530,7 @@ const UserTrackerPage: React.FC = () => {
   return (
     <div className="dashboard-wrapper">
       {/* SIDEBAR */}
-      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
+      <button className="hamburger" id="tour-hamburger" onClick={() => setSidebarOpen(!sidebarOpen)}>
         &#9776;
       </button>
 
@@ -383,6 +583,17 @@ const UserTrackerPage: React.FC = () => {
         <header className="page-header user-header">
           <h1>User Management</h1>
           <div className="header-buttons">
+            <button
+              className="add-btn"
+              id="tour-start"
+              style={{background: "#ffffff", color: "#000000", marginLeft: "10px"}}
+              onClick={() => {
+                setCurrentStep(0);
+                setIsOpen(true);
+              }}
+            >
+              🎥 Take a Tour
+            </button>&emsp;
             <button className="add-btn" onClick={() => navigate("/Create_new_User")}>+ &nbsp; New User</button>
             &emsp;
             <button className="upload-btn" onClick={handleCSVUpload}>
@@ -405,7 +616,7 @@ const UserTrackerPage: React.FC = () => {
         <br /><br />
 
         {/* Search and Filter */}
-        <div className="user-filter-box">
+        <div className="user-filter-box" id="tour-search-filter">
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <input
               type="text"
@@ -438,7 +649,7 @@ const UserTrackerPage: React.FC = () => {
             <div key={status}>
               <h2>{status.charAt(0).toUpperCase() + status.slice(1)} Users</h2>
               {users.length > 0 ? (
-                <table className="responsive-table">
+                <table className="responsive-table" id="tour-user-table">
                   <thead>
                     <tr>
                       <th>Full Name</th>
@@ -470,6 +681,7 @@ const UserTrackerPage: React.FC = () => {
                             <>
                             <button
                               className="user-status-btn active"
+                              id="tour-status-button"
                               onClick={() => handleStatusChange(user.id, "active")}
                             >
                               Set Active
@@ -500,6 +712,7 @@ const UserTrackerPage: React.FC = () => {
                           {/* Role Editing */}
                           {user.role_id ? (
                             <select
+                              id="tour-role-dropdown"
                               value={user.role_id}
                               onChange={(e) => handleRoleSelection(user, parseInt(e.target.value))}
                             >
@@ -542,7 +755,7 @@ const UserTrackerPage: React.FC = () => {
 
       {/* RoleAssignModal */}
       {isRoleAssignModalOpen && (
-        <div className="RoleAssignModal">
+        <div className="RoleAssignModal" id="tour-role-modal">
           <div className="RoleAssignModal-content">
             <p>{RoleAssignModalMessage}</p>
             <div className="RoleAssignModal-actions">
@@ -556,4 +769,17 @@ const UserTrackerPage: React.FC = () => {
   );
 };
 
-export default UserTrackerPage;
+export default function UserTrackerPageWithTour() {
+  return (
+    <TourProvider
+      steps={UserTrackerPageSteps}
+      scrollSmooth={true}
+      components={{
+        Navigation: CustomNavigation,
+        Close: CustomClose,  // ✅ Custom close button
+      }}
+    >
+      <UserTrackerPage />
+    </TourProvider>
+  );
+}
