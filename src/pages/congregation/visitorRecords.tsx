@@ -194,12 +194,12 @@ const VisitorRecordsPage: React.FC = () => {
 
   // Open the view visitor page in a new tab
   const openViewVisitor = (id: number) => {
-    window.open(`/congregation/viewVisitor/${id}`, "_blank");
+    navigate(`/congregation/viewVisitor/${id}`);
   };
 
   // Open the edit visitor page in a new tab
   const openEditVisitor = (id: number) => {
-    window.open(`/congregation/editVisitor/${id}`, "_blank");
+    navigate(`/congregation/editVisitor/${id}`);
   };
 
   {/*const handleCSVUpload = () => {

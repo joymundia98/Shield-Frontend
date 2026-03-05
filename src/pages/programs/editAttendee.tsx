@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import "../../styles/global.css"; // Import your styles
 import ProgramsHeader from './ProgramsHeader';
 import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
-
+import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -51,6 +51,16 @@ const EditAttendee: React.FC = () => {
         return () => body.classList.remove("sidebar-open");
       }, [sidebarOpen]);
 
+  // ---------------- Helper function to fetch with authFetch fallback ----------------
+  const fetchWithAuthFallback = async (url: string, options?: RequestInit) => {
+    try {
+      return await authFetch(url, options);
+    } catch (err) {
+      console.warn("authFetch failed, falling back to orgFetch:", err);
+      return await orgFetch(url, options);
+    }
+  };
+
   // Fetch Attendee and Event Details
   useEffect(() => {
     if (!attendeeId) {
@@ -61,19 +71,11 @@ const EditAttendee: React.FC = () => {
     // Fetch attendee details by attendeeId
     const fetchAttendeeDetails = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/programs/attendees/${attendeeId}`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch attendee details. Status: ${response.status}`);
-        }
-        const fetchedAttendee = await response.json();
+        const fetchedAttendee: Attendee = await fetchWithAuthFallback(`${baseURL}/api/programs/attendees/${attendeeId}`);
         setAttendee(fetchedAttendee);
 
         // Fetch event details based on the program_id in the attendee data
-        const responseEvent = await fetch(`${baseURL}/api/programs/${fetchedAttendee.program_id}`);
-        if (!responseEvent.ok) {
-          throw new Error(`Failed to fetch event details. Status: ${responseEvent.status}`);
-        }
-        const fetchedEvent = await responseEvent.json();
+        const fetchedEvent: Event = await fetchWithAuthFallback(`${baseURL}/api/programs/${fetchedAttendee.program_id}`);
         setEvent(fetchedEvent);
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -84,7 +86,6 @@ const EditAttendee: React.FC = () => {
           alert("Unknown error occurred.");
         }
       }
-
     };
 
     fetchAttendeeDetails();
@@ -121,7 +122,7 @@ const EditAttendee: React.FC = () => {
         try {
           const roleToSend = attendee.role === "Other" ? attendee.customRole : attendee.role;
 
-          const response = await fetch(`${baseURL}/api/programs/attendees/${attendeeId}`, {
+          await fetchWithAuthFallback(`${baseURL}/api/programs/attendees/${attendeeId}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -137,14 +138,8 @@ const EditAttendee: React.FC = () => {
             }),
           });
 
-          if (response.ok) {
-            alert("Attendee updated successfully!");
-            navigate(`/programs/attendeeManagement`);
-          } else {
-            const errorData = await response.json();
-            console.error("Error updating attendee:", errorData);
-            alert(`Error updating attendee: ${errorData.message || "Unknown error"}`);
-          }
+          alert("Attendee updated successfully!");
+          navigate(`/programs/attendeeManagement`);
         } catch (error: unknown) {
           if (error instanceof Error) {
             console.error("Error updating attendee:", error);

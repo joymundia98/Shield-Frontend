@@ -416,7 +416,7 @@ const OrgLobby: React.FC = () => {
   // Open the view visitor page in a new tab
   const openViewUser = (id: number) => {
     console.log('User ID from URL:', id);
-    window.open(`/Organization/viewUser/${id}`, "_blank");
+    navigate(`/Organization/viewUser/${id}`);
   };
 
   //Pulsate the Tour Button

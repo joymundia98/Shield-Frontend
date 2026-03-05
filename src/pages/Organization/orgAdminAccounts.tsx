@@ -314,7 +314,7 @@ const AdminAccounts: React.FC = () => {
 
   // Open view user page in a new tab
   const openViewUser = (id: number) => {
-    window.open(`/Organization/viewUser/${id}`, "_blank");
+    navigate(`/Organization/viewUser/${id}`);
   };
 
   //Pulsate the Tour Button

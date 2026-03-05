@@ -129,7 +129,7 @@ const RegisteredProgramsPage: React.FC = () => {
 
   const handleViewProgram = (id: string) => {
     const url = `/programs/viewProgram?id=${id}`;
-    window.open(url, "_blank");
+    navigate(url);
   };
 
   // Toggle sidebar state

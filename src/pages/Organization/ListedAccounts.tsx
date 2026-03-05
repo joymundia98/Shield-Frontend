@@ -383,7 +383,7 @@ const UserTrackerPage: React.FC = () => {
   }, [sidebarOpen]);
 
   const openViewUser = (id: number) => {
-    window.open(`/Organization/viewUser/${id}`, "_blank");
+    navigate(`/Organization/viewUser/${id}`);
   };
 
   const handleRoleSelection = (user: User, newRoleId: number) => {

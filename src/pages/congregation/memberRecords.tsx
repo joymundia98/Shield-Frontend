@@ -196,11 +196,11 @@ const ChurchMembersPage: React.FC = () => {
 
   const openEditPage = (member: Member) => {
     const url = `/congregation/editMember/${member.member_id}`;
-    window.open(url, "_blank");
+    navigate(url);
   };
 
   const openViewModal = (member: Member) => {
-    window.open(`/congregation/viewMember/${member.member_id}`, "_blank");
+    navigate(`/congregation/viewMember/${member.member_id}`);
   };
 
   const handleViewMore = () => {

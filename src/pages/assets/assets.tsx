@@ -165,7 +165,7 @@ const AssetsPage: React.FC = () => {
 
   const handleView = (id: string) => {
     const url = `/assets/viewAsset?id=${id}`;
-    window.open(url, "_blank");
+    navigate(url);
   };
 
   // ---------------- Helpers ----------------
