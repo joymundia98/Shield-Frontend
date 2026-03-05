@@ -263,10 +263,14 @@ const PermissionsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessCard, setShowSuccessCard] = useState(false);
+  
   const navigate = useNavigate();
 
+   //Open the radio selections during tour
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
+
   //Tour
-    const { setIsOpen, setCurrentStep } = useTour();
+    const { setIsOpen, setCurrentStep, currentStep } = useTour();
 
   //const [successMessage, _setSuccessMessage] = useState<string | null>(null);
 
@@ -564,8 +568,20 @@ const PermissionsPage: React.FC = () => {
     }
   }, [sidebarOpen]);
 
+  //Open Radio input during tour
+  useEffect(() => {
+  // When tour reaches the "Assign Permissions" step
+  if (currentStep === 4) {
+    const firstCategory = Object.keys(filteredPermissions)[0];
+    if (firstCategory) {
+      setOpenCategory(firstCategory);
+    }
+  }
+}, [currentStep, filteredPermissions]);
+
   if (loading) return <p>Loading permissions and roles...</p>;
   if (error) return <p>{error}</p>;
+
 
   return (
     <div className="permissions-body">
@@ -697,8 +713,13 @@ const PermissionsPage: React.FC = () => {
         {/* Permissions Categories */}
         <div id="tour-permissions-container" className="permissions-radio-inputs">
           {Object.keys(filteredPermissions).map((category) => (
-            <label key={category} className="radio">
-              <input type="radio" name="radio" />
+            <label key={category} className="radio">    
+              <input
+                type="radio"
+                name="radio"
+                checked={openCategory === category}
+                onChange={() => setOpenCategory(category)}
+              />
               <span className="name">
                 <span className="pre-name"></span>
                 <span className="pos-name"></span>
