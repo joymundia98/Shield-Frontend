@@ -141,6 +141,7 @@ import BranchDirectoryPage from "./pages/HQ/branchDirectory";
 import BranchRegister from "./pages/HQ/newBranch";
 import HQOrganizationSuccessPage from "./pages/HQ/success";
 import GeneralReport from "./pages/HQ/generalReport";
+import ViewOrgPage from "./pages/HQ/viewOrg";
 
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -781,6 +782,7 @@ function App() {
           <Route path="/HQ/newBranch" element={<BranchRegister />} />
           <Route path="/HQ/success" element={<HQOrganizationSuccessPage />} />
           <Route path="/HQ/GeneralReport" element={<GeneralReport />} />
+          <Route path="/HQ/viewOrg/:id" element={<ViewOrgPage />} />
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />

@@ -330,9 +330,9 @@ const BranchDirectoryPage: React.FC = () => {
     return ["all", ...uniqueDistricts];
   }, [organizationData]);
 
-  const openViewOrganization = () => {
+  {/*const openViewOrganization = () => {
     navigate(`/InProgress`);
-  };
+  };*/}
 
   //Pulsate the Tour Button
   const [isPulsating, setIsPulsating] = useState(false);
@@ -374,6 +374,11 @@ const BranchDirectoryPage: React.FC = () => {
   
     return () => clearInterval(timer);  // Clean up the timer
   }, [timePassed, pulseIntervalStarted]);
+
+  //===============VIEW ORGS =======================//
+  const openViewOrg = (id: number) => {
+    navigate(`/HQ/viewOrg/${id}`);
+  };
 
   return (
     <div className="dashboard-wrapper">
@@ -629,9 +634,7 @@ const BranchDirectoryPage: React.FC = () => {
                               <td>
                                 <button
                                   className="add-btn"
-                                  onClick={() =>
-                                    openViewOrganization()
-                                  }
+                                  onClick={() => openViewOrg(org.id)} // Pass org.id here
                                   id="tour-view-branch"
                                 >
                                   View
