@@ -174,15 +174,16 @@ const BranchDirectoryPage: React.FC = () => {
 
   /* ============================
      AUTO START TOUR (ONCE)
+     Temporarily Removed
   ============================ */
 
-  useEffect(() => {
+  {/*useEffect(() => {
     const hasSeenTour = localStorage.getItem("branchTourSeen");
     if (!hasSeenTour) {
       setIsOpen(true);
       localStorage.setItem("branchTourSeen", "true");
     }
-  }, [setIsOpen]);
+  }, [setIsOpen]);*/}
 
   /* ============================
      ORIGINAL DATA FETCH LOGIC
@@ -333,6 +334,47 @@ const BranchDirectoryPage: React.FC = () => {
     navigate(`/InProgress`);
   };
 
+  //Pulsate the Tour Button
+  const [isPulsating, setIsPulsating] = useState(false);
+  const [timePassed, setTimePassed] = useState(0);  // Track time passed
+  const [pulseIntervalStarted, setPulseIntervalStarted] = useState(false);  // To prevent multiple intervals from being set
+  
+  useEffect(() => {
+    // Start pulsating immediately when the component mounts
+    setIsPulsating(true);
+  
+    const timer = setInterval(() => {
+      setTimePassed((prev) => prev + 1);  // Increment time passed every minute
+    }, 60000);  // Track every minute
+  
+    // If the time passed reaches 2 minutes, stop pulsating for 2 minutes
+    if (timePassed === 2 && !pulseIntervalStarted) {
+      setIsPulsating(false);  // Stop pulsating
+      setTimeout(() => {
+        setPulseIntervalStarted(true);
+        setIsPulsating(true);  // Resume pulsating
+      }, 120000);  // Wait for 2 minutes before resuming
+    }
+  
+    // Once time passed reaches 4 minutes, set the pulsating interval
+    if (timePassed >= 4 && pulseIntervalStarted) {
+      const pulseInterval = setInterval(() => {
+        setIsPulsating(true);
+        setTimeout(() => setIsPulsating(false), 1000);  // Pulsate for 1 second
+      }, 120000);  // Pulsates every 2 minutes after the initial 2-minute pause
+  
+      // Clean up the interval after 5 minutes (total 7 minutes)
+      setTimeout(() => {
+        clearInterval(pulseInterval);
+        setIsPulsating(false);  // Stop pulsating after 5 minutes
+      }, 300000);  // After 5 minutes (5 * 60 seconds)
+  
+      return () => clearInterval(pulseInterval);  // Clean up on unmount
+    }
+  
+    return () => clearInterval(timer);  // Clean up the timer
+  }, [timePassed, pulseIntervalStarted]);
+
   return (
     <div className="dashboard-wrapper">
       {/* SIDEBAR */}
@@ -434,7 +476,7 @@ const BranchDirectoryPage: React.FC = () => {
             </button>
 
             <button
-              className="add-btn"
+              className={`add-btn ${isPulsating ? 'pulsating' : ''}`}
               style={{ background: "#ffffff", marginLeft: "10px", color: "#000000" }}
               onClick={() => {
                 setCurrentStep(0);
