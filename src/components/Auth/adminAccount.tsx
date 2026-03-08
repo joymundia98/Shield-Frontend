@@ -191,10 +191,10 @@ export const AdminAccount = () => {
     const organization = storedOrganization ? JSON.parse(storedOrganization) : null;
     const headquarterId = organization?.headquarters_id || null;
 
-    if (!headquarterId) {
-      setErrorMessage("Headquarters ID is missing.");
-      return;
-    }
+    // if (!headquarterId) {
+    //   setErrorMessage("Headquarters ID is missing.");
+    //   return;
+    // }
 
     // ✅ STEP 1: Register admin
     const response = await axios.post(`${baseURL}/api/auth/register`, {
