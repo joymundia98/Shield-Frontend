@@ -155,6 +155,56 @@ import DepartmentsUploadGuide from "./pages/Organization/departmentsUpload";
 import UploadMembersGuide from "./pages/congregation/uploadMembers";
 import UploadVisitorsGuide from "./pages/congregation/uploadVisitors";
 
+//Session Expired
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import SessionExpiredModal from "./components/SessionExpiredModal"
+import { startSessionTimer, clearSessionTimer } from "./utils/sessionTimeout"
+
+// --------------------------------------------------
+// Session Handler (needs to be inside BrowserRouter)
+// --------------------------------------------------
+function SessionHandler() {
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+  const startIfToken = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      startSessionTimer(setSessionExpired);
+    }
+  };
+
+  // run once on mount
+  startIfToken();
+
+  // listen for token changes in same tab
+  window.addEventListener("tokenChanged", startIfToken);
+
+  // listen for token changes from other tabs
+  window.addEventListener("storage", startIfToken);
+
+  return () => {
+    window.removeEventListener("tokenChanged", startIfToken);
+    window.removeEventListener("storage", startIfToken);
+    clearSessionTimer();
+  };
+}, []);
+
+  const handleLogin = () => {
+    localStorage.removeItem("token");
+    clearSessionTimer();
+    setSessionExpired(false);
+    navigate("/login");
+  };
+
+  return <SessionExpiredModal open={sessionExpired} onLogin={handleLogin} />;
+}
+
+// -------------------------
+// Main App
+// -------------------------
 function App() {
   return (
     <AuthProvider>
@@ -800,6 +850,9 @@ function App() {
           {/* Catch-all for undefined routes (404) */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+
+        {/* Session Expired Modal */}
+        <SessionHandler />
       </BrowserRouter>
     </AuthProvider>
   );

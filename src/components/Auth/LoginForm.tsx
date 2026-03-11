@@ -57,6 +57,9 @@ export const LoginForm = () => {
       if (!token) throw new Error("No accessToken returned from backend");
       localStorage.setItem("token", token);
 
+      // 🔔 Notify SessionHandler in App.tsx that the token changed
+      window.dispatchEvent(new Event("tokenChanged"));
+
       const user = response.data.user;
       if (!user) throw new Error("No user object returned from backend");
       localStorage.setItem("user", JSON.stringify(user));

@@ -197,7 +197,12 @@ const Pricing = () => {
                 <p className="Price_category">Mother Body / Oversight Plan</p>
                 <p className="price">
                   <span className="price price--number">
-                    <span className="price price--dolar">Custom Pricing</span>
+                    <span className="price price--dolar">K</span>1,200
+                  </span>
+                </p>
+                <p className="price">
+                  <span className="price price--number">
+                    <span className="price price--dolar">per month</span>
                   </span>
                 </p>
                 <ul>
