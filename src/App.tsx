@@ -148,6 +148,11 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 
 import UnderConstructionPage from "./pages/InProgress";
 
+
+//Super Admin Pages
+import OrganizationRegistrationsPage from "./pages/SuperAdmin/organizationRegistrations";
+import AdminAccountsPage from "./pages/SuperAdmin/AdminAccounts";
+
 //CSV File Upload
 import UploadCSV from "./components/UploadCSV";
 import UploadUsersGuide from "./pages/Organization/uploadUsers";
@@ -833,6 +838,12 @@ function App() {
           <Route path="/HQ/success" element={<HQOrganizationSuccessPage />} />
           <Route path="/HQ/GeneralReport" element={<GeneralReport />} />
           <Route path="/HQ/viewOrg/:id" element={<ViewOrgPage />} />
+
+          {/* ------------------------------
+                  SUPER ADMIN MODULE
+          --------------------------------*/}
+          <Route path="/SuperAdmin/RegisteredOrganizations" element={<OrganizationRegistrationsPage />} />
+          <Route path="/SuperAdmin/RegisteredAdmins" element={<AdminAccountsPage />} />
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />
