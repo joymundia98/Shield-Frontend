@@ -102,6 +102,8 @@ const Pricing = () => {
       {/* =================== PRICE SECTION =================== */}
       <section className="Price-section">
         <h1>SCI-ELD Pricing Plans</h1>
+
+        <p>All Plans begin with the 21 day free-trial with all features unlocked</p>
         <div className="Price_cards">
           {/* Single Church Plan */}
           <div
@@ -128,7 +130,7 @@ const Pricing = () => {
                   <li>Automated Reports</li>
                 </ul>
               </div>
-              <a href="#">get started now</a>
+              <a href="/SignUp">get started now</a>
             </div>
           </div>
 
@@ -156,7 +158,7 @@ const Pricing = () => {
                   <li>Oversight Analytics</li>
                 </ul>
               </div>
-              <a href="#">get started now</a>
+              <a href="/SignUp">get started now</a>
             </div>
           </div>
 
@@ -183,7 +185,7 @@ const Pricing = () => {
                   <li>Automated Reporting to Head Office</li>
                 </ul>
               </div>
-              <a href="#">get started now</a>
+              <a href="/SignUp">get started now</a>
             </div>
           </div>
 
@@ -211,7 +213,7 @@ const Pricing = () => {
                   <li>Compliance Reporting</li>
                 </ul>
               </div>
-              <a href="#">get started now</a>
+              <a href="/SignUp">get started now</a>
             </div>
           </div>
 
@@ -239,7 +241,7 @@ const Pricing = () => {
                   <li>M&E and Audit Reports</li>
                 </ul>
               </div>
-              <a href="#">get started now</a>
+              <a href="/SignUp">get started now</a>
             </div>
           </div>
         </div>
