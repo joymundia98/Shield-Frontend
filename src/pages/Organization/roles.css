@@ -333,3 +333,20 @@ h1 {
   margin-top: 10px;
   color: #555;
 }
+
+.role-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.edit-role-icon {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: 0.2s;
+}
+
+.edit-role-icon:hover {
+  opacity: 1;
+  color: #007bff;
+}

@@ -308,6 +308,10 @@ const RolesPage: React.FC = () => {
   const [newRoleDescription, setNewRoleDescription] = useState<string>("");
   const [currentDepartmentId, setCurrentDepartmentId] = useState<number | null>(null);
 
+  //States to toggle Edit Role
+  const [editingRoleId, setEditingRoleId] = useState<number | null>(null);
+  const [isEditingRole, setIsEditingRole] = useState(false);
+
   // Function to fetch departments with auth logic
   const fetchDepartments = useCallback(async () => {
     try {
@@ -548,10 +552,22 @@ const handleAddDepartment = async () => {
     setModalOpen(true);
   };
 
+  //Edit Role Function
+  const openEditRoleModal = (role: Role) => {
+    setEditingRoleId(role.id);
+    setCurrentDepartmentId(role.department_id);
+    setNewRoleName(role.name);
+    setNewRoleDescription(role.description);
+    setIsEditingRole(true);
+    setModalOpen(true);
+  };
+
   const closeModal = () => {
     setModalOpen(false);
     setNewRoleName("");
     setNewRoleDescription("");
+    setEditingRoleId(null);
+    setIsEditingRole(false);
   };
 
   const handleAddRole = async () => {
@@ -613,6 +629,55 @@ const handleAddDepartment = async () => {
     }
   };
 
+  //Edit Role API Function (PUT)
+  const handleEditRole = async () => {
+    if (!editingRoleId) return;
+
+    try {
+      const token = localStorage.getItem("authToken");
+
+      const response = await fetch(`${baseURL}/api/roles/${editingRoleId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newRoleName,
+          description: newRoleDescription,
+          department_id: currentDepartmentId,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update role");
+
+      const updatedRole = await response.json();
+
+      const updateRoles = (depts: Department[]) =>
+        depts.map((dept) =>
+          dept.id === updatedRole.department_id
+            ? {
+                ...dept,
+                roles: dept.roles.map((role) =>
+                  role.id === updatedRole.id ? updatedRole : role
+                ),
+              }
+            : dept
+        );
+
+      setChurchDepartments(updateRoles);
+      setCorporateDepartments(updateRoles);
+
+      setSuccessMessage(`Role "${updatedRole.name}" updated successfully!`);
+      setTimeout(() => setSuccessMessage(null), 2000);
+
+      closeModal();
+    } catch (error) {
+      console.error("Error updating role:", error);
+      setError("Failed to update role.");
+    }
+  };
+
   //Pulsate the Tour Button
     const [isPulsating, setIsPulsating] = useState(false);
     const [timePassed, setTimePassed] = useState(0);  // Track time passed
@@ -653,6 +718,7 @@ const handleAddDepartment = async () => {
     
       return () => clearInterval(timer);  // Clean up the timer
     }, [timePassed, pulseIntervalStarted]);
+
 
   if (loading) return <p>Loading departments...</p>;
   if (error) return <p>{error}</p>;
@@ -744,8 +810,16 @@ const handleAddDepartment = async () => {
                     id={index === 0 ? "tour-role-card" : undefined}
                   >
                       <div className="role-card-header">
-                        <h4>{role.name}</h4>
-                      </div>
+                          <h4>{role.name}</h4>
+
+                          <span
+                            className="edit-role-icon"
+                            title="Edit"
+                            onClick={() => openEditRoleModal(role)}
+                          >
+                            ✏️
+                          </span>
+                        </div>
                       <div className="tooltip">{role.description}</div>
                     </div>
                   ))}
@@ -934,7 +1008,7 @@ const handleAddDepartment = async () => {
       {modalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2>Add New Role</h2>
+            <h2>{isEditingRole ? "Edit Role" : "Add New Role"}</h2>
             <input
               type="text"
               placeholder="Role Name"
@@ -946,7 +1020,12 @@ const handleAddDepartment = async () => {
               value={newRoleDescription}
               onChange={(e) => setNewRoleDescription(e.target.value)}
             />
-            <button onClick={handleAddRole} className="add-role-btn">Add Role</button>
+            <button
+              onClick={isEditingRole ? handleEditRole : handleAddRole}
+              className="add-role-btn"
+            >
+              {isEditingRole ? "Save Changes" : "Add Role"}
+            </button>
             <button onClick={closeModal}>Cancel</button>
           </div>
         </div>
