@@ -555,9 +555,9 @@ const fetchAsArray = async (url: string): Promise<any[]> => {
 const genderData: GenderData[] = useMemo(() => {
   const genders: ("Male" | "Female")[] = ["Male", "Female"];
 
-  //Counting only Active Members to reflect actual Growth
+  //Counting All Members to reflect actual Growth
   const membersUpToDate = filterByBranch(allMembers, selectedBranch).filter(
-    m => isUpToSelectedDate(m.date_joined, selectedDate) && m.status === "Active"
+    m => isUpToSelectedDate(m.date_joined, selectedDate)
   );
 
   return genders.map(g => {
@@ -1004,6 +1004,14 @@ const getLast12Months = (endDate: Date) => {
   });
 };
 
+/* =======================
+   DATA AVAILABILITY
+======================= */
+
+const hasMemberData =
+  genderData.reduce((sum, g) => sum + g.totalCount, 0) > 0;
+
+const hasConvertData = converts.length > 0;
 
   /* =======================
      GROWTH CHART
@@ -1126,9 +1134,9 @@ useEffect(() => {
   useEffect(() => {
   // ✅ MEMBERS → rolling
   const membersUpToDate = filterByBranch(allMembers, selectedBranch).filter(
-    m => isUpToSelectedDate(m.date_joined, selectedDate) && m.status === "Active"
+    m => isUpToSelectedDate(m.date_joined, selectedDate)
   );
-
+  
   // ✅ VISITORS → selected month ONLY
   const visitorsThisMonth = filterByBranch(allVisitors, selectedBranch).filter(
     v => isSameMonthAndYear(v.visit_date, selectedDate)
@@ -1372,34 +1380,44 @@ const { setIsOpen, setCurrentStep } = useTour();
 
         <div className="chart-box" id="tour-member-breakdown">
           <h3 className="generalReportH3">Member Breakdown</h3>
-          <div className="gender-breakdown">
-            {genderData.map((gender, i) => (
-              <div className="gender-gender-breakdown" key={i}>
-                <div className="gender-content">
-                  <img src={gender.gender === "Male" ? maleImage : femaleImage} />
-                  <div className="stats-gender-breakdown">
-                    <h2>{gender.gender} Breakdown</h2>
 
-                    <div
-                      className="donut-chart"
-                      style={{
-                        background: `conic-gradient(${gender.gender === "Male" ? "#5C4736" : "#AF907A"} 0% ${gender.percentage}%, #ddd ${gender.percentage}% 100%)`,
-                      }}
-                      title={`${gender.totalCount} members (${gender.percentage}%)`}
-                    >
-                      <span>{gender.percentage}%</span>
-                    </div>
+          {!hasMemberData ? (
+            <p style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+              No member records for this particular date or branch(es).
+            </p>
+          ) : (
+            <div className="gender-breakdown">
+              {genderData.map((gender, i) => (
+                <div className="gender-gender-breakdown" key={i}>
+                  <div className="gender-content">
+                    <img src={gender.gender === "Male" ? maleImage : femaleImage} />
+                    <div className="stats-gender-breakdown">
+                      <h2>{gender.gender} Breakdown</h2>
 
-                    <div className="age-bars">
+                      <div
+                        className="donut-chart"
+                        style={{
+                          background: `conic-gradient(${
+                            gender.gender === "Male" ? "#5C4736" : "#AF907A"
+                          } 0% ${gender.percentage}%, #ddd ${gender.percentage}% 100%)`,
+                        }}
+                      >
+                        <span>{gender.percentage}%</span>
+                      </div>
+
+                      <div className="age-bars">
                         {gender.ageGroups.map((age, j) => (
-                          <div className="age-bar" key={j} title={`${age.count} members (${age.percentage}%)`}>
+                          <div className="age-bar" key={j}>
                             <div className="age-label">{age.label}</div>
                             <div className="bar">
                               <div
                                 className="bar-fill"
                                 style={{
                                   width: `${age.percentage}%`,
-                                  background: gender.gender === "Male" ? "#5C4736" : "#AF907A",
+                                  background:
+                                    gender.gender === "Male"
+                                      ? "#5C4736"
+                                      : "#AF907A",
                                 }}
                               />
                             </div>
@@ -1407,42 +1425,54 @@ const { setIsOpen, setCurrentStep } = useTour();
                         ))}
                       </div>
 
-                    <h4>Age</h4>
+                      <h4>Age</h4>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <br/>
 
         <div className="chart-grid" id="tour-convert-chart">
-          <div className="chart-box">
-            <h3>Convert Breakdown</h3>
-            <canvas id="convertChart" />
-            <p style={{ textAlign: "center", marginTop: "10px" }}>
-              Visitors: {convertBreakdown.visitorPercentage}% &nbsp;|&nbsp;
-              Members: {convertBreakdown.memberPercentage}%
-            </p>
+
+            {!hasConvertData ? (
+              <div className="chart-box">
+                <h3>Convert Insights</h3>
+                <p style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+                  No convert records for this particular date or branch(es).
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="chart-box">
+                  <h3>Convert Breakdown</h3>
+                  <canvas id="convertChart" />
+                  <p style={{ textAlign: "center", marginTop: "10px" }}>
+                    Visitors: {convertBreakdown.visitorPercentage}% &nbsp;|&nbsp;
+                    Members: {convertBreakdown.memberPercentage}%
+                  </p>
+                </div>
+
+                <div className="chart-box">
+                  <div className="chart-box page-break move-down">
+                    <h3>Convert Age Distribution</h3>
+                    <canvas id="ageDistributionChart" />
+                  </div>
+
+                  <br/>
+
+                  <div className="chart-box">
+                    <h3>Convert Gender Distribution</h3>
+                    <canvas id="convertGenderChart" />
+                  </div>
+                </div>
+              </>
+            )}
+
           </div>
-
-          <div className="chart-box">
-            <div className="chart-box page-break move-down">
-              <h3>Convert Age Distribution</h3>
-              <canvas id="ageDistributionChart" />
-            </div>
-
-            <br/>
-
-            <div className="chart-box">
-              <h3>Convert Gender Distribution</h3>
-              <canvas id="convertGenderChart" />
-            </div>
-
-          </div>
-
-        </div>
 
         <br/>
 
