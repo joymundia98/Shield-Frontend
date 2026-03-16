@@ -131,7 +131,7 @@ const dropdowns: Dropdown[] = [
       { name: "Donor Categories", href: "/donor/donorCategories", permission: "View Donor Categories"  },
     ],
   },
-  {
+  /*{
     label: "Governance & Documents Management",
     links: [
       { name: "Dashboard", href: "/governance/dashboard", permission: "View Governance Dashboard" },
@@ -141,7 +141,7 @@ const dropdowns: Dropdown[] = [
       { name: "Church Documentation", href: "/governance/documentation", permission: "View Documentation" },
       { name: "Certificates for Members", href: "/governance/certificates", permission: "View Certificates" },
     ],
-  },
+  },*/
 ];
 
 const DashboardPage: React.FC = () => {

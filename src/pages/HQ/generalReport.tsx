@@ -481,7 +481,7 @@ const fetchAsArray = async (url: string): Promise<any[]> => {
     if (!authToken || !headquarterId) return;
 
     const data = await fetchAsArray(
-      `${baseURL}/api/converts`
+      `${baseURL}/api/headquarters/${headquarterId}/converts`
     );
 
     setAllConverts(data);

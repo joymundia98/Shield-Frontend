@@ -99,7 +99,7 @@ const HeaderNav: React.FC = () => {
         { name: "Donor Categories", href: "/donor/donorCategories", permission: "View Donor Categories" },
       ],
     },
-    {
+    /*{
       label: "Governance",
       links: [
         { name: "Dashboard", href: "/governance/dashboard", permission: "View Governance Dashboard" },
@@ -109,7 +109,7 @@ const HeaderNav: React.FC = () => {
         { name: "Church Documentation", href: "/governance/documentation", permission: "View Documentation" },
         { name: "Certificates for Members", href: "/governance/certificates", permission: "View Certificates" },
       ],
-    },
+    },*/
   ];
 
   const location = useLocation();
