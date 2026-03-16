@@ -96,14 +96,16 @@ const InternalAccountCreation = () => {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       // Retrieve the organization from localStorage
-      const storedOrganization = localStorage.getItem("organization");
-      if (!storedOrganization) {
-        setErrorMessage("Organization data not found in local storage.");
+      const storedUser = localStorage.getItem("user");
+
+      if (!storedUser) {
+        setErrorMessage("User data not found in local storage.");
         return;
       }
 
-      const organization = JSON.parse(storedOrganization);
-      const organizationId = organization?.id;
+      const user = JSON.parse(storedUser);
+      const organizationId = user?.organization_id;
+
       if (!organizationId) {
         setErrorMessage("Organization ID is missing.");
         return;
@@ -117,7 +119,7 @@ const InternalAccountCreation = () => {
         phone: data.phone,
         position: data.position,
         role_id: data.role, // Send selected role id
-        status: "active",  // Set status to "pending" by default
+        status: "active",  // Set status to "active" by default
         password: data.password,
         organization_id: organizationId, // Include organization_id in the payload
       });
