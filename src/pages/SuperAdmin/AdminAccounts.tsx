@@ -31,7 +31,7 @@ const AdminAccountsPage: React.FC = () => {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const [admins, setAdmins] = useState<AdminAccount[]>([]);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [_organizations, setOrganizations] = useState<Organization[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [recordsToShow, setRecordsToShow] = useState(5);

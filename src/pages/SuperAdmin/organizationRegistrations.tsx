@@ -113,7 +113,7 @@ const OrganizationRegistrationsPage: React.FC = () => {
   }, []);
 
   const filteredOrganizations = useMemo(() => {
-  const today = new Date();
+ // const today = new Date();
 
   return organizations
     // remove test emails
