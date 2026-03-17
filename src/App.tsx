@@ -162,7 +162,7 @@ import UploadVisitorsGuide from "./pages/congregation/uploadVisitors";
 
 //Session Expired
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import SessionExpiredModal from "./components/SessionExpiredModal"
 import { startSessionTimer, clearSessionTimer } from "./utils/sessionTimeout"
 
@@ -210,10 +210,24 @@ function SessionHandler() {
 // -------------------------
 // Main App
 // -------------------------
+// Helper component to decide if SessionHandler should show
+function SessionHandlerWrapper() {
+  const location = useLocation();
+  const PUBLIC_PAGES = ["/", "/Oldhome", "/about", "/pricing", "/signUp", "/contact", "/login", "/register"];
+  const isPublicPage = PUBLIC_PAGES.includes(location.pathname);
+
+  // Only render SessionHandler on non-public pages
+  return !isPublicPage ? <SessionHandler /> : null;
+}
+
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        {/* SessionHandlerWrapper is inside BrowserRouter */}
+        <SessionHandlerWrapper />
+
         <Routes>
 
           {/* ------------------------------
