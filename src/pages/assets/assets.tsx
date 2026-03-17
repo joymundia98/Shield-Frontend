@@ -62,20 +62,23 @@ const AssetsPage: React.FC = () => {
   }, [sidebarOpen]);
 
   // ---------------- AUTH FETCH WITH FALLBACK ----------------
-  const fetchDataWithAuthFallback = async (url: string) => {
-    try {
-      return await authFetch(url);
-    } catch (error: unknown) {
-      console.log("authFetch failed, falling back to orgFetch", error);
+  const fetchDataWithAuthFallback = async (
+  url: string,
+  options?: RequestInit
+) => {
+  try {
+    return await authFetch(url, options);
+  } catch (error: unknown) {
+    console.log("authFetch failed, falling back to orgFetch", error);
 
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        console.log("Unauthorized, redirecting to login");
-        navigate("/login");
-      }
-
-      return await orgFetch(url);
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      console.log("Unauthorized, redirecting to login");
+      navigate("/login");
     }
-  };
+
+    return await orgFetch(url, options);
+  }
+};
 
   // ---------------- Fetch Data ----------------
   useEffect(() => {
@@ -104,7 +107,7 @@ const AssetsPage: React.FC = () => {
     const fetchLocations = async () => {
       try {
         const data: Location[] = await fetchDataWithAuthFallback(
-          `${baseURL}/api/asset_locations`
+          `${baseURL}/api/assets/location`
         );
         setLocations(data);
       } catch (error) {
@@ -143,25 +146,30 @@ const AssetsPage: React.FC = () => {
 
   // ---------------- Actions ----------------
   const handleAdd = () => {
-    navigate("/assets/addAsset", { state: { addAssetCallback: setInventory } });
+    console.log("Clicked Add New Asset");
+    navigate("/assets/addAsset");
   };
 
   const handleEdit = (id: string) => navigate(`/assets/edit/${id}`);
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this asset?")) {
-      try {
-        await fetchDataWithAuthFallback(
-          `${baseURL}/api/assets/${id}`
-        );
-        setInventory((prev) =>
-          prev.filter((a) => a.asset_id !== Number(id))
-        );
-      } catch (error) {
-        console.error("Error deleting asset:", error);
-      }
+  if (window.confirm("Are you sure you want to delete this asset?")) {
+    try {
+      // Make sure to use DELETE method
+      await fetchDataWithAuthFallback(`${baseURL}/api/assets/${id}`, {
+        method: "DELETE",
+      });
+
+      // Update local state
+      setInventory((prev) => prev.filter((a) => a.asset_id !== Number(id)));
+
+      alert("Asset deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting asset:", error);
+      alert("Failed to delete asset. Please try again.");
     }
-  };
+  }
+};
 
   const handleView = (id: string) => {
     const url = `/assets/viewAsset?id=${id}`;
