@@ -340,7 +340,8 @@ h1 {
   align-items: center;
 }
 
-.edit-role-icon {
+.edit-role-icon,
+.delete-role-icon {
   cursor: pointer;
   opacity: 0.6;
   transition: 0.2s;
@@ -349,4 +350,9 @@ h1 {
 .edit-role-icon:hover {
   opacity: 1;
   color: #007bff;
+}
+
+.delete-role-icon:hover {
+  opacity: 1;
+  color: #ff0000;
 }

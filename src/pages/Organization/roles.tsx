@@ -719,6 +719,49 @@ const handleAddDepartment = async () => {
       return () => clearInterval(timer);  // Clean up the timer
     }, [timePassed, pulseIntervalStarted]);
 
+  // Delete Role Function
+  const handleDeleteRole = async (role: Role) => {
+  const confirmDelete = window.confirm(
+    `Are you sure you want to delete the role "${role.name}"?`
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    const token = localStorage.getItem("authToken");
+
+    const response = await fetch(`${baseURL}/api/roles/${role.id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error("Failed to delete role");
+
+    // Remove role from UI
+    const removeRole = (depts: Department[]) =>
+      depts.map((dept) =>
+        dept.id === role.department_id
+          ? {
+              ...dept,
+              roles: dept.roles.filter((r) => r.id !== role.id),
+            }
+          : dept
+      );
+
+    setChurchDepartments(removeRole);
+    setCorporateDepartments(removeRole);
+
+    setSuccessMessage(`Role "${role.name}" deleted successfully!`);
+    setTimeout(() => setSuccessMessage(null), 2000);
+
+  } catch (error) {
+    console.error("Error deleting role:", error);
+    setError("Failed to delete role.");
+  }
+};
+
 
   if (loading) return <p>Loading departments...</p>;
   if (error) return <p>{error}</p>;
@@ -812,14 +855,25 @@ const handleAddDepartment = async () => {
                       <div className="role-card-header">
                           <h4>{role.name}</h4>
 
-                          <span
-                            className="edit-role-icon"
-                            title="Edit"
-                            onClick={() => openEditRoleModal(role)}
-                          >
-                            ✏️
-                          </span>
+                          <div className="role-actions">
+                            <span
+                              className="edit-role-icon"
+                              title="Edit"
+                              onClick={() => openEditRoleModal(role)}
+                            >
+                              ✏️
+                            </span>
+
+                            <span
+                              className="delete-role-icon"
+                              title="Delete"
+                              onClick={() => handleDeleteRole(role)}
+                            >
+                              🗑️
+                            </span>
+                          </div>
                         </div>
+
                       <div className="tooltip">{role.description}</div>
                     </div>
                   ))}
