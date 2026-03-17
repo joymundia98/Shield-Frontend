@@ -16,7 +16,8 @@ interface KPI {
   totalMembers: number;
   weeklyAttendance: number;
   monthlyGiving: number;
-  activeVolunteers: number;
+  totalWorkers: number;
+  activeWorkers: number;
 }
 
 interface Member {
@@ -154,7 +155,8 @@ const DashboardPage: React.FC = () => {
     totalMembers: 0,
     weeklyAttendance: 0,
     monthlyGiving: 0,
-    activeVolunteers: 0,
+    totalWorkers: 0,
+    activeWorkers: 0,
   });
 
   const [chartData, _setChartData] = useState<ChartData>({
@@ -304,6 +306,55 @@ const DashboardPage: React.FC = () => {
       }));
     }
   }, [members]);
+
+  useEffect(() => {
+  const fetchStaff = async () => {
+    try {
+      const response = await authFetch(`${baseURL}/api/staff`);
+
+      if (Array.isArray(response)) {
+        const totalWorkers = response.length;
+
+        const activeWorkers = response.filter(
+          (staff: any) => staff.status === "active"
+        ).length;
+
+        setKpi(prev => ({
+          ...prev,
+          totalWorkers,
+          activeWorkers
+        }));
+      } else {
+        console.error("Unexpected staff response:", response);
+      }
+
+    } catch (err) {
+      console.error("authFetch failed, falling back to orgFetch:", err);
+
+      try {
+        const response = await orgFetch(`${baseURL}/api/staff`);
+
+        if (Array.isArray(response)) {
+          const totalWorkers = response.length;
+
+          const activeWorkers = response.filter(
+            (staff: any) => staff.status === "active"
+          ).length;
+
+          setKpi(prev => ({
+            ...prev,
+            totalWorkers,
+            activeWorkers
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching staff:", error);
+      }
+    }
+  };
+
+  fetchStaff();
+}, []);
 
   useEffect(() => {
     const initialState: Record<string, boolean> = {};
@@ -561,8 +612,10 @@ const DashboardPage: React.FC = () => {
             <h4>(Average)</h4>
           </div>
           <div className="kpi-card">
-            <h3>Active Volunteers</h3>
-            <p>{kpi.activeVolunteers}</p>
+            <h3>Total Workers</h3>
+            <p>{kpi.totalWorkers}</p>
+            <h3>Active Workers</h3>
+            <p>{kpi.activeWorkers}</p>
           </div>
         </div>
 

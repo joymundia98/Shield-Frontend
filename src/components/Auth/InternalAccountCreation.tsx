@@ -112,7 +112,7 @@ const InternalAccountCreation = () => {
       }
 
       // Submit registration data to the backend, with status set to "pending"
-      await axios.post(`${baseURL}/api/auth/register`, {
+      await axios.post(`${baseURL}/api/auth/org_register/user`, {
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
