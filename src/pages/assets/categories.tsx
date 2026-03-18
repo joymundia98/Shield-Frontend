@@ -216,6 +216,9 @@ const CategoriesPage: React.FC = () => {
         {hasPermission("View All Assets") && <a href="/assets/assets">Asset Inventory</a>}
         {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
         {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance">Maintenance</a>}
+        
+        <a href="/assets/locations">Asset Locations</a>
+        
         {hasPermission("View Categories") && <a href="/assets/categories" className="active">Categories</a>}
         <hr className="sidebar-separator" />
         {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}

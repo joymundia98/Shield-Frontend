@@ -78,6 +78,9 @@ const HeaderNav: React.FC = () => {
         { name: "Assets", href: "/assets/assets", permission: "View All Assets" },
         { name: "Depreciation Info", href: "/assets/depreciation", permission: "View Asset Depreciation" },
         { name: "Maintenance", href: "/assets/maintenance", permission: "Manage Asset Maintenance" },
+        
+        { name: "Asset Locations", href: "/assets/locations", permission: "public" },
+
         { name: "Categories", href: "/assets/categories", permission: "View Categories" },
       ],
     },
@@ -132,7 +135,10 @@ const HeaderNav: React.FC = () => {
       <ul className="header-nav">
         {items.map((item, index) => {
           // Filter links based on permissions
-          const visibleLinks = item.links.filter(link => hasPermission(link.permission));
+          const visibleLinks = item.links.filter(link => {
+            if (link.permission === "public") return true; // ✅ allow public routes
+            return hasPermission(link.permission);
+          });
           
           // If no links are visible, don't render the category
           if (visibleLinks.length === 0) return null;

@@ -15,6 +15,9 @@ const AssetsHeader: React.FC = () => {
     { name: "Assets", href: "/assets/assets", permission: "View All Assets" },
     { name: "Depreciation Info", href: "/assets/depreciation", permission: "View Asset Depreciation" },
     { name: "Maintenance", href: "/assets/maintenance", permission: "Manage Asset Maintenance" },
+    
+    { name: "Asset Locations", href: "/assets/locations", permission: "public" },
+
     { name: "Categories", href: "/assets/categories", permission: "View Categories" },
     { name: "➜] Logout", href: "#logout", permission: "logout" }, // Special case
   ];
@@ -28,7 +31,8 @@ const AssetsHeader: React.FC = () => {
 
   // Filter links based on permissions
   const filteredLinks = assetsLinks.filter(link => {
-    if (link.permission === "logout") return true; // Always show logout
+    if (link.permission === "logout") return true;
+    if (link.permission === "public") return true; // ✅ allow public routes
     return hasPermission(link.permission);
   });
 

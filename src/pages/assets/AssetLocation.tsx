@@ -191,6 +191,7 @@ const AssetLocationsPage: React.FC = () => {
         {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard">Dashboard</a>}
         {hasPermission("View All Assets") && <a href="/assets/assets">Asset Inventory</a>}
         {hasPermission("View Categories") && <a href="/assets/categories">Categories</a>}
+        
         <a href="/assets/locations" className="active">Locations</a>
 
         <hr className="sidebar-separator" />
@@ -266,7 +267,7 @@ const AssetLocationsPage: React.FC = () => {
         />
 
         <div className="filter-popup-buttons">
-          <button className="add-btn" onClick={saveLocation}>Save</button>
+          <button className="add-btn" onClick={saveLocation}>Save</button>&emsp;
           <button className="cancel-btn" onClick={closePopup}>Cancel</button>
           {editId !== null && (
             <button className="delete-btn" onClick={() => deleteLocation(editId!)}>

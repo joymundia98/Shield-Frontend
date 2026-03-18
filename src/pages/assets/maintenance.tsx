@@ -105,6 +105,9 @@ const MaintenancePage: React.FC = () => {
                 </a>}
                 {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
                 {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance" className="active">Maintenance</a>}
+                
+                <a href="/assets/locations">Asset Locations</a>
+                
                 {hasPermission("View Categories") && <a href="/assets/categories">Categories</a>}
 
                 <hr className="sidebar-separator" />
