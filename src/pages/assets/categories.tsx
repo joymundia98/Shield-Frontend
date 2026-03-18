@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import AssetsHeader from "./AssetsHeader";
 import { authFetch, orgFetch } from "../../utils/api";
-import axios from "axios";
-import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
-
+import { useAuth } from "../../hooks/useAuth";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -23,32 +21,23 @@ interface Asset {
 
 const CategoriesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth(); // Access the hasPermission function
+  const { hasPermission } = useAuth();
 
-  // ---------------- Sidebar ----------------
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   useEffect(() => {
-    if (sidebarOpen) {
-      document.body.classList.add("sidebar-open");
-    } else {
-      document.body.classList.remove("sidebar-open");
-    }
+    if (sidebarOpen) document.body.classList.add("sidebar-open");
+    else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
   // ---------------- AUTH FETCH WITH FALLBACK ----------------
-  const fetchDataWithAuthFallback = async (url: string) => {
+  const fetchDataWithAuthFallback = async (url: string, options?: RequestInit) => {
     try {
-      return await authFetch(url);
+      return await authFetch(url, options);
     } catch (error: unknown) {
       console.log("authFetch failed, falling back to orgFetch", error);
-
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        navigate("/login");
-      }
-
-      return await orgFetch(url);
+      return await orgFetch(url, options);
     }
   };
 
@@ -58,6 +47,12 @@ const CategoriesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [showPopup, setShowPopup] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [isMaintenance, setIsMaintenance] = useState(false);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryDesc, setCategoryDesc] = useState("");
+
   // ---------------- FETCH DATA ----------------
   useEffect(() => {
     const fetchData = async () => {
@@ -66,18 +61,17 @@ const CategoriesPage: React.FC = () => {
 
         const [categoriesData, assetsData] = await Promise.all([
           fetchDataWithAuthFallback(`${baseURL}/api/assets/categories`),
-          fetchDataWithAuthFallback(`${baseURL}/api/assets`)
+          fetchDataWithAuthFallback(`${baseURL}/api/assets`),
         ]);
 
         // Count assets per category
         const assetCounts: Record<number, number> = {};
         (assetsData as Asset[]).forEach((asset) => {
-          assetCounts[asset.category_id] =
-            (assetCounts[asset.category_id] || 0) + 1;
+          assetCounts[asset.category_id] = (assetCounts[asset.category_id] || 0) + 1;
         });
 
         // Map asset categories with totals
-        const mappedAssetCategories: Category[] = categoriesData.map((item: any) => ({
+        const mappedAssetCategories: Category[] = (categoriesData as any[]).map((item) => ({
           id: item.category_id,
           name: item.name,
           desc: item.description,
@@ -86,8 +80,7 @@ const CategoriesPage: React.FC = () => {
 
         setAssetCategories(mappedAssetCategories);
 
-        // ---------------- Maintenance Categories ----------------
-        // If you have a backend endpoint, replace this with API call
+        // Maintenance categories (frontend-only)
         setMaintenanceCategories([
           { id: 1, name: "Preventive", desc: "Scheduled routine maintenance" },
           { id: 2, name: "Corrective", desc: "Repair after breakdown" },
@@ -104,91 +97,100 @@ const CategoriesPage: React.FC = () => {
     fetchData();
   }, []);
 
-  // ---------------- POPUP STATE ----------------
-  const [showPopup, setShowPopup] = useState(false);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [isMaintenance, setIsMaintenance] = useState(false);
-  const [categoryName, setCategoryName] = useState("");
-  const [categoryDesc, setCategoryDesc] = useState("");
-
-  const openPopup = (index: number | null = null, maintenance = false) => {
-    setEditIndex(index);
+  // ---------------- POPUP ----------------
+  const openPopup = (id: number | null = null, maintenance = false) => {
     setIsMaintenance(maintenance);
     setShowPopup(true);
 
     const source = maintenance ? maintenanceCategories : assetCategories;
 
-    if (index !== null) {
-      const data = source[index];
+    if (id !== null) {
+      const data = source.find((c) => c.id === id);
+      if (!data) return;
       setCategoryName(data.name);
       setCategoryDesc(data.desc);
+      setEditId(id);
     } else {
       setCategoryName("");
       setCategoryDesc("");
+      setEditId(null);
     }
   };
 
   const closePopup = () => {
     setShowPopup(false);
-    setEditIndex(null);
+    setEditId(null);
     setCategoryName("");
     setCategoryDesc("");
+    setIsMaintenance(false);
   };
 
-  const saveCategory = () => {
+  // ---------------- SAVE CATEGORY ----------------
+  const saveCategory = async () => {
     if (!categoryName.trim()) {
       alert("Category name is required");
       return;
     }
 
-    if (isMaintenance) {
-      if (editIndex !== null) {
+    try {
+      if (isMaintenance) {
+        // Frontend-only maintenance categories
         const updated = [...maintenanceCategories];
-        updated[editIndex] = {
-          ...updated[editIndex],
-          name: categoryName,
-          desc: categoryDesc,
-        };
+        if (editId !== null) {
+          const index = updated.findIndex((c) => c.id === editId);
+          if (index >= 0) updated[index] = { ...updated[index], name: categoryName, desc: categoryDesc };
+        } else {
+          updated.push({ id: Date.now(), name: categoryName, desc: categoryDesc });
+        }
         setMaintenanceCategories(updated);
-      } else {
-        setMaintenanceCategories((prev) => [
-          ...prev,
-          { id: Date.now(), name: categoryName, desc: categoryDesc },
-        ]);
+        closePopup();
+        return;
       }
-    } else {
-      if (editIndex !== null) {
-        const updated = [...assetCategories];
-        updated[editIndex] = {
-          ...updated[editIndex],
-          name: categoryName,
-          desc: categoryDesc,
-        };
+
+      // ---------------- Asset Categories ----------------
+      const options: RequestInit = {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: categoryName, description: categoryDesc }),
+      };
+
+      if (editId !== null) {
+        // Update existing
+        options.method = "PATCH";
+        await fetchDataWithAuthFallback(`${baseURL}/api/assets/categories/${editId}`, options);
+
+        const updated = assetCategories.map((c) =>
+          c.id === editId ? { ...c, name: categoryName, desc: categoryDesc } : c
+        );
         setAssetCategories(updated);
       } else {
-        setAssetCategories((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            name: categoryName,
-            desc: categoryDesc,
-            total: 0,
-          },
-        ]);
+        // Create new
+        options.method = "POST";
+        const newCategory = await fetchDataWithAuthFallback(`${baseURL}/api/assets/categories`, options);
+        setAssetCategories([...assetCategories, { id: newCategory.category_id, name: newCategory.name, desc: newCategory.description }]);
       }
-    }
 
-    closePopup();
+      closePopup();
+    } catch (err: any) {
+      console.error(err);
+      alert("Error saving category: " + err.message);
+    }
   };
 
-  const deleteCategory = (index: number, maintenance = false) => {
-    if (!window.confirm("Are you sure you want to delete this category?"))
-      return;
+  // ---------------- DELETE CATEGORY ----------------
+  const deleteCategory = async (id: number, maintenance = false) => {
+    if (!window.confirm("Are you sure you want to delete this category?")) return;
 
-    if (maintenance) {
-      setMaintenanceCategories((prev) => prev.filter((_, i) => i !== index));
-    } else {
-      setAssetCategories((prev) => prev.filter((_, i) => i !== index));
+    try {
+      if (maintenance) {
+        setMaintenanceCategories((prev) => prev.filter((c) => c.id !== id));
+        return;
+      }
+
+      await fetchDataWithAuthFallback(`${baseURL}/api/assets/categories/${id}`, { method: "DELETE" });
+      setAssetCategories((prev) => prev.filter((c) => c.id !== id));
+    } catch (err: any) {
+      console.error(err);
+      alert("Error deleting category: " + err.message);
     }
   };
 
@@ -197,59 +199,40 @@ const CategoriesPage: React.FC = () => {
 
   return (
     <div className="dashboard-wrapper">
-      <button className="hamburger" onClick={toggleSidebar}>
-        &#9776;
-      </button>
+      <button className="hamburger" onClick={toggleSidebar}>&#9776;</button>
 
+      {/* ---------------- SIDEBAR ---------------- */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
           <div className="toggle close-btn">
-            <input
-              type="checkbox"
-              id="closeSidebarButton"
-              checked={sidebarOpen}
-              onChange={toggleSidebar}
-            />
+            <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
             <span className="button"></span>
             <span className="label">X</span>
           </div>
         </div>
+
         <h2>ASSET MANAGER</h2>
         {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard">Dashboard</a>}
-        {hasPermission("View CongView All Assets") && <a href="/assets/assets">
-          Asset Inventory
-        </a>}
+        {hasPermission("View All Assets") && <a href="/assets/assets">Asset Inventory</a>}
         {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
         {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance">Maintenance</a>}
         {hasPermission("View Categories") && <a href="/assets/categories" className="active">Categories</a>}
-
         <hr className="sidebar-separator" />
         {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
-
-        <a
-          href="/"
-          onClick={(e) => {
-            e.preventDefault();
-            localStorage.clear();
-            navigate("/");
-          }}
-        >
-          ➜ Logout
-        </a>
+        <a href="/" onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}>➜ Logout</a>
       </div>
 
+      {/* ---------------- MAIN CONTENT ---------------- */}
       <div className="dashboard-content">
         <AssetsHeader />
         <br />
         <h1>Categories Management</h1>
 
-        {/* ---------------- Asset Categories ---------------- */}
+        {/* ---------------- Asset Categories Table ---------------- */}
         <div className="table-section">
           <div className="table-header" style={{ display: "flex", justifyContent: "space-between" }}>
             <h2>Asset Categories</h2>
-            <button className="add-btn" onClick={() => openPopup(null, false)}>
-              + Add Asset Category
-            </button>
+            <button className="add-btn" onClick={() => openPopup(null, false)}>+ Add Asset Category</button>
           </div>
 
           <table className="responsive-table">
@@ -263,15 +246,15 @@ const CategoriesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {assetCategories.map((cat, index) => (
+              {assetCategories.map((cat) => (
                 <tr key={cat.id}>
                   <td>{cat.id}</td>
                   <td>{cat.name}</td>
                   <td>{cat.desc}</td>
                   <td>{cat.total}</td>
                   <td>
-                    <button className="edit-btn" onClick={() => openPopup(index, false)}>Edit</button>&emsp;
-                    <button className="delete-btn" onClick={() => deleteCategory(index, false)}>Delete</button>
+                    <button className="edit-btn" onClick={() => openPopup(cat.id, false)}>Edit</button>&emsp;
+                    <button className="delete-btn" onClick={() => deleteCategory(cat.id, false)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -279,13 +262,11 @@ const CategoriesPage: React.FC = () => {
           </table>
         </div>
 
-        {/* ---------------- Maintenance Categories ---------------- */}
+        {/* ---------------- Maintenance Categories Table ---------------- */}
         <div className="table-section">
           <div className="table-header" style={{ display: "flex", justifyContent: "space-between" }}>
             <h2>Maintenance Categories</h2>
-            <button className="add-btn" onClick={() => openPopup(null, true)}>
-              + Add Maintenance Category
-            </button>
+            <button className="add-btn" onClick={() => openPopup(null, true)}>+ Add Maintenance Category</button>
           </div>
 
           <table className="responsive-table">
@@ -298,14 +279,14 @@ const CategoriesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {maintenanceCategories.map((cat, index) => (
+              {maintenanceCategories.map((cat) => (
                 <tr key={cat.id}>
                   <td>{cat.id}</td>
                   <td>{cat.name}</td>
                   <td>{cat.desc}</td>
                   <td>
-                    <button className="edit-btn" onClick={() => openPopup(index, true)}>Edit</button>&emsp;
-                    <button className="delete-btn" onClick={() => deleteCategory(index, true)}>Delete</button>
+                    <button className="edit-btn" onClick={() => openPopup(cat.id, true)}>Edit</button>&emsp;
+                    <button className="delete-btn" onClick={() => deleteCategory(cat.id, true)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -315,32 +296,23 @@ const CategoriesPage: React.FC = () => {
       </div>
 
       {/* ---------------- POPUP ---------------- */}
-      {showPopup && (
-        <>
-          <div className="overlay" onClick={closePopup} />
-          <div className="filter-popup" style={{ width: 380 }}>
-            <h3>{editIndex !== null ? "Edit Category" : "Add Category"}</h3>
+      {showPopup && <div className="overlay" onClick={closePopup}></div>}
+      <div className="filter-popup" style={{ display: showPopup ? "block" : "none", width: "400px", padding: "2rem" }}>
+        <h3>{editId !== null ? "Edit" : "Add"} {isMaintenance ? "Maintenance Category" : "Asset Category"}</h3>
 
-            <input
-              type="text"
-              value={categoryName}
-              placeholder="Category Name"
-              onChange={(e) => setCategoryName(e.target.value)}
-            />
+        <label>Name</label>
+        <input type="text" value={categoryName} onChange={(e) => setCategoryName(e.target.value)} placeholder="Enter category name" />
+        <label>Description</label>
+        <textarea value={categoryDesc} onChange={(e) => setCategoryDesc(e.target.value)} placeholder="Enter description" />
 
-            <textarea
-              value={categoryDesc}
-              placeholder="Short description"
-              onChange={(e) => setCategoryDesc(e.target.value)}
-            />
-
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button className="add-btn" onClick={saveCategory}>Save</button>
-              <button className="cancel-btn" onClick={closePopup}>Cancel</button>
-            </div>
-          </div>
-        </>
-      )}
+        <div className="filter-popup-buttons" style={{ display: "flex", justifyContent: "flex-end", gap: "1rem", marginTop: "1rem" }}>
+          <button className="add-btn" onClick={saveCategory}>Save</button>
+          <button className="cancel-btn" onClick={closePopup}>Cancel</button>
+          {editId !== null && (
+            <button className="delete-btn" onClick={() => deleteCategory(editId, isMaintenance)}>Delete</button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

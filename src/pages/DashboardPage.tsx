@@ -589,7 +589,19 @@ const DashboardPage: React.FC = () => {
 
       {/* Main Dashboard */}
       <div className="dashboard-content">
-        <HeaderNav />
+        <div className="do-not-print">
+          <HeaderNav />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container">
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
 
         <br/>
 

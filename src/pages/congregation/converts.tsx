@@ -332,7 +332,21 @@ const ConvertsDashboard: React.FC = () => {
 
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
-        <CongregationHeader/><br />
+        <div className="do-not-print">
+          <CongregationHeader />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container">
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
+
+        <br />
 
         {/* HEADER */}
         <header>

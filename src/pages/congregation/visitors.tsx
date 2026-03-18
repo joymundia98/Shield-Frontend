@@ -365,12 +365,26 @@ const VisitorsDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-        <CongregationHeader /><br />
+        <div className="do-not-print">
+          <CongregationHeader />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container">
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
+
+        <br/>
 
         <header>
           <h1>Church Visitors Overview</h1>
           <br />
-          <div className="header-buttons">
+          <div className="header-buttons do-not-print">
             <button className="add-btn" onClick={() => navigate("/congregation/addVisitors")}>
               + &nbsp; Add Visitor
             </button>

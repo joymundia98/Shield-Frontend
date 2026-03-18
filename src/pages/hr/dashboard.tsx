@@ -225,7 +225,21 @@ const HRDashboard: React.FC = () => {
       {/* Main Dashboard Content */}
       <div className="dashboard-content">
 
-        <HRHeader/><br/>
+        <div className="do-not-print">
+          <HRHeader />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container" style={{ margin: "10px 0" }}>
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
+
+        <br />
 
         <h1>HR Dashboard Overview</h1>
         <br /><br />

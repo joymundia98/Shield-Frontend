@@ -215,7 +215,21 @@ const ProgramsDashboard: React.FC = () => {
 
       <div className="dashboard-content">
 
-        <ProgramsHeader/><br/>
+        <div className="do-not-print">
+          <ProgramsHeader />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container">
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
+
+        <br />
 
         <h1>Programs & Events Overview</h1>
 

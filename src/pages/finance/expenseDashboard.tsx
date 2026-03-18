@@ -274,9 +274,23 @@ const ExpenseDashboardPage: React.FC = () => {
       {/* Main Content */}
       <div className="dashboard-content">
 
-        <FinanceHeader />
-                        
-        <br/>
+        <div className="do-not-print">
+          
+            <FinanceHeader />
+
+            </div>
+    
+            {/* PRINT BUTTON */}
+            <div className="do-not-print print-button-container" style={{ margin: "10px 0" }}>
+              <button
+                className="print-button"
+                onClick={() => window.print()}
+              >
+                🖨️ Print Report
+              </button>
+            </div>
+    
+            <br />
 
         {/* HEADER */}
         <header className="page-header expense-header">

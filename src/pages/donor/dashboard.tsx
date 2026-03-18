@@ -218,7 +218,21 @@ const DonorDashboard: React.FC = () => {
       {/* Main Content */}
       <div className="dashboard-content">
 
-        <DonorsHeader /><br />
+        <div className="do-not-print">
+          <DonorsHeader />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container">
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
+
+        <br />
 
         <h1>Donor Dashboard Overview</h1>
 

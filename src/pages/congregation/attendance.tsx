@@ -368,7 +368,22 @@ const AttendancePage: React.FC = () => {
 
       {/* Main content */}
       <div className="dashboard-content">
-        <CongregationHeader /><br />
+        <div className="do-not-print">
+          <CongregationHeader />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container">
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
+
+        <br/>
+
         <header className="page-header attendance-header">
           <h1>Attendance Tracker</h1>
           <button className="add-btn" style={{ margin: "10px 0" }} onClick={() => navigate("/congregation/recordAttendance")}>
@@ -511,31 +526,31 @@ const AttendancePage: React.FC = () => {
         </div>
 
         {/* Records Table */}
-        <h2 className="records-heading">Records</h2>
+        <h2 className="records-heading do-not-print">Records</h2>
         
         <br/>
 
-        <button className="add-btn" onClick={() => downloadFile("pdf")}>
+        <button className="add-btn do-not-print" onClick={() => downloadFile("pdf")}>
           📄 Export PDF
         </button>&emsp;
 
-        <button className="add-btn" onClick={() => downloadFile("excel")}>
+        <button className="add-btn do-not-print" onClick={() => downloadFile("excel")}>
           📊 Export Excel
         </button>&emsp;
 
-        <button className="add-btn" onClick={() => downloadFile("csv")}>
+        <button className="add-btn do-not-print" onClick={() => downloadFile("csv")}>
           ⬇️ Export CSV
         </button>
         <br/><br/>
 
         {loading ? (
-          <p>Loading records...</p>
+          <p className="do-not-print">Loading records...</p>
         ) : error ? (
-          <p style={{ color: "red" }}>{error}</p>
+          <p className="" style={{ color: "red" }}>{error}</p>
         ) : filteredAttendance.length === 0 ? (
-          <p>No records found.</p>
+          <p className="do-not-print">No records found.</p>
         ) : (
-          <div>
+          <div className="do-not-print">
             <table className="responsive-table">
               <thead>
                 <tr>

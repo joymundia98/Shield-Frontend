@@ -201,8 +201,23 @@ const BudgetBreakdownPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="dashboard-content container">
-        <FinanceHeader />
-        <br />
+        <div className="do-not-print">
+          
+            <FinanceHeader />
+
+            </div>
+    
+            {/* PRINT BUTTON */}
+            <div className="do-not-print print-button-container" style={{ margin: "10px 0" }}>
+              <button
+                className="print-button"
+                onClick={() => window.print()}
+              >
+                🖨️ Print Report
+              </button>
+            </div>
+    
+            <br />
         <header>
           <h1>Budget Breakdown</h1>
           <button className="add-btn" onClick={() => navigate("/finance/setBudget")}>

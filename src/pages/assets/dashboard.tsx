@@ -158,7 +158,21 @@ const AssetDashboard: React.FC = () => {
       {/* Main Dashboard Content */}
       <div className="dashboard-content">
 
-        <AssetsHeader/><br/>
+        <div className="do-not-print">
+          <AssetsHeader />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container">
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
+
+        <br/>
 
         <h1>Asset Management Overview</h1>
 
@@ -179,8 +193,8 @@ const AssetDashboard: React.FC = () => {
             <p>{underMaintenance}</p>
           </div>
           <div className="kpi-card">
-            <h3>Pending Requests</h3>
-            <p>{pendingRequests}</p>
+            <h3>Average Depreciation Rate</h3>
+            <p>{pendingRequests}%</p>
           </div>
         </div>
 

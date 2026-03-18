@@ -392,9 +392,23 @@ const CongregationDashboard: React.FC = () => {
 
       {/* MAIN DASHBOARD CONTENT */}
       <div className="dashboard-content">
-        <CongregationHeader /><br />
-                
-        <h1>Congregation Overview</h1>
+        <div className="do-not-print">
+            <CongregationHeader />
+          </div>
+
+          {/* PRINT BUTTON */}
+          <div className="do-not-print print-button-container">
+            <button
+              className="print-button"
+              onClick={() => window.print()}
+            >
+              🖨️ Print Report
+            </button>
+          </div>
+
+          <br/>
+
+          <h1>Congregation Overview</h1>
         <br /><br />
 
         {/* KPI Cards */}

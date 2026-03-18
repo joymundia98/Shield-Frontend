@@ -63,6 +63,8 @@ import AssetsPage from "./pages/assets/assets";
 import ViewAsset from "./pages/assets/viewAsset";
 import DepreciationPage from "./pages/assets/depreciation";
 import AddAssetPage from "./pages/assets/addAsset";
+import EditAssetPage from "./pages/assets/editAsset";
+import AssetLocationsPage from "./pages/assets/AssetLocation";
 import MaintenancePage from "./pages/assets/maintenance";
 import CategoriesPage from "./pages/assets/categories";
 
@@ -352,6 +354,8 @@ function App() {
               <AddAssetPage />
             </ProtectedRoute>
           } />
+          <Route path="/assets/edit/:id" element={<EditAssetPage />} />
+          <Route path="/assets/locations" element={<AssetLocationsPage />} />
           <Route path="/assets/viewAsset" element={
             <ProtectedRoute requiredPermission="View Detailed Info about an Asset" fallback="/403">
               <ViewAsset />

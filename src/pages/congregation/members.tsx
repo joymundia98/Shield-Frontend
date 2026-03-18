@@ -221,12 +221,26 @@ useEffect(() => {
 
       <div className="dashboard-content">
 
-        <CongregationHeader/><br/>
-        
-        <header>
-          <h1>Church Members Overview</h1>
+        <div className="do-not-print">
+            <CongregationHeader />
+          </div>
+
+          {/* PRINT BUTTON */}
+          <div className="do-not-print print-button-container">
+            <button
+              className="print-button"
+              onClick={() => window.print()}
+            >
+              🖨️ Print Report
+            </button>
+          </div>
+
           <br/>
-          <div className="header-buttons">
+
+          <header>
+            <h1>Church Members Overview</h1>
+          <br/>
+          <div className="header-buttons do-not-print">
             <button className="add-btn" onClick={() => navigate("/congregation/addMember")}>+ &nbsp; Add Member</button>&emsp;
             <button className="upload-btn" onClick={handleCSVUpload}>
               📤 Upload CSV
