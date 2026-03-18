@@ -1,0 +1,13 @@
+INSERT INTO asset_categories (name, description) VALUES
+('Electronics & Media', 'Projectors, laptops, sound systems, cameras, streaming and lighting equipment'),
+('Furniture & Fixtures', 'Chairs, tables, pulpits, desks, cabinets, shelves, and general furnishings'),
+('Vehicles & Transport', 'Church vans, buses, cars, motorcycles, and transport equipment'),
+('Worship & Religious Items', 'Altars, communion sets, robes, offering plates, candles, and other sacred items'),
+('Books & Teaching Materials', 'Bibles, hymn books, study guides, devotionals, and Sunday school materials'),
+('Musical Equipment', 'Instruments, microphones, stands, cables, and choir-related equipment'),
+('Building & Property', 'Church buildings, land, fencing, parking areas, and structural assets'),
+('Maintenance Equipment', 'Cleaning tools, generators, gardening tools, ladders, and repair equipment'),
+('Kitchen & Hospitality', 'Cooking appliances, utensils, serving equipment, and food preparation items'),
+('Office & Administration', 'Printers, copiers, filing cabinets, safes, and office supplies'),
+('Outreach & Events', 'Tents, portable PA systems, banners, evangelism tools, and event equipment'),
+('Digital Assets', 'Websites, domain names, social media accounts, software, and digital media content');

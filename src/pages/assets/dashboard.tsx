@@ -3,15 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Chart from "chart.js/auto";
 import "../../styles/global.css";
 import AssetsHeader from './AssetsHeader';
-import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+import { useAuth } from "../../hooks/useAuth";
+import { authFetch } from "../../utils/api";
 
-interface Asset {
-  id: number;
-  name: string;
-  category: string;
-  condition: string;
-  value: number;
-}
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface Activity {
   assetName: string;
@@ -29,14 +24,18 @@ interface Maintenance {
 
 const AssetDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth(); // Access the hasPermission function
+  const { hasPermission } = useAuth();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [assets, setAssets] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]); // ✅ NEW
+
   const categoryChartRef = useRef<Chart | null>(null);
   const conditionChartRef = useRef<Chart | null>(null);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  // Add/remove sidebar-open class on body for CSS to show close button
+  // Sidebar effect
   useEffect(() => {
     if (sidebarOpen) {
       document.body.classList.add("sidebar-open");
@@ -45,105 +44,258 @@ const AssetDashboard: React.FC = () => {
     }
   }, [sidebarOpen]);
 
-  // Dynamic data examples
-  const assets: Asset[] = useMemo(() => [
-    { id: 1, name: "Laptop Dell XPS", category: "Electronics", condition: "Good", value: 1200 },
-    { id: 2, name: "Office Chair", category: "Furniture", condition: "New", value: 300 },
-    { id: 3, name: "Projector HD400", category: "Electronics", condition: "Needs Repair", value: 800 },
-    { id: 4, name: "Generator GX200", category: "IT Equipment", condition: "Good", value: 5000 },
-    { id: 5, name: "Office AC Unit", category: "Others", condition: "Damaged", value: 1200 },
-  ], []);
+  // ================= FETCH ASSETS + CATEGORIES =================
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [assetsData, categoriesData] = await Promise.all([
+          authFetch(`${baseURL}/api/assets`),
+          authFetch(`${baseURL}/api/assets/categories`)
+        ]);
 
-  const activities: Activity[] = useMemo(() => [
-    { assetName: "Laptop Dell XPS", activity: "Assigned", date: "2025-11-18", performedBy: "IT Admin" },
-    { assetName: "Projector HD400", activity: "Maintenance Completed", date: "2025-11-17", performedBy: "Technician" },
-  ], []);
+        setAssets(assetsData);
+        setCategories(categoriesData);
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      }
+    };
 
-  const maintenanceList: Maintenance[] = useMemo(() => [
-    { assetName: "Generator GX200", nextService: "2025-12-01", type: "Full Service", status: "Scheduled" },
-    { assetName: "Office AC Unit", nextService: "2025-12-04", type: "Filter Replacement", status: "Pending" },
-  ], []);
+    fetchData();
+  }, []);
 
-  // KPI Calculations
+  // ================= CATEGORY MAP =================
+  const categoryMap = useMemo(() => {
+    const map: Record<number, string> = {};
+    categories.forEach((cat) => {
+      map[cat.category_id] = cat.name;
+    });
+    return map;
+  }, [categories]);
+
+  // ================= KPI CALCULATIONS =================
   const totalAssets = assets.length;
-  const totalValue = assets.reduce((sum, a) => sum + a.value, 0);
-  const underMaintenance = assets.filter(a => a.condition === "Needs Repair" || a.condition === "Damaged").length;
-  const pendingRequests = maintenanceList.filter(m => m.status === "Pending").length;
 
-  // Category Chart
+  const totalValue = assets.reduce(
+    (sum, a) => sum + parseFloat(a.current_value || 0),
+    0
+  );
+
+  const underMaintenance = assets.filter(
+    (a) =>
+      a.condition_status === "Needs Repair" ||
+      a.condition_status === "Damaged"
+  ).length;
+
+  const avgDepreciation =
+    assets.length > 0
+      ? (
+          assets.reduce((sum, a) => {
+            const purchase = parseFloat(a.purchase_cost || 0);
+            const current = parseFloat(a.current_value || 0);
+            if (purchase === 0) return sum;
+            return sum + ((purchase - current) / purchase) * 100;
+          }, 0) / assets.length
+        ).toFixed(2)
+      : "0";
+
+  // ================= CHART: CATEGORY (FIXED) =================
   useEffect(() => {
     categoryChartRef.current?.destroy();
+
     const ctx = document.getElementById("categoryChart") as HTMLCanvasElement;
-    if (ctx) {
-      const categories = Array.from(new Set(assets.map(a => a.category)));
-      const counts = categories.map(cat => assets.filter(a => a.category === cat).length);
 
-      categoryChartRef.current = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: categories,
-          datasets: [{ label: "Assets", data: counts, backgroundColor: "#1A3D7C" }],
-        },
-        options: { responsive: true, plugins: { legend: { display: false } } },
-      });
-    }
-  }, [assets]);
+    if (!ctx || !assets.length || !categories.length) return;
 
-  // Condition Pie Chart
+    const categoryCounts: Record<string, number> = {};
+
+    assets.forEach((asset) => {
+      const categoryName =
+        categoryMap[asset.category_id] || "Unknown";
+
+      categoryCounts[categoryName] =
+        (categoryCounts[categoryName] || 0) + 1;
+    });
+
+    const labels = Object.keys(categoryCounts);
+    const data = Object.values(categoryCounts);
+
+    categoryChartRef.current = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Assets",
+            data,
+            backgroundColor: "#1A3D7C",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+      },
+    });
+  }, [assets, categories, categoryMap]);
+
+  // ================= CHART: CONDITION =================
   useEffect(() => {
     conditionChartRef.current?.destroy();
+
     const ctx = document.getElementById("conditionChart") as HTMLCanvasElement;
-    if (ctx) {
-      const conditions = Array.from(new Set(assets.map(a => a.condition)));
-      const counts = conditions.map(cond => assets.filter(a => a.condition === cond).length);
+
+    if (ctx && assets.length > 0) {
+      const conditions = Array.from(
+        new Set(assets.map((a) => a.condition_status))
+      );
+
+      const counts = conditions.map((cond) =>
+        assets.filter((a) => a.condition_status === cond).length
+      );
 
       conditionChartRef.current = new Chart(ctx, {
         type: "pie",
         data: {
           labels: conditions,
-          datasets: [{ data: counts, backgroundColor: ["#5C4736", "#817E7A", "#AF907A", "#20262C"] }],
+          datasets: [
+            {
+              data: counts,
+              backgroundColor: ["#5C4736", "#817E7A", "#AF907A", "#20262C"],
+            },
+          ],
         },
       });
     }
   }, [assets]);
 
+  // ================= RECENT ACTIVITY =================
+  const activities: Activity[] = useMemo(() => {
+    if (!assets.length) return [];
+
+    const result: Activity[] = [];
+
+    assets.forEach((asset) => {
+      const purchase = parseFloat(asset.purchase_cost || 0);
+      const current = parseFloat(asset.current_value || 0);
+
+      if (!purchase) return;
+
+      const depreciation = ((purchase - current) / purchase) * 100;
+
+      const createdDate = new Date(asset.created_at);
+      const now = new Date();
+
+      const diffDays =
+        (now.getTime() - createdDate.getTime()) /
+        (1000 * 60 * 60 * 24);
+
+      if (diffDays <= 7) {
+        result.push({
+          assetName: asset.name,
+          activity: "New Asset Added",
+          date: createdDate.toISOString().split("T")[0],
+          performedBy: "System",
+        });
+      }
+
+      if (depreciation > 30) {
+        result.push({
+          assetName: asset.name,
+          activity: "High Depreciation",
+          date: new Date().toISOString().split("T")[0],
+          performedBy: "System Alert",
+        });
+      }
+
+      if (asset.condition_status === "Damaged") {
+        result.push({
+          assetName: asset.name,
+          activity: "Asset Damaged",
+          date: new Date().toISOString().split("T")[0],
+          performedBy: "System Alert",
+        });
+      }
+    });
+
+    return result
+      .sort(
+        (a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+      .slice(0, 10);
+  }, [assets]);
+
+  // ================= MOCK MAINTENANCE =================
+  const maintenanceList: Maintenance[] = useMemo(() => [
+    {
+      assetName: "Generator GX200",
+      nextService: "2025-12-01",
+      type: "Full Service",
+      status: "Scheduled",
+    },
+    {
+      assetName: "Office AC Unit",
+      nextService: "2025-12-04",
+      type: "Filter Replacement",
+      status: "Pending",
+    },
+  ], []);
+
+  /*================Asset value Format Helper function==============*/
+  const formatCurrency = (value: number) => {
+    if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+    if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
+    return `$${value.toFixed(2)}`;
+  };
+
   return (
     <div className="dashboard-wrapper">
-      {/* Hamburger */}
       <button className="hamburger" onClick={toggleSidebar}>
         &#9776;
       </button>
 
-      {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`} id="sidebar">
         <div className="close-wrapper">
-            <div className="toggle close-btn">
-                <input
-                type="checkbox"
-                id="closeSidebarButton"
-                checked={sidebarOpen}
-                onChange={toggleSidebar}
-                />
-                <span className="button"></span>
-                <span className="label">X</span>
-            </div>
+          <div className="toggle close-btn">
+            <input
+              type="checkbox"
+              id="closeSidebarButton"
+              checked={sidebarOpen}
+              onChange={toggleSidebar}
+            />
+            <span className="button"></span>
+            <span className="label">X</span>
+          </div>
         </div>
 
         <h2>ASSET MANAGER</h2>
-    
-        {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard" className="active">Dashboard</a>}
-        {hasPermission("View CongView All Assets") && <a href="/assets/assets" className="active">
-          Asset Inventory
-        </a>}
-        {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation">Depreciation Info</a>}
-        {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance">Maintenance</a>}
-        
+        {hasPermission("View Asset Dashboard") && (
+          <a href="/assets/dashboard" className="active">Dashboard</a>
+        )}
+        {hasPermission("View All Assets") && (
+          <a href="/assets/assets">Asset Inventory</a>
+        )}
+        {hasPermission("View Asset Depreciation") && (
+          <a href="/assets/depreciation">Depreciation Info</a>
+        )}
+        {hasPermission("Manage Asset Maintenance") && (
+          <a href="/assets/maintenance">Maintenance</a>
+        )}
+
         <a href="/assets/locations">Asset Locations</a>
-        
-        {hasPermission("View Categories") && <a href="/assets/categories">Categories</a>}
+
+        {hasPermission("View Categories") && (
+          <a href="/assets/categories">Categories</a>
+        )}
 
         <hr className="sidebar-separator" />
-        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+
+        {hasPermission("View Main Dashboard") && (
+          <a href="/dashboard" className="return-main">
+            ← Back to Main Dashboard
+          </a>
+        )}
 
         <a
           href="/"
@@ -154,66 +306,59 @@ const AssetDashboard: React.FC = () => {
             navigate("/");
           }}
         >
-          ➜] Logout
+          ➜ Logout
         </a>
       </div>
 
-      {/* Main Dashboard Content */}
       <div className="dashboard-content">
-
         <div className="do-not-print">
           <AssetsHeader />
         </div>
 
-        {/* PRINT BUTTON */}
         <div className="do-not-print print-button-container">
-          <button
-            className="print-button"
-            onClick={() => window.print()}
-          >
+          <button className="print-button" onClick={() => window.print()}>
             🖨️ Print Report
           </button>
         </div>
 
-        <br/>
-
+        <br />
         <h1>Asset Management Overview</h1>
+        <br /><br />
 
-        <br/><br/>
-
-        {/* KPI Cards */}
         <div className="kpi-container">
           <div className="kpi-card">
             <h3>Total Assets</h3>
             <p>{totalAssets}</p>
           </div>
+
           <div className="kpi-card">
             <h3>Asset Value</h3>
-            <p>${(totalValue / 1000).toFixed(1)}k</p>
+            <p>{formatCurrency(totalValue)}</p>
           </div>
+
           <div className="kpi-card">
             <h3>Under Maintenance</h3>
             <p>{underMaintenance}</p>
           </div>
+
           <div className="kpi-card">
             <h3>Average Depreciation Rate</h3>
-            <p>{pendingRequests}%</p>
+            <p>{avgDepreciation}%</p>
           </div>
         </div>
 
-        {/* Charts */}
         <div className="chart-grid">
           <div className="chart-box">
             <h3>Assets by Category</h3>
             <canvas id="categoryChart"></canvas>
           </div>
+
           <div className="chart-box">
             <h3>Condition Overview</h3>
             <canvas id="conditionChart"></canvas>
           </div>
         </div>
 
-        {/* Recent Activity */}
         <h3>Recent Activity</h3>
         <table className="responsive-table">
           <thead>
@@ -227,7 +372,7 @@ const AssetDashboard: React.FC = () => {
           <tbody>
             {activities.map((act, idx) => (
               <tr key={idx}>
-                <th>{act.assetName}</th>
+                <td>{act.assetName}</td>
                 <td>{act.activity}</td>
                 <td>{act.date}</td>
                 <td>{act.performedBy}</td>
@@ -236,7 +381,6 @@ const AssetDashboard: React.FC = () => {
           </tbody>
         </table>
 
-        {/* Maintenance Summary */}
         <h3>Upcoming Maintenance</h3>
         <table className="responsive-table">
           <thead>
@@ -250,7 +394,7 @@ const AssetDashboard: React.FC = () => {
           <tbody>
             {maintenanceList.map((m, idx) => (
               <tr key={idx}>
-                <th>{m.assetName}</th>
+                <td>{m.assetName}</td>
                 <td>{m.nextService}</td>
                 <td>{m.type}</td>
                 <td>{m.status}</td>

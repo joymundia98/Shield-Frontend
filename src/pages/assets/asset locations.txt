@@ -19,3 +19,16 @@ Retail Store Front – Display and sale of assets directly to customers
 R&D Lab – Storage of experimental equipment and prototypes
 
 Maintenance Shop – Workshop for repair and maintenance tasks
+
+/************ Prod Locations ******************/
+INSERT INTO asset_locations (name, description) VALUES
+('Filing Room', 'Secure room used for storing physical documents, records, archived files, and administrative materials requiring organized and controlled access'),
+('Music Room / Rehearsal Room', 'Dedicated space for storing musical instruments, audio equipment, sheet music, and accessories, as well as conducting rehearsals'),
+('Library', 'Organized area for storing books, Bibles, study guides, and educational materials, typically arranged for easy access and inventory management'),
+('Pantry / Food Storage', 'Designated storage area for non-perishable food items, kitchen supplies, and hospitality resources, maintained under proper storage conditions'),
+('General Storage Room', 'Multipurpose storage area used for keeping surplus items, event equipment, furniture, and infrequently used assets'),
+('Cleaning Supplies Room', 'Restricted-access area for storing cleaning equipment, chemicals, and maintenance supplies in a safe and organized manner'),
+('Garage', 'Enclosed or covered space used for parking and safeguarding church vehicles and related transport equipment'),
+('Cloud Storage', 'Remote digital storage environment used for securely storing electronic files, media, backups, and administrative data accessible via the internet'),
+('Local Server', 'On-site digital storage system used for managing internal data, applications, and backups within the church network infrastructure'),
+('External Hard Drives', 'Portable digital storage devices used for backing up and transferring important data, media files, and system archives');
