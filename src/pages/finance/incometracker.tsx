@@ -151,6 +151,7 @@ const IncomeTrackerPage: React.FC = () => {
 
   // ---------------- FILTERS ----------------
   const [selectedFilter, setSelectedFilter] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("All"); 
 
   // ---------------- MONTH/YEAR FILTER ----------------
   const now = new Date();
@@ -170,13 +171,21 @@ const IncomeTrackerPage: React.FC = () => {
         ...g,
         items: g.items.filter((i) => {
           const d = new Date(i.date);
-          return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+
+          const matchesDate =
+            d.getMonth() === selectedMonth &&
+            d.getFullYear() === selectedYear;
+
+          const matchesStatus =
+            selectedStatus === "All" || i.status === selectedStatus;
+
+          return matchesDate && matchesStatus;
         })
       }));
     });
 
     return filteredByDate;
-  }, [categories, selectedFilter, selectedMonth, selectedYear]);
+   }, [categories, selectedFilter, selectedMonth, selectedYear, selectedStatus]);
 
   // ---------------- KPI totals ----------------
   const { totalApproved, totalPending, totalRejected } = useMemo(() => {
@@ -537,9 +546,11 @@ const IncomeTrackerPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ---------------- FILTER BY CATEGORY ---------------- */}
+        {/* ---------------- FILTER BY CATEGORY AND STATUS ---------------- */}
         <div className="income-filter-box">
-          <h3>Filter by Category</h3>
+          <h3>Filters</h3>
+
+          {/* Category Filter */}
           <select
             className="income-filter-select"
             value={selectedFilter}
@@ -550,6 +561,21 @@ const IncomeTrackerPage: React.FC = () => {
                 {cat}
               </option>
             ))}
+          </select>
+
+          &emsp;
+
+          {/* ✅ Status Filter */}
+          <select
+            className="income-filter-select"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+          >
+            <option value="All">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Void">Void</option>
           </select>
         </div>
 
