@@ -637,6 +637,8 @@ const DashboardPage: React.FC = () => {
             <canvas id="attendanceChart"></canvas>
           </div>
 
+          
+
           <div className="chart-box">
             <h3>Church Growth (12 Months)</h3>
             <canvas id="growthChart"></canvas>

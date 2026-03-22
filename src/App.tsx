@@ -76,6 +76,7 @@ import AddExpensePage from "./pages/finance/addExpense";
 import ViewExpensePage from "./pages/finance/viewExpense";
 import IncomeTrackerPage from "./pages/finance/incometracker";
 import AddIncomePage from "./pages/finance/addIncome";
+import EditIncome from "./pages/finance/EditIncome";
 import IncomeDashboardPage from "./pages/finance/incomeDashboard";
 import FinanceCategoryPage from "./pages/finance/financeCategory";
 import BudgetsPage from "./pages/finance/budgets";          
@@ -558,6 +559,9 @@ function App() {
               <AddExpensePage />
             </ProtectedRoute>
           } />
+          
+          <Route path="/finance/editIncome/:id" element={<EditIncome />} />
+
           <Route path="/finance/viewExpense/:id" element={<ViewExpensePage />} />
           <Route path="/finance/addIncome" element={
             <ProtectedRoute requiredPermission="Add Income" fallback="/403">

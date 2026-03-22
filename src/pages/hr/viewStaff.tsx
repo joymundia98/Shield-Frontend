@@ -1,23 +1,40 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import HRHeader from './HRHeader';
-import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
-
+import { useAuth } from "../../hooks/useAuth";
+import axios from "axios";
+import { authFetch, orgFetch } from "../../utils/api";
 
 // Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const ViewStaffPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth(); // Access the hasPermission function
-  const { id } = useParams(); // Extract id from the URL
+  const { hasPermission } = useAuth();
+  const { id } = useParams();
 
-  const [staffData, setStaffData] = useState<any>(null); // Store staff data
-  const [departmentData, setDepartmentData] = useState<any>(null); // Store department data
-  const [roleData, setRoleData] = useState<any>(null); // Store role data
+  const [staffData, setStaffData] = useState<any>(null);
+  const [departmentData, setDepartmentData] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // ------------------- Sidebar -------------------
+  // ---------------- Auth Fetch Fallback ----------------
+  const fetchDataWithAuthFallback = async (url: string) => {
+    try {
+      return await authFetch(url);
+    } catch (error: unknown) {
+      console.log("authFetch failed, falling back to orgFetch", error);
+
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        navigate("/login");
+      }
+
+      return await orgFetch(url);
+    }
+  };
+
+  // ---------------- Sidebar ----------------
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
   useEffect(() => {
@@ -25,53 +42,57 @@ const ViewStaffPage: React.FC = () => {
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // Fetch staff data when the component mounts or id changes
+  // ---------------- Fetch Staff ----------------
   useEffect(() => {
-    if (!id) return; // If there's no id, don't fetch data
+    if (!id) return;
 
     const fetchStaffData = async () => {
       try {
-        const response = await fetch(`${baseURL}/api/staff/${id}`);
-        const data = await response.json();
-        setStaffData(data); // Store the staff data
+        setLoading(true);
+        setError(null);
 
-        // Fetch department and role data based on staff data
-        fetchDepartmentData(data.department_id);
-        fetchRoleData(data.role);
-      } catch (error) {
+        const data = await fetchDataWithAuthFallback(
+          `${baseURL}/api/staff/${id}`
+        );
+
+        console.log("STAFF DATA:", data);
+
+        setStaffData(data);
+
+        // ✅ Fetch department ONLY (role is already a string)
+        if (data?.department_id) {
+          fetchDepartmentData(data.department_id);
+        }
+
+      } catch (error: any) {
         console.error("Error fetching staff data:", error);
+        setError(error.message || "Failed to load staff");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchStaffData();
   }, [id]);
 
-  // Fetch department data using department_id from staff data
+  // ---------------- Fetch Department ----------------
   const fetchDepartmentData = async (departmentId: number) => {
     try {
-      const response = await fetch(`${baseURL}/api/departments/${departmentId}`);
-      const data = await response.json();
-      setDepartmentData(data); // Store department data
+      const data = await fetchDataWithAuthFallback(
+        `${baseURL}/api/departments/${departmentId}`
+      );
+
+      console.log("DEPARTMENT:", data);
+      setDepartmentData(data);
     } catch (error) {
       console.error("Error fetching department data:", error);
     }
   };
 
-  // Fetch role data (if needed) based on staff's role field
-  const fetchRoleData = async (role: string) => {
-    try {
-      const response = await fetch(`${baseURL}/api/roles/${role}`);
-      const data = await response.json();
-      setRoleData(data); // Store role data
-    } catch (error) {
-      console.error("Error fetching role data:", error);
-    }
-  };
-
-  // Ensure that all data is available before rendering the page
-  if (!staffData || !departmentData || !roleData) {
-    return <div>Loading...</div>; // Show loading message while fetching data
-  }
+  // ---------------- Loading / Error ----------------
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div style={{ color: "red" }}>{error}</div>;
+  if (!staffData) return <div>No staff data found</div>;
 
   return (
     <div className="dashboard-wrapper">
@@ -112,7 +133,7 @@ const ViewStaffPage: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/"); // logout
+            navigate("/");
           }}
         >
           ➜ Logout
@@ -129,7 +150,9 @@ const ViewStaffPage: React.FC = () => {
 
         <br />
         {/* Back to Staff List Button */}
-        <button className="add-btn" onClick={() => navigate("/hr/staffDirectory")}>← &nbsp; Back to Staff Directory</button>
+        <button className="add-btn" onClick={() => navigate("/hr/staffDirectory")}>
+          ← &nbsp; Back to Staff Directory
+        </button>
         <br /><br/>
 
         {/* Employee Information Table */}
@@ -138,59 +161,59 @@ const ViewStaffPage: React.FC = () => {
           <tbody>
             <tr>
               <td><strong>Staff Name</strong></td>
-              <td>{staffData.name}</td>  {/* Display staff name */}
+              <td>{staffData.name}</td>
             </tr>
             <tr>
               <td><strong>Gender</strong></td>
-              <td>{staffData.gender}</td>  {/* Display staff gender */}
+              <td>{staffData.gender}</td>
             </tr>
             <tr>
               <td><strong>Email</strong></td>
-              <td>{staffData.email}</td>  {/* Display staff email */}
+              <td>{staffData.email}</td>
             </tr>
             <tr>
               <td><strong>Phone</strong></td>
-              <td>{staffData.phone}</td>  {/* Display staff phone */}
+              <td>{staffData.phone}</td>
             </tr>
             <tr>
               <td><strong>Address</strong></td>
-              <td>{staffData.address}</td>  {/* Display staff address */}
+              <td>{staffData.address}</td>
             </tr>
             <tr>
               <td><strong>Department</strong></td>
-              <td>{departmentData?.name ?? "N/A"}</td> {/* Display department name */}
+              <td>{departmentData?.name ?? "N/A"}</td>
             </tr>
             <tr>
               <td><strong>Position</strong></td>
-              <td>{staffData.position}</td> {/* Display position */}
+              <td>{staffData.position}</td>
             </tr>
             <tr>
               <td><strong>Role</strong></td>
-              <td>{roleData?.name ?? staffData.role}</td> {/* Display role name */}
+              <td>{staffData.role ?? "N/A"}</td>
             </tr>
             <tr>
               <td><strong>Status</strong></td>
-              <td>{staffData.status}</td> {/* Display status */}
+              <td>{staffData.status}</td>
             </tr>
             <tr>
               <td><strong>Contract Type</strong></td>
-              <td>{staffData.contract_type}</td> {/* Display contract type */}
+              <td>{staffData.contract_type}</td>
             </tr>
             <tr>
               <td><strong>Start Date</strong></td>
-              <td>{new Date(staffData.start_date).toLocaleDateString()}</td> {/* Display start date */}
+              <td>{staffData.start_date ? new Date(staffData.start_date).toLocaleDateString() : "N/A"}</td>
             </tr>
             <tr>
               <td><strong>Join Date</strong></td>
-              <td>{new Date(staffData.join_date).toLocaleDateString()}</td> {/* Display join date */}
+              <td>{staffData.join_date ? new Date(staffData.join_date).toLocaleDateString() : "N/A"}</td>
             </tr>
             <tr>
               <td><strong>NRC</strong></td>
-              <td>{staffData.nrc}</td> {/* Display NRC */}
+              <td>{staffData.nrc}</td>
             </tr>
             <tr>
               <td><strong>Paid</strong></td>
-              <td>{staffData.paid ? "Yes" : "No"}</td> {/* Display if paid */}
+              <td>{staffData.paid ? "Yes" : "No"}</td>
             </tr>
           </tbody>
         </table>

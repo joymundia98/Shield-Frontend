@@ -15,7 +15,7 @@ interface IncomeItem {
   giver: string | null;
   description: string;
   amount: number;
-  status: "Pending" | "Approved" | "Rejected";
+  status: "Pending" | "Approved" | "Rejected" | "Void"; // ✅ added Void
   attachments?: { url: string; type: string }[];
   extraFields?: Record<string, string>;
   category_name: string;
@@ -57,6 +57,16 @@ const IncomeTrackerPage: React.FC = () => {
   const [categoryList, setCategoryList] = useState<string[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<any[]>([]);
+
+  //------------------ Edit Modal State -----
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editReason, setEditReason] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editTarget, setEditTarget] = useState<{
+    catName: string;
+    groupName: string;
+    item: IncomeItem;
+  } | null>(null);
 
   const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
     try {
@@ -192,6 +202,15 @@ const IncomeTrackerPage: React.FC = () => {
   const [modalType, setModalType] = useState<"approve" | "reject">("approve");
   const [modalAction, setModalAction] = useState<() => void>(() => {});
 
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
+  const [rejectTarget, setRejectTarget] = useState<{
+    catName: string;
+    groupName: string;
+    item: IncomeItem;
+  } | null>(null);
+
   const openModal = (action: () => void, type: "approve" | "reject") => {
     setModalType(type);
     setModalAction(() => action);
@@ -215,6 +234,71 @@ const IncomeTrackerPage: React.FC = () => {
     setViewRecord(null);
     setViewModalOpen(false);
   };
+
+//function to open reject modal
+  const openRejectModal = (
+    catName: string,
+    groupName: string,
+    item: IncomeItem
+  ) => {
+    setRejectTarget({ catName, groupName, item });
+    setRejectReason("");
+    setRejectError("");
+    setRejectModalOpen(true);
+  };
+
+//Reject proceed function
+  const handleRejectProceed = async () => {
+  if (!rejectReason.trim()) {
+    setRejectError("A rejection reason is required.");
+    return;
+  }
+
+  if (!rejectTarget) return;
+
+  const { item, catName, groupName } = rejectTarget;
+
+  try {
+    const updatedDescription = `${item.description}\n\n[REJECTED on ${new Date().toLocaleDateString()}]: ${rejectReason}`;
+
+    const { category_name, subcategory_name, attachments, extraFields, ...cleanItem } = item as any;
+
+    await fetchDataWithAuthFallback(
+      `${BACKEND_URL}/finance/incomes/${item.id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...cleanItem,
+          description: updatedDescription,
+          status: "Rejected",
+        }),
+      }
+    );
+
+    setRejectModalOpen(false);
+
+    // ✅ Use SAME computed value (do NOT recompute)
+    setCategories((prev) => {
+      const updated = { ...prev };
+
+      const group = updated[catName]?.find((g) => g.name === groupName);
+
+      if (group) {
+        const targetItem = group.items.find((i) => i.id === item.id);
+
+        if (targetItem) {
+          targetItem.status = "Rejected";
+          targetItem.description = updatedDescription; // ✅ FIX HERE
+        }
+      }
+
+      return updated;
+    });
+
+  } catch (error) {
+    console.error("Failed to reject record", error);
+  }
+};
 
   const updateStatus = async (
     catName: string,
@@ -244,6 +328,61 @@ const IncomeTrackerPage: React.FC = () => {
       console.error("Failed to update status", error);
     }
   };
+
+  //----------------Open Edit Modal Function---------
+  const openEditModal = (
+    catName: string,
+    groupName: string,
+    item: IncomeItem
+  ) => {
+    setEditTarget({ catName, groupName, item });
+    setEditReason("");
+    setEditError("");
+    setEditModalOpen(true);
+  };
+
+  const handleEditProceed = async () => {
+  if (!editReason.trim()) {
+    setEditError("A reason is required for audit trail purposes.");
+    return;
+  }
+
+  if (!editTarget) return;
+
+  const { item } = editTarget;
+
+  try {
+    const updatedDescription = `${item.description}\n\n[VOIDED on ${new Date().toLocaleDateString()}]: ${editReason}`;
+
+    // Remove frontend-only fields
+    const {
+      category_name,
+      subcategory_name,
+      attachments,
+      extraFields,
+      ...cleanItem
+    } = item as any;
+
+    await fetchDataWithAuthFallback(
+      `${BACKEND_URL}/finance/incomes/${item.id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...cleanItem, // ✅ original DB fields
+          description: updatedDescription,
+          status: "Void",
+        }),
+      }
+    );
+
+    setEditModalOpen(false);
+
+    navigate(`/finance/editIncome/${item.id}`);
+
+  } catch (error) {
+    console.error("Failed to void record before edit", error);
+  }
+};
 
   // ---------------- VISIBLE ROWS ----------------
   const [visibleRows, setVisibleRows] = useState<{ [key: string]: number }>({});
@@ -451,9 +590,22 @@ const IncomeTrackerPage: React.FC = () => {
                             <td>
                               <span className={`status ${item.status}`}>{item.status}</span>
                             </td>
+
                             <td>
                               <button className="add-btn" onClick={() => openViewModal(item)}>View</button>
                               &nbsp;&nbsp;
+
+                              {item.status === "Pending" && (
+                                <button
+                                  className="edit-btn"
+                                  onClick={() => openEditModal(catName, group.name, item)}
+                                >
+                                  Edit
+                                </button>
+                              )}
+
+                              &nbsp;&nbsp;
+
                               {item.status === "Pending" && (
                                 <>
                                   <button
@@ -464,18 +616,19 @@ const IncomeTrackerPage: React.FC = () => {
                                   >
                                     Approve
                                   </button>
+
                                   &nbsp;&nbsp;
+
                                   <button
                                     className="reject-btn"
-                                    onClick={() =>
-                                      openModal(() => updateStatus(catName, group.name, idx, "Rejected"), "reject")
-                                    }
+                                    onClick={() => openRejectModal(catName, group.name, item)}
                                   >
                                     Reject
                                   </button>
                                 </>
                               )}
                             </td>
+
                           </tr>
                         ))}
                       </tbody>
@@ -564,6 +717,116 @@ const IncomeTrackerPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* ---------------- EDIT MODAL ---------------- */}
+        {editModalOpen && (
+          <div className="expenseModal" style={{ display: "flex" }}>
+            <div className="expenseModal-content">
+              <h2>Financial Record Edit Notice</h2>
+
+              <p>
+                You are about to modify a financial record. 
+                The existing record will be permanently voided to preserve audit integrity.
+              </p>
+
+              <p>
+                This action is <strong>irreversible</strong>  and will be logged. 
+                A <strong>valid</strong> reason is required to proceed.
+              </p>
+
+              <label>
+                Reason for Edit <span style={{ color: "red" }}>*</span>
+              </label>
+
+              <textarea
+                value={editReason}
+                onChange={(e) => {
+                  setEditReason(e.target.value);
+                  setEditError("");
+                }}
+                placeholder="Enter reason for editing this record"
+                style={{ width: "100%", minHeight: "80px" }}
+              />
+
+              <small style={{ display: "block", marginTop: "5px" }}>
+                All fields marked with * are mandatory.
+              </small>
+              <br/>
+
+              {editError && (
+                <p style={{ color: "red", marginTop: "5px" }}>
+                  {editError}
+                </p>
+              )}
+
+              <div className="expenseModal-buttons">
+                <button
+                  className="delete-cancel-btn"
+                  onClick={() => setEditModalOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="expenseModal-confirm"
+                  onClick={handleEditProceed}
+                >
+                  Proceed
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- REJECTION MODALL ---------------- */}
+        {rejectModalOpen && (
+          <div className="expenseModal" style={{ display: "flex" }}>
+            <div className="expenseModal-content">
+              <h2>Reject Income</h2>
+
+              <p>⚠︎ Warning: This Action can not be undone!</p>
+
+              <p>Please provide a reason for rejecting this income record.</p>
+
+              <label>
+                Rejection Reason <span style={{ color: "red" }}>*</span>
+              </label>
+
+              <textarea
+                value={rejectReason}
+                onChange={(e) => {
+                  setRejectReason(e.target.value);
+                  setRejectError("");
+                }}
+                placeholder="Enter reason for rejection"
+                style={{ width: "100%", minHeight: "80px" }}
+              />
+
+              {rejectError && (
+                <p style={{ color: "red", marginTop: "5px" }}>
+                  {rejectError}
+                </p>
+              )}
+
+              <div className="expenseModal-buttons">
+                <button
+                  className="delete-cancel-btn"
+                  onClick={() => setRejectModalOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="expenseModal-confirm"
+                  onClick={handleRejectProceed}
+                >
+                  Proceed
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

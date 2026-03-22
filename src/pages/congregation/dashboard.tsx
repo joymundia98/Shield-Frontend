@@ -433,15 +433,19 @@ const CongregationDashboard: React.FC = () => {
             <h3>Church Growth (Last 12 Months)</h3>
             <canvas id="growthChart"></canvas>
           </div>
-          <div className="chart-box">
+          <div className="chart-box page-break">
             <h3>Members by Status</h3>
             <canvas id="statusChart"></canvas>
           </div>
-          <div className="chart-box">
+
+          
+          <div className="chart-box page-break">
             <h3>Attendance Last 4 Weeks</h3>
             <canvas id="attendanceChart"></canvas>
           </div>
-          <div className="chart-box">
+
+          
+          <div className="chart-box page-break">
             <h3>Age Group Distribution</h3>
             <canvas id="ageChart"></canvas>
           </div>

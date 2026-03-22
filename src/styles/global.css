@@ -978,6 +978,11 @@
             border: 1px solid #f5a1a1;
         }
 
+        .status.Void {
+            background-color: #6c757d;
+            color: white;
+        }
+
         /* ---------- Modal Styles ---------- */
         .modal {
             display: none;
@@ -3040,6 +3045,8 @@
   background-color: #142d5c;
   color: #ffffff;
 }
+
+
 
 /*=================TOUR GUIDE CSS===========================*/
 .reactour__tooltip {
