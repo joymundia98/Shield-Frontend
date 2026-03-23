@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LandingPage } from "./pages/LandingPage";
+import { ForgotPasswordForm } from './components/Auth/forgotPassword';
 
 //Remodelled Landing Page
 import  Landing  from "./pages/Landing/Landing";
@@ -247,6 +248,10 @@ function App() {
           <Route path="/contact" element={<ContactUs />} />
 
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Forgot Password Route */}
+          <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+
           <Route path="/register" element={<RegisterPage />} />
 
           {/* ------------------------------

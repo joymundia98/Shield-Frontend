@@ -197,7 +197,7 @@ export const LoginForm = () => {
           {error && <div className="form-error">{error}</div>}
 
           <div className="form-link">
-            <a href="#" className="forgot-pass">Forgot password?</a>
+            <a href="/forgot-password" className="forgot-pass">Forgot password?</a>
           </div>
 
           <div className="field button-field">
