@@ -8,8 +8,9 @@ import {
   ArcElement,
   BarElement,
   Tooltip,
-  Legend
+  Legend,
 } from "chart.js";
+import type { ChartOptions } from "chart.js"; // Only for TypeScript
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
 import { authFetch, orgFetch } from "../../utils/api"; // <-- added authFetch import
@@ -164,10 +165,14 @@ const ExpenseDashboardPage: React.FC = () => {
   }, [budgets, selectedYear, selectedMonth]);
 
   // ------------------- Calculate Total Expenses and Budget -------------------
-  
-  const totalExpenses = useMemo(
-    () => filteredExpenses.reduce((sum, e) => sum + e.amountNum, 0),
+  const approvedExpenses = useMemo(
+    () => filteredExpenses.filter(e => e.status === "Approved"),
     [filteredExpenses]
+  );
+
+  const totalExpenses = useMemo(
+    () => approvedExpenses.reduce((sum, e) => sum + e.amountNum, 0),
+    [approvedExpenses]
   );
 
   const totalBudget = useMemo(
@@ -176,61 +181,102 @@ const ExpenseDashboardPage: React.FC = () => {
   );
 
   // ------------------- Reserve Funds -------------------
-  const reserveFunds = totalBudget - totalExpenses; // <-- dynamic based on budget
+  const reserveFunds = totalBudget - totalExpenses; // now based on approved expenses
 
+  // Accurate monthly burn rate based on days in selected month
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+  const burnRate = (totalExpenses / daysInMonth).toFixed(2);
 
-  const burnRate = (totalExpenses / new Date().getDate()).toFixed(2); // Example calculation for burn rate
-
-  
   // ------------------- Charts -------------------
-  const categoryTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
+  const categoryTotalsByStatus = useMemo(() => {
+    const result: Record<string, Record<string, number>> = {};
     filteredExpenses.forEach((e) => {
-      totals[e.categoryName] = (totals[e.categoryName] || 0) + e.amountNum;
+      const cat = e.categoryName;
+      if (!result[cat]) result[cat] = { Approved: 0, Pending: 0, Rejected: 0 };
+      result[cat][e.status] += e.amountNum;
     });
-    return totals;
+    return result;
   }, [filteredExpenses]);
 
-  const departmentTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
+  const departmentTotalsByStatus = useMemo(() => {
+    const result: Record<string, Record<string, number>> = {};
     filteredExpenses.forEach((e) => {
-      totals[e.department] = (totals[e.department] || 0) + e.amountNum;
+      const dept = e.department;
+      if (!result[dept]) result[dept] = { Approved: 0, Pending: 0, Rejected: 0 };
+      result[dept][e.status] += e.amountNum;
     });
-
-    // Convert to array and sort by amount descending, take top 5
-    const sortedTop5 = Object.entries(totals)
-      .sort(([, a], [, b]) => b - a) // sort descending
-      .slice(0, 5); // top 5
-
-    // Convert back to object for chart
-    return Object.fromEntries(sortedTop5);
+    return result;
   }, [filteredExpenses]);
-
 
   const categoryChartData = {
-    labels: Object.keys(categoryTotals),
+    labels: Object.keys(categoryTotalsByStatus),
     datasets: [
       {
-        label: "Spend per Category",
-        data: Object.values(categoryTotals),
+        label: "Approved",
+        data: Object.keys(categoryTotalsByStatus).map(
+          (k) => categoryTotalsByStatus[k].Approved
+        ),
         backgroundColor: "#1A3D7C",
+      },
+      {
+        label: "Pending",
+        data: Object.keys(categoryTotalsByStatus).map(
+          (k) => categoryTotalsByStatus[k].Pending
+        ),
+        backgroundColor: "#E0A800",
+      },
+      {
+        label: "Rejected",
+        data: Object.keys(categoryTotalsByStatus).map(
+          (k) => categoryTotalsByStatus[k].Rejected
+        ),
+        backgroundColor: "#C0392B",
       },
     ],
   };
 
   const departmentChartData = {
-    labels: Object.keys(departmentTotals),
+    labels: Object.keys(departmentTotalsByStatus),
     datasets: [
       {
         label: "Top 5 Spend per Department",
-        data: Object.values(departmentTotals),
-        backgroundColor: [
-          "#5C4736", "#817E7A", "#AF907A", "#20262C", "#858796"
-        ],
+        data: Object.keys(departmentTotalsByStatus).map(
+          (k) =>
+            departmentTotalsByStatus[k].Approved +
+            departmentTotalsByStatus[k].Pending +
+            departmentTotalsByStatus[k].Rejected
+        ),
+        backgroundColor: ["#5C4736", "#817E7A", "#AF907A", "#20262C", "#858796"],
       },
     ],
   };
 
+  const categoryChartOptions: ChartOptions<"bar"> = {
+    responsive: true,
+    plugins: {
+      legend: { position: "top" },
+    },
+    scales: {
+      x: { stacked: true },
+      y: { stacked: true },
+    },
+  };
+
+  const departmentChartOptions: ChartOptions<"pie"> = {
+    responsive: true,
+    plugins: {
+      legend: { position: "top" },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            const dept = context.label!;
+            const breakdown = departmentTotalsByStatus[dept];
+            return `${dept}: ${breakdown.Approved.toLocaleString()} Approved, ${breakdown.Pending.toLocaleString()} Pending, ${breakdown.Rejected.toLocaleString()} Rejected`;
+          },
+        },
+      },
+    },
+  };
 
   return (
     <div className="dashboard-wrapper">
@@ -254,7 +300,6 @@ const ExpenseDashboardPage: React.FC = () => {
         {hasPermission("Manage Payroll") && <a href="/finance/payroll">Payroll</a>}
         {hasPermission("View Finance Categories") && <a href="/finance/financeCategory">Finance Categories</a>}
 
-
         <hr className="sidebar-separator" />
         {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
 
@@ -275,22 +320,20 @@ const ExpenseDashboardPage: React.FC = () => {
       <div className="dashboard-content">
 
         <div className="do-not-print">
-          
             <FinanceHeader />
+        </div>
+    
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container" style={{ margin: "10px 0" }}>
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
 
-            </div>
-    
-            {/* PRINT BUTTON */}
-            <div className="do-not-print print-button-container" style={{ margin: "10px 0" }}>
-              <button
-                className="print-button"
-                onClick={() => window.print()}
-              >
-                🖨️ Print Report
-              </button>
-            </div>
-    
-            <br />
+        <br />
 
         {/* HEADER */}
         <header className="page-header expense-header">
@@ -316,7 +359,6 @@ const ExpenseDashboardPage: React.FC = () => {
         <div className="expense-filter-box">
           <h3>Filter by Date</h3>
           <div className="expense-filter-select">
-            
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))}>
               {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, idx) => (
                 <option key={month} value={idx + 1}>{month}</option>
@@ -328,20 +370,19 @@ const ExpenseDashboardPage: React.FC = () => {
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
-
           </div>
         </div>
 
         {/* KPI Cards */}
         <div className="kpi-container">
           <div className="kpi-card">
-            <h3>Total Expenses vs Budget</h3>
+            <h3>Approved Expenses vs Budget</h3>
             <p>ZMW {totalExpenses.toLocaleString()} / ZMW {totalBudget.toLocaleString()}</p>
           </div>
           <div className="kpi-card">
             <h3>Reserve Funds</h3>
             <p>ZMW {reserveFunds.toLocaleString()}</p>
-            <h4>Total Budget -  Total Expenses</h4>
+            <h4>Total Budget - Approved Expenses</h4>
           </div>
 
           <div className="kpi-card">
@@ -354,11 +395,11 @@ const ExpenseDashboardPage: React.FC = () => {
         <div className="chart-grid">
           <div className="chart-box">
             <h3>Spend by Category</h3>
-            <Bar data={categoryChartData} options={{ responsive: true }} />
+            <Bar data={categoryChartData} options={categoryChartOptions} />
           </div>
           <div className="chart-box">
             <h3>Spend by Department</h3>
-            <Pie data={departmentChartData} options={{ responsive: true }} />
+            <Pie data={departmentChartData} options={departmentChartOptions} />
           </div>
         </div>
       </div>

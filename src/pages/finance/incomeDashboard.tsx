@@ -150,34 +150,28 @@ const IncomeDashboard: React.FC = () => {
     };
   }, [incomesWithCategory]);
 
-  // ---------------- CATEGORY TOTALS + TOP 5 SOURCES ----------------
-  const { categoryTotals, sourceTotals } = useMemo(() => {
-    const categoryTotals: Record<string, number> = {};
-    const sourceMap: Record<string, number> = {};
+  // ---------------- CATEGORY TOTALS BY STATUS ----------------
+  const categoryTotalsByStatus = useMemo(() => {
+    const result: Record<string, Record<string, number>> = {};
 
     incomesWithCategory.forEach(i => {
-      categoryTotals[i.categoryName] =
-        (categoryTotals[i.categoryName] || 0) + i.amountNum;
-
-      const giver = i.giver || "Anonymous";
-      sourceMap[giver] = (sourceMap[giver] || 0) + i.amountNum;
+      const cat = i.categoryName;
+      if (!result[cat]) result[cat] = { Approved: 0, Pending: 0, Rejected: 0 };
+      result[cat][i.status] += i.amountNum;
     });
 
-    const sortedSources = Object.entries(sourceMap).sort(
-      (a, b) => b[1] - a[1]
-    );
+    return result;
+  }, [incomesWithCategory]);
 
-    const top5 = sortedSources.slice(0, 5);
-    const others = sortedSources.slice(5);
-
-    const sourceTotals: Record<string, number> = {};
-    top5.forEach(([giver, total]) => (sourceTotals[giver] = total));
-
-    if (others.length) {
-      sourceTotals["Others"] = others.reduce((s, [, v]) => s + v, 0);
-    }
-
-    return { categoryTotals, sourceTotals };
+  // ---------------- SOURCE TOTALS BY STATUS ----------------
+  const sourceTotalsByStatus = useMemo(() => {
+    const result: Record<string, Record<string, number>> = {};
+    incomesWithCategory.forEach(i => {
+      const giver = i.giver || "Anonymous";
+      if (!result[giver]) result[giver] = { Approved: 0, Pending: 0, Rejected: 0 };
+      result[giver][i.status] += i.amountNum;
+    });
+    return result;
   }, [incomesWithCategory]);
 
   // ---------------- Charts ----------------
@@ -185,41 +179,67 @@ const IncomeDashboard: React.FC = () => {
     let categoryChart: Chart | null = null;
     let sourceChart: Chart | null = null;
 
+    // ---- Stacked Bar Chart ----
     if (categoryChartRef.current) {
+      const labels = Object.keys(categoryTotalsByStatus);
+      const approvedData = labels.map(l => categoryTotalsByStatus[l].Approved);
+      const pendingData = labels.map(l => categoryTotalsByStatus[l].Pending);
+      const rejectedData = labels.map(l => categoryTotalsByStatus[l].Rejected);
+
       categoryChart = new Chart(categoryChartRef.current, {
         type: "bar",
         data: {
-          labels: Object.keys(categoryTotals),
+          labels,
           datasets: [
-            {
-              label: "Income",
-              data: Object.values(categoryTotals),
-              backgroundColor: "#1A3D7C"
-            }
-          ]
+            { label: "Approved", data: approvedData, backgroundColor: "#1A3D7C" },
+            { label: "Pending", data: pendingData, backgroundColor: "#E0A800" },
+            { label: "Rejected", data: rejectedData, backgroundColor: "#C0392B" },
+          ],
         },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "top" } },
+          scales: {
+            x: { stacked: true },
+            y: { stacked: true }
+          }
+        }
       });
     }
 
+    // ---- Pie Chart with Status Breakdown Tooltips ----
     if (sourceChartRef.current) {
+      const labels = Object.keys(sourceTotalsByStatus);
+      const totals = labels.map(
+        l => sourceTotalsByStatus[l].Approved + sourceTotalsByStatus[l].Pending + sourceTotalsByStatus[l].Rejected
+      );
+
       sourceChart = new Chart(sourceChartRef.current, {
         type: "pie",
         data: {
-          labels: Object.keys(sourceTotals),
+          labels,
           datasets: [
             {
-              data: Object.values(sourceTotals),
+              data: totals,
               backgroundColor: [
-                "#5C4736",
-                "#817E7A",
-                "#AF907A",
-                "#20262C",
-                "#858796",
-                "#C9B29B"
-              ]
+                "#5C4736", "#817E7A", "#AF907A", "#20262C", "#858796", "#C9B29B"
+              ],
             }
           ]
+        },
+        options: {
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const giver = context.label!;
+                  const breakdown = sourceTotalsByStatus[giver];
+                  return `${giver}: ${breakdown.Approved.toLocaleString()} Approved, ${breakdown.Pending.toLocaleString()} Pending, ${breakdown.Rejected.toLocaleString()} Rejected`;
+                }
+              }
+            },
+            legend: { position: "right" }
+          }
         }
       });
     }
@@ -228,7 +248,7 @@ const IncomeDashboard: React.FC = () => {
       categoryChart?.destroy();
       sourceChart?.destroy();
     };
-  }, [categoryTotals, sourceTotals]);
+  }, [categoryTotalsByStatus, sourceTotalsByStatus]);
 
   return (
     <div className="dashboard-wrapper">
@@ -280,19 +300,19 @@ const IncomeDashboard: React.FC = () => {
           
             <FinanceHeader />
 
-            </div>
-    
-            {/* PRINT BUTTON */}
-            <div className="do-not-print print-button-container" style={{ margin: "10px 0" }}>
-              <button
-                className="print-button"
-                onClick={() => window.print()}
-              >
-                🖨️ Print Report
-              </button>
-            </div>
-    
-            <br />
+        </div>
+
+        {/* PRINT BUTTON */}
+        <div className="do-not-print print-button-container" style={{ margin: "10px 0" }}>
+          <button
+            className="print-button"
+            onClick={() => window.print()}
+          >
+            🖨️ Print Report
+          </button>
+        </div>
+
+        <br />
 
         <header className="page-header income-header">
           <h1>Income Dashboard</h1>

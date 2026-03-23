@@ -77,6 +77,7 @@ import ViewExpensePage from "./pages/finance/viewExpense";
 import IncomeTrackerPage from "./pages/finance/incometracker";
 import AddIncomePage from "./pages/finance/addIncome";
 import EditIncome from "./pages/finance/EditIncome";
+import EditExpense from "./pages/finance/EditExpense";
 import IncomeDashboardPage from "./pages/finance/incomeDashboard";
 import FinanceCategoryPage from "./pages/finance/financeCategory";
 import BudgetsPage from "./pages/finance/budgets";          
@@ -561,6 +562,7 @@ function App() {
           } />
           
           <Route path="/finance/editIncome/:id" element={<EditIncome />} />
+          <Route path="/finance/editExpense/:id" element={<EditExpense />} />
 
           <Route path="/finance/viewExpense/:id" element={<ViewExpensePage />} />
           <Route path="/finance/addIncome" element={

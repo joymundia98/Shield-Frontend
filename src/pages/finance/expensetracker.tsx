@@ -17,7 +17,7 @@ interface ExpenseItem {
   department?: string;
   description: string;
   amount: number;
-  status: "Pending" | "Approved" | "Rejected";
+  status: "Pending" | "Approved" | "Rejected" | "Void";
   attachments?: { url: string; type: string }[];
   extraFields?: Record<string, string>;
   category_name: string;
@@ -175,13 +175,29 @@ const ExpenseTrackerPage: React.FC = () => {
     "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
   ];
 
+
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [selectedStatus, setSelectedStatus] = useState<string>("All");
+
+
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(
-      (expense) =>
+    return expenses.filter((expense) => {
+      const matchesDate =
         new Date(expense.date).getFullYear() === selectedYear &&
-        new Date(expense.date).getMonth() + 1 === selectedMonth
-    );
-  }, [expenses, selectedYear, selectedMonth]);
+        new Date(expense.date).getMonth() + 1 === selectedMonth;
+
+      const matchesCategory =
+        selectedCategory === "All" ||
+        expense.category_name === selectedCategory;
+
+      const matchesStatus =
+        selectedStatus === "All" ||
+        expense.status === selectedStatus;
+
+      return matchesDate && matchesCategory && matchesStatus;
+    });
+ }, [expenses, selectedYear, selectedMonth, selectedCategory, selectedStatus]);
+
 
   // ------------------- GROUPING EXPENSES BY DEPARTMENT -------------------
   const [groupedExpenses, setGroupedExpenses] = useState<{ [key: string]: ExpenseGroup[] }>({});
@@ -265,6 +281,133 @@ const ExpenseTrackerPage: React.FC = () => {
   const confirmModal = () => {
     modalAction();
     setModalOpen(false);
+  };
+
+  // ---------------- EDIT MODAL ----------------
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editReason, setEditReason] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editTarget, setEditTarget] = useState<{
+    deptName: string;
+    groupName: string;
+    item: ExpenseItem;
+  } | null>(null);
+
+  // ---------------- REJECT MODAL ----------------
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
+  const [rejectTarget, setRejectTarget] = useState<{
+    deptName: string;
+    groupName: string;
+    item: ExpenseItem;
+  } | null>(null);
+
+  //----------- Reject modal opener ---------------
+  const openRejectModal = (
+    deptName: string,
+    groupName: string,
+    item: ExpenseItem
+  ) => {
+    setRejectTarget({ deptName, groupName, item });
+    setRejectReason("");
+    setRejectError("");
+    setRejectModalOpen(true);
+  };
+
+
+  //----------Reject handler (AUDIT SAFE) -------
+  const handleRejectProceed = async () => {
+    if (!rejectReason.trim()) {
+      setRejectError("A rejection reason is required.");
+      return;
+    }
+
+    if (!rejectTarget) return;
+
+    const { item } = rejectTarget;
+
+    try {
+      const updatedDescription = `${item.description}\n\n[REJECTED on ${new Date().toLocaleDateString()}]: ${rejectReason}`;
+
+      const { category_name, subcategory_name, attachments, extraFields, ...cleanItem } = item as any;
+
+      await fetchDataWithAuthFallback(
+        `${BACKEND_URL}/finance/expenses/${item.id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            ...cleanItem,
+            description: updatedDescription,
+            status: "Rejected",
+          }),
+        }
+      );
+
+      setRejectModalOpen(false);
+
+      // Update UI instantly
+      setExpenses((prev) =>
+        prev.map((exp) =>
+          exp.id === item.id
+            ? { ...exp, status: "Rejected", description: updatedDescription }
+            : exp
+        )
+      );
+
+    } catch (error) {
+      console.error("Failed to reject expense", error);
+    }
+  };
+
+  // --------------✏️ Edit modal opener -----------
+  const openEditModal = (
+    deptName: string,
+    groupName: string,
+    item: ExpenseItem
+  ) => {
+    setEditTarget({ deptName, groupName, item });
+    setEditReason("");
+    setEditError("");
+    setEditModalOpen(true);
+  };
+
+  // ---------- ✏️ Edit handler (VOID + REDIRECT) ----
+  const handleEditProceed = async () => {
+    if (!editReason.trim()) {
+      setEditError("A reason is required for audit trail purposes.");
+      return;
+    }
+
+    if (!editTarget) return;
+
+    const { item } = editTarget;
+
+    try {
+      const updatedDescription = `${item.description}\n\n[VOIDED on ${new Date().toLocaleDateString()}]: ${editReason}`;
+
+      const { category_name, subcategory_name, attachments, extraFields, ...cleanItem } = item as any;
+
+      await fetchDataWithAuthFallback(
+        `${BACKEND_URL}/finance/expenses/${item.id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            ...cleanItem,
+            description: updatedDescription,
+            status: "Void",
+          }),
+        }
+      );
+
+      setEditModalOpen(false);
+
+      // Redirect to edit page
+      navigate(`/finance/editExpense/${item.id}`);
+
+    } catch (error) {
+      console.error("Failed to void expense before edit", error);
+    }
   };
 
   // ------------------- KPI TOTALS -------------------
@@ -451,6 +594,45 @@ const ExpenseTrackerPage: React.FC = () => {
 
         <p>Expenses Relating to Payroll handled separately</p>
 
+        <div className="expense-filter-box">
+          <h3>Filter</h3>
+
+          {/* CATEGORY FILTER */}
+          {/* CATEGORY DROPDOWN */}
+          <div>
+            <strong>Category</strong><br />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              {_categoryList.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <br />
+
+          {/* STATUS FILTER */}
+          {/* STATUS DROPDOWN */}
+            <div>
+              <strong>Status</strong><br />
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+              >
+                {["All", "Pending", "Approved", "Rejected", "Void"].map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+        </div>
+
         {/* GROUPED EXPENSES TABLE */}
         {Object.entries(groupedExpenses).map(([deptName, groups]) => (
           <div key={deptName}>
@@ -495,7 +677,24 @@ const ExpenseTrackerPage: React.FC = () => {
                                 onClick={() => navigate(`/finance/viewExpense/${item.id}`)}
                               >
                                 View
-                              </button> &emsp;
+                              </button> 
+
+                              &emsp;
+
+                              {item.status === "Pending" && (
+                                <>
+                                  <button
+                                    className="edit-btn"
+                                    onClick={() => openEditModal(deptName, group.name, item)}
+                                  >
+                                    Edit
+                                  </button>
+
+                                  &emsp;
+                                </>
+                              )}
+                              
+                              &emsp;
 
                               {item.status === "Pending" && (
                                 <>
@@ -508,12 +707,14 @@ const ExpenseTrackerPage: React.FC = () => {
 
                                   <button
                                     className="reject-btn"
-                                    onClick={() => openModal(() => updateStatus(deptName, group.name, idx, "Rejected"), "reject")}
+                                    onClick={() => openRejectModal(deptName, group.name, item)}
                                   >
                                     Reject
                                   </button>
+
                                 </>
                               )}
+
                             </td>
                           </tr>
                         ))}
@@ -559,6 +760,114 @@ const ExpenseTrackerPage: React.FC = () => {
                   onClick={confirmModal}
                 >
                   Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/** 🔴 Reject Modal **/}
+        {rejectModalOpen && (
+          <div className="expenseModal" style={{ display: "flex" }}>
+            <div className="expenseModal-content">
+              <h2>Reject Expense</h2>
+
+              <p>⚠︎ Warning: This Action can not be undone!</p>
+
+              <p>Please provide a reason for rejecting this expense record.</p>
+
+              <label>
+                Rejection Reason <span style={{ color: "red" }}>*</span>
+              </label>
+
+              <textarea
+                value={rejectReason}
+                onChange={(e) => {
+                  setRejectReason(e.target.value);
+                  setRejectError("");
+                }}
+                placeholder="Enter reason for rejection"
+                style={{ width: "100%", minHeight: "80px" }}
+              />
+
+              {rejectError && (
+                <p style={{ color: "red", marginTop: "5px" }}>
+                  {rejectError}
+                </p>
+              )}
+
+              <div className="expenseModal-buttons">
+                <button
+                  className="delete-cancel-btn"
+                  onClick={() => setRejectModalOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="expenseModal-confirm"
+                  onClick={handleRejectProceed}
+                >
+                  Proceed
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/** ✏️ Edit Modal **/}
+        {editModalOpen && (
+          <div className="expenseModal" style={{ display: "flex" }}>
+            <div className="expenseModal-content">
+              <h2>Financial Record Edit Notice</h2>
+
+              <p>
+                You are about to modify a financial record. 
+                The existing record will be permanently voided to preserve audit integrity.
+              </p>
+
+              <p>
+                This action is <strong>irreversible</strong> and will be logged. 
+                A <strong>valid</strong> reason is required to proceed.
+              </p>
+
+              <label>
+                Reason for Edit <span style={{ color: "red" }}>*</span>
+              </label>
+
+              <textarea
+                value={editReason}
+                onChange={(e) => {
+                  setEditReason(e.target.value);
+                  setEditError("");
+                }}
+                placeholder="Enter reason for editing this record"
+                style={{ width: "100%", minHeight: "80px" }}
+              />
+
+              <small style={{ display: "block", marginTop: "5px" }}>
+                All fields marked with * are mandatory.
+              </small>
+
+              {editError && (
+                <p style={{ color: "red", marginTop: "5px" }}>
+                  {editError}
+                </p>
+              )}
+
+              <div className="expenseModal-buttons">
+                <button
+                  className="delete-cancel-btn"
+                  onClick={() => setEditModalOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="expenseModal-confirm"
+                  onClick={handleEditProceed}
+                >
+                  Proceed
                 </button>
               </div>
             </div>
