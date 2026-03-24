@@ -1,8 +1,12 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import AssetsHeader from './AssetsHeader';
-import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+import { useAuth } from "../../hooks/useAuth";
+import { authFetch, orgFetch } from "../../utils/api";
+import axios from "axios";
+
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface Asset {
   id: string;
@@ -10,18 +14,18 @@ interface Asset {
   acquisitionDate: string;
   initialValue: number;
   currentValue: number;
+  depreciation_id?: number;
 }
 
 const DepreciationPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth(); // Access the hasPermission function
+  const { hasPermission } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
-  const [assets, setAssets] = useState<Asset[]>([
-    { id: "001", name: "Projector X1", acquisitionDate: "2022-06-15", initialValue: 1500, currentValue: 1200 },
-  ]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [_assetMap, setAssetMap] = useState<Record<number, string>>({}); // Keeping assetMap
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -35,45 +39,77 @@ const DepreciationPage: React.FC = () => {
     currentValue: "",
   });
 
+  // ---------------- AUTH FETCH WITH FALLBACK ----------------
+  const fetchDataWithAuthFallback = async (
+    url: string,
+    options?: RequestInit
+  ) => {
+    try {
+      return await authFetch(url, options);
+    } catch (error: unknown) {
+      console.log("authFetch failed, falling back to orgFetch", error);
+
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log("Unauthorized, redirecting to login");
+        navigate("/login");
+      }
+
+      return await orgFetch(url, options);
+    }
+  };
+
   // ---------------- Sidebar ----------------
   const toggleSidebar = () => {
-    console.log("Toggling sidebar", !sidebarOpen);
     setSidebarOpen(!sidebarOpen);
   };
 
   useEffect(() => {
-    console.log("Sidebar state changed:", sidebarOpen);
     if (sidebarOpen) document.body.classList.add("sidebar-open");
     else document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // ---------------- Modal ----------------
-  const openModal = (index: number | null = null) => {
-    console.log("openModal called with index:", index);
-    setEditIndex(index);
-    if (index !== null) {
-      const asset = assets[index];
-      setFormData({
-        name: asset.name,
-        acquisitionDate: asset.acquisitionDate,
-        initialValue: asset.initialValue,
-        currentValue: asset.currentValue,
-      });
-    } else {
-      setFormData({ name: "", acquisitionDate: "", initialValue: "", currentValue: "" });
-    }
-    setModalOpen(true);
-    console.log("modalOpen state after openModal:", true);
-  };
+  // ---------------- Fetch Assets + Depreciation ----------------
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [depreciationData, assetsData] = await Promise.all([
+          fetchDataWithAuthFallback(`${baseURL}/api/depreciation`),
+          fetchDataWithAuthFallback(`${baseURL}/api/assets`)
+        ]);
 
+        // Build asset ID → name map
+        const map: Record<number, string> = {};
+        assetsData.forEach((asset: any) => {
+          map[asset.asset_id] = asset.name;
+        });
+        setAssetMap(map);
+
+        // Format data (preserving your structure)
+        const formatted = depreciationData.map((item: any) => ({
+          id: item.asset_id.toString(),
+          name: map[item.asset_id] || `Asset ${item.asset_id}`,
+          acquisitionDate: item.created_at,
+          initialValue: parseFloat(item.opening_value),
+          currentValue: parseFloat(item.closing_value),
+          depreciation_id: item.depreciation_id,
+        }));
+
+        setAssets(formatted);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // ---------------- Modal ----------------
   const closeModal = () => {
-    console.log("Closing modal");
     setModalOpen(false);
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    console.log("Form change:", id, value);
     setFormData(prev => ({
       ...prev,
       [id]: id.includes("Value") ? (value === "" ? "" : Number(value)) : value,
@@ -81,18 +117,16 @@ const DepreciationPage: React.FC = () => {
   };
 
   // ---------------- Depreciation ----------------
-  const depreciationRate = useMemo(() => {
-    const initial = Number(formData.initialValue);
-    const current = Number(formData.currentValue);
+  const depreciationRate = ((initial: number, current: number) => {
     if (!isNaN(initial) && !isNaN(current) && initial > 0 && current <= initial) {
       return ((initial - current) / initial * 100).toFixed(2);
     }
     return "";
-  }, [formData.initialValue, formData.currentValue]);
+  })(Number(formData.initialValue), Number(formData.currentValue));
 
-  const handleSave = (e: React.FormEvent) => {
+  // ---------------- Save (UNCHANGED) ----------------
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Saving form:", formData);
 
     if (
       formData.name === "" ||
@@ -101,35 +135,85 @@ const DepreciationPage: React.FC = () => {
       formData.currentValue === ""
     ) return;
 
-    const newAsset: Asset = {
-      id: editIndex !== null ? assets[editIndex].id : (assets.length + 1).toString().padStart(3, "0"),
+    const payload = {
       name: formData.name,
-      acquisitionDate: formData.acquisitionDate,
-      initialValue: Number(formData.initialValue),
-      currentValue: Number(formData.currentValue),
+      acquisition_date: formData.acquisitionDate,
+      purchase_cost: formData.initialValue,
+      current_value: formData.currentValue,
     };
 
-    if (editIndex === null) {
-      setAssets(prev => [...prev, newAsset]);
-      console.log("Added new asset:", newAsset);
-    } else {
-      setAssets(prev => prev.map((a, idx) => (idx === editIndex ? newAsset : a)));
-      console.log("Edited asset at index", editIndex, newAsset);
-    }
+    try {
+      if (editIndex === null) {
+        const newAsset = await fetchDataWithAuthFallback(
+          `${baseURL}/api/assets`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
 
-    setFormData({ name: "", acquisitionDate: "", initialValue: "", currentValue: "" });
-    setEditIndex(null);
-    closeModal();
+        setAssets(prev => [
+          ...prev,
+          {
+            id: newAsset.asset_id.toString(),
+            name: newAsset.name,
+            acquisitionDate: newAsset.acquisition_date,
+            initialValue: parseFloat(newAsset.purchase_cost),
+            currentValue: parseFloat(newAsset.current_value),
+          },
+        ]);
+      } else {
+        const id = assets[editIndex].id;
+
+        await fetchDataWithAuthFallback(
+          `${baseURL}/api/assets/${id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        setAssets(prev =>
+          prev.map((a, idx) =>
+            idx === editIndex
+              ? {
+                  ...a,
+                  name: payload.name,
+                  acquisitionDate: payload.acquisition_date,
+                  initialValue: Number(payload.purchase_cost),
+                  currentValue: Number(payload.current_value),
+                }
+              : a
+          )
+        );
+      }
+
+      closeModal();
+      setEditIndex(null);
+    } catch (error) {
+      console.error("Error saving asset:", error);
+    }
   };
 
-  const handleDelete = (index: number) => {
+  // ---------------- Delete ----------------
+  const handleDelete = async (depreciationId?: number) => {
     if (window.confirm("Are you sure you want to delete this asset?")) {
-      setAssets(prev => prev.filter((_, idx) => idx !== index));
-      console.log("Deleted asset at index:", index);
+      try {
+        await fetchDataWithAuthFallback(
+          `${baseURL}/api/depreciation/${depreciationId}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        setAssets(prev => prev.filter(a => a.depreciation_id !== depreciationId));
+      } catch (error) {
+        console.error("Error deleting asset:", error);
+      }
     }
   };
-
-  console.log("Render - modalOpen:", modalOpen);
 
   return (
     <div className="dashboard-wrapper">
@@ -154,9 +238,7 @@ const DepreciationPage: React.FC = () => {
         </div>
         <h2>ASSET MANAGER</h2>
         {hasPermission("View Asset Dashboard") && <a href="/assets/dashboard">Dashboard</a>}
-        {hasPermission("View CongView All Assets") && <a href="/assets/assets">
-          Asset Inventory
-        </a>}
+        {hasPermission("View All Assets") && <a href="/assets/assets">Asset Inventory</a>}
         {hasPermission("View Asset Depreciation") && <a href="/assets/depreciation" className="active">Depreciation Info</a>}
         {hasPermission("Manage Asset Maintenance") && <a href="/assets/maintenance">Maintenance</a>}
         
@@ -183,15 +265,6 @@ const DepreciationPage: React.FC = () => {
 
         <h1>Asset Depreciation</h1>
 
-        <div className="table-header">
-          <button
-            className="add-btn"
-            onClick={() => { console.log("Clicked Add Asset"); openModal(); }}
-          >
-            + &nbsp; Add New Asset
-          </button>
-        </div>
-
         <table className="responsive-table">
           <thead>
             <tr>
@@ -204,95 +277,58 @@ const DepreciationPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {assets.map((asset, index) => (
+            {assets.map((asset) => (
               <tr key={asset.id}>
                 <td>{asset.name}</td>
                 <td>{asset.acquisitionDate}</td>
                 <td>{asset.initialValue}</td>
                 <td>{asset.currentValue}</td>
-                <td>{((asset.initialValue - asset.currentValue) / asset.initialValue * 100).toFixed(2)}</td>
+                <td>
+                  {((asset.initialValue - asset.currentValue) / asset.initialValue * 100).toFixed(2)}
+                </td>
                 <td className="actions">
-                  <button className="edit-btn" onClick={() => openModal(index)}>Edit</button>
-                  <button className="delete-btn" onClick={() => handleDelete(index)}>Delete</button>
+                  <button
+                    className="edit-btn"
+                    onClick={() => navigate(`/assets/editDepreciation/${asset.depreciation_id}`)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="delete-btn"
+                    onClick={() => handleDelete(asset.depreciation_id)}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* Modal */}
+        {/* Modal (UNCHANGED) */}
         {modalOpen && (
           <>
-            <div
-              className="overlay"
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: "rgba(0,0,0,0.5)",
-                zIndex: 9998
-              }}
-              onClick={closeModal}
-            ></div>
-            <div
-              className="modal"
-              style={{
-                position: "fixed",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                zIndex: 9999,
-                backgroundColor: "#fff",
-                padding: "1.5rem",
-                borderRadius: "8px",
-                minWidth: "300px",
-              }}
-            >
+            <div className="overlay" onClick={closeModal}></div>
+            <div className="modal">
               <div className="modal-content">
                 <h2>{editIndex !== null ? "Edit Asset" : "Add New Asset"}</h2>
                 <form onSubmit={handleSave}>
                   <label>Asset Name</label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={formData.name}
-                    onChange={handleFormChange}
-                    required
-                  />
+                  <input type="text" id="name" value={formData.name} onChange={handleFormChange} required />
 
                   <label>Acquisition Date</label>
-                  <input
-                    type="date"
-                    id="acquisitionDate"
-                    value={formData.acquisitionDate}
-                    onChange={handleFormChange}
-                    required
-                  />
+                  <input type="date" id="acquisitionDate" value={formData.acquisitionDate} onChange={handleFormChange} required />
 
-                  <label>Initial Value ($)</label>
-                  <input
-                    type="number"
-                    id="initialValue"
-                    value={formData.initialValue ?? ""}
-                    onChange={handleFormChange}
-                    required
-                  />
+                  <label>Initial Value (K)</label>
+                  <input type="number" id="initialValue" value={formData.initialValue ?? ""} onChange={handleFormChange} required />
 
-                  <label>Current Value ($)</label>
-                  <input
-                    type="number"
-                    id="currentValue"
-                    value={formData.currentValue ?? ""}
-                    onChange={handleFormChange}
-                    required
-                  />
+                  <label>Current Value (K)</label>
+                  <input type="number" id="currentValue" value={formData.currentValue ?? ""} onChange={handleFormChange} required />
 
                   <label>Depreciation Rate (%)</label>
                   <input type="number" value={depreciationRate} readOnly />
 
-                  <div className="modal-buttons" style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+                  <div className="modal-buttons">
                     <button type="submit" className="add-btn">Save</button>
                     <button type="button" className="cancel-btn" onClick={closeModal}>Cancel</button>
                   </div>

@@ -160,28 +160,56 @@ const EditAssetPage: React.FC = () => {
       longitude: formData.longitude || null,
     };
 
+    // Calculate Depreciation Rate and Depreciation Amount
+    const purchaseCost = parseFloat(formData.purchase_cost);
+    const currentValue = parseFloat(formData.current_value);
+
+    const depreciationRate = ((purchaseCost - currentValue) / purchaseCost) * 100;
+    const depreciationAmount = purchaseCost - currentValue;  // Assuming full depreciation is recorded at the point of purchase
+
+    const depreciationPayload = {
+      asset_id: id,
+      fiscal_year: new Date().getFullYear(),
+      opening_value: purchaseCost,
+      depreciation_rate: depreciationRate.toFixed(2),
+      depreciation_amount: depreciationAmount.toFixed(2),
+      closing_value: currentValue,
+      useful_life: 10, // Assuming 10 years useful life. You can adjust based on user input
+    };
+
     try {
+      // Step 1: Update Asset
       await authFetch(`${baseURL}/api/assets/${id}`, {
-        method: "PUT",
+        method: "PATCH",
         body: JSON.stringify(payload),
       });
 
-      alert("Asset updated successfully!");
+      // Step 2: Update Depreciation for the Asset
+      await authFetch(`${baseURL}/api/depreciation/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(depreciationPayload),
+      });
+
+      alert("Asset and depreciation updated successfully!");
       navigate("/assets/assets");
     } catch (err) {
-      console.error("authFetch failed, fallback:", err);
-
+      console.error("Error updating asset or depreciation:", err);
       try {
         await orgFetch(`${baseURL}/api/assets/${id}`, {
-          method: "PUT",
+          method: "PATCH",
           body: JSON.stringify(payload),
         });
 
-        alert("Asset updated successfully!");
+        await orgFetch(`${baseURL}/api/depreciation/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(depreciationPayload),
+        });
+
+        alert("Asset and depreciation updated successfully!");
         navigate("/assets/assets");
       } catch (error) {
-        console.error("orgFetch failed:", error);
-        alert("Failed to update asset.");
+        console.error("Error updating with orgFetch:", error);
+        alert("Failed to update asset or depreciation.");
       }
     }
   };
@@ -275,6 +303,7 @@ const EditAssetPage: React.FC = () => {
             <label>Condition</label>
             <select name="condition_status" value={formData.condition_status} onChange={handleChange} required>
               <option value="">Select</option>
+              <option>Excellent</option>
               <option>Good</option>
               <option>Fair</option>
               <option>Poor</option>
@@ -284,6 +313,7 @@ const EditAssetPage: React.FC = () => {
             <select name="status" value={formData.status} onChange={handleChange} required>
               <option value="">Select</option>
               <option>In Use</option>
+              <option>In Storage</option>
               <option>In Maintenance</option>
               <option>Disposed</option>
             </select>

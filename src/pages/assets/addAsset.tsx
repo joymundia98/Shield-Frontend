@@ -124,7 +124,15 @@ const AddAssetPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload = {
+    // Calculate Depreciation Rate and Depreciation Amount
+    const purchaseCost = parseFloat(formData.purchase_cost);
+    const currentValue = parseFloat(formData.current_value);
+
+    const depreciationRate = ((purchaseCost - currentValue) / purchaseCost) * 100;
+    const depreciationAmount = purchaseCost - currentValue;  // Assuming full depreciation is recorded at the point of purchase
+
+    // Form Data Payload for Asset
+    const assetPayload = {
       name: formData.name,
       category_id: formData.category_id,
       location_id: formData.location_id,
@@ -141,20 +149,39 @@ const AddAssetPage: React.FC = () => {
     };
 
     try {
-      // Just await, no need to store response if you don't use it
-      await authFetch(`${baseURL}/api/assets`, {
+      // Step 1: Create Asset
+      const assetResponse = await authFetch(`${baseURL}/api/assets`, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(assetPayload),
       });
-      alert("Asset added successfully!");
+
+      const assetId = assetResponse.asset_id; // assuming the response includes the asset id
+
+      // Step 2: Create Depreciation Entry for the New Asset
+      const depreciationPayload = {
+        asset_id: assetId,
+        fiscal_year: new Date().getFullYear(),
+        opening_value: purchaseCost, // Opening value from the asset
+        depreciation_rate: depreciationRate.toFixed(2),
+        depreciation_amount: depreciationAmount.toFixed(2),
+        closing_value: currentValue,
+        useful_life: 10, // Assuming 10 years useful life. You can adjust based on user input
+      };
+
+      // Create depreciation record
+      await authFetch(`${baseURL}/api/depreciation`, {
+        method: "POST",
+        body: JSON.stringify(depreciationPayload),
+      });
+
+      alert("Asset added and depreciation recorded successfully!");
       navigate("/assets/assets");
     } catch (err) {
       console.error("Error submitting with authFetch, falling back to orgFetch:", err);
-
       try {
         await orgFetch(`${baseURL}/api/assets`, {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: JSON.stringify(assetPayload),
         });
         alert("Asset added successfully!");
         navigate("/assets/assets");
@@ -253,6 +280,7 @@ const AddAssetPage: React.FC = () => {
             <label>Condition Status</label>
             <select name="condition_status" value={formData.condition_status} onChange={handleChange} required>
               <option value="">Select Condition</option>
+              <option>Excellent</option>
               <option>Good</option>
               <option>Fair</option>
               <option>Poor</option>
@@ -262,6 +290,7 @@ const AddAssetPage: React.FC = () => {
             <select name="status" value={formData.status} onChange={handleChange} required>
               <option value="">Select Status</option>
               <option>In Use</option>
+              <option>In Storage</option>
               <option>In Maintenance</option>
               <option>Disposed</option>
             </select>
