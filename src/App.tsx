@@ -4,6 +4,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LandingPage } from "./pages/LandingPage";
 import { ForgotPasswordForm } from './components/Auth/forgotPassword';
+import { ResetPassword } from './components/Auth/resetPassword';
 
 //Remodelled Landing Page
 import  Landing  from "./pages/Landing/Landing";
@@ -251,6 +252,8 @@ function App() {
 
           {/* Forgot Password Route */}
           <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/register" element={<RegisterPage />} />
 
