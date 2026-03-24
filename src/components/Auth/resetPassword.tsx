@@ -19,6 +19,9 @@ export const ResetPassword = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   useEffect(() => {
     if (sidebarOpen) document.body.classList.add("sidebar-open");
     else document.body.classList.remove("sidebar-open");
@@ -124,7 +127,7 @@ export const ResetPassword = () => {
             <img src={headerLogo} alt="Logo" />
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="off">
             <h3 style={{ textAlign: "center", marginBottom: "20px" }}>
               Reset Password
             </h3>
@@ -139,22 +142,38 @@ export const ResetPassword = () => {
             {/* New Password */}
             <div className="field input-field">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
+                autoComplete="new-password"
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <label>New Password</label>
+              <span
+                className="showPassword"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "👁️" : "🙈"}
+              </span>
               <label>New Password</label>
             </div>
 
             {/* Confirm Password */}
             <div className="field input-field">
               <input
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 required
                 value={confirmPassword}
+                autoComplete="new-password"
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
+              <label>Confirm Password</label>
+              <span
+                className="showPassword"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? "👁️" : "🙈"}
+              </span>
               <label>Confirm Password</label>
             </div>
 

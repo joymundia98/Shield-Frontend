@@ -16,10 +16,13 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export const ForgotPasswordForm = () => {
-  const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // ✅ Modal + countdown state
+  const [showModal, setShowModal] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15 * 60);
 
   const location = useLocation();
 
@@ -30,6 +33,29 @@ export const ForgotPasswordForm = () => {
   useEffect(() => {
     document.body.classList.toggle("sidebar-open", sidebarOpen);
   }, [sidebarOpen]);
+
+  // ✅ Countdown logic
+  useEffect(() => {
+    if (!showModal) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [showModal]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   const menuLinks = [
     { label: "Home", path: "/" },
@@ -44,16 +70,16 @@ export const ForgotPasswordForm = () => {
   const onSubmit = async (data: ForgotPasswordFormData) => {
     setLoading(true);
     setError('');
-    setStatusMessage('');
 
     try {
       await axios.post(`${baseURL}/api/auth/forgot-password`, {
         email: data.email,
       });
 
-      setStatusMessage(
-        '✅ If this email exists, a password reset link has been sent.'
-      );
+      // ✅ Show modal + reset timer
+      setTimeLeft(15 * 60);
+      setShowModal(true);
+
     } catch (err: any) {
       console.error('Forgot password error:', err);
       setError(err.response?.data?.message || 'Something went wrong. Please try again.');
@@ -105,7 +131,7 @@ export const ForgotPasswordForm = () => {
         </button>
       )}
 
-      {/* Forgot Password Form */}
+      {/* Form */}
       <div className="login-parent-container">
         <div className="loginContainer">
           <div className="header">
@@ -119,10 +145,9 @@ export const ForgotPasswordForm = () => {
             </div>
 
             {error && <div className="form-error">{error}</div>}
-            {statusMessage && <div className="success-card">{statusMessage}</div>}
 
             <div className="field button-field">
-              <button type="submit" disabled={loading}>
+              <button type="submit" disabled={loading || showModal}>
                 {loading ? 'Sending...' : 'Send Reset Link'}
               </button>
             </div>
@@ -134,6 +159,125 @@ export const ForgotPasswordForm = () => {
           </form>
         </div>
       </div>
+
+      {/* ✅ Embedded Glass Modal */}
+      {showModal && (
+        <>
+          <style>{`
+            .glass-modal {
+              padding: 40px;
+              width: 440px;
+              border-radius: 24px;
+              text-align: center;
+              color: white;
+              border: 1px solid rgba(255,255,255,0.3);
+
+              background: linear-gradient(
+                135deg,
+                rgba(255,255,255,0.25),
+                rgba(255,255,255,0.08),
+                rgba(255,255,255,0.03)
+              );
+
+              backdrop-filter: blur(10px);
+              box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+              animation: popIn 0.4s ease;
+            }
+
+            .glass-modal p {
+              opacity: 0.95;
+              line-height: 1.6;
+              margin-bottom: 18px;
+              color: white;
+            }
+
+            .timer {
+              font-size: 18px;
+              font-weight: 600;
+              margin-top: 10px;
+              color: #00ffcc;
+            }
+
+            .glass-button {
+              cursor: pointer;
+              margin-top: 20px;
+              padding: 14px 28px;
+              border-radius: 999px;
+
+              border: 1px solid rgba(255,255,255,0.3);
+
+              background: linear-gradient(
+                135deg,
+                rgba(255,255,255,0.3),
+                rgba(255,255,255,0.05)
+              );
+
+              color: white;
+              font-size: 16px;
+              font-weight: 600;
+
+              backdrop-filter: blur(8px);
+              transition: all 0.4s ease;
+            }
+
+            .glass-button:hover {
+              transform: scale(1.05);
+            }
+
+            .disabled {
+              opacity: 0.5;
+              cursor: not-allowed;
+            }
+
+            @keyframes popIn {
+              from { transform: scale(0.9); opacity: 0; }
+              to { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
+
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.65)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999
+          }}>
+            <div className="glass-modal">
+              <h2>Password Reset Email Sent</h2>
+
+              <p>
+                If an account with the provided email exists, a password reset link
+                has been sent.
+              </p>
+
+              <p>
+                Please check your inbox as well as your spam or junk folder.
+                For security reasons, this link will expire in <strong>15 minutes</strong>.
+              </p>
+
+              <div className="timer">
+                {timeLeft > 0
+                  ? `You can request another link in ${formatTime(timeLeft)}`
+                  : "You may now request a new reset link."}
+              </div>
+
+              <button
+                className={`glass-button ${timeLeft > 0 ? "disabled" : ""}`}
+                disabled={timeLeft > 0}
+                onClick={() => setShowModal(false)}
+              >
+                {timeLeft > 0 ? "Please wait..." : "Request Again"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };
