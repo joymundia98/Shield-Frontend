@@ -170,7 +170,7 @@ const AdminAccountsPage: React.FC = () => {
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
         <header>
-          <h1>System Administrator Accounts</h1>
+          <h1>Registered System Administrator Accounts</h1>
           
         </header>
 

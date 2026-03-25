@@ -15,8 +15,13 @@ interface Organization {
   district: string;
   email: string;
   status: string;
-  createdAt: string;
-  trialEnd: string;
+
+  createdAt: Date;
+  trialEnd: Date;
+
+  createdAtDisplay: string;
+  trialEndDisplay: string;
+  
   orgType: string;
 }
 
@@ -98,8 +103,12 @@ const OrganizationRegistrationsPage: React.FC = () => {
                 email: org.organization_email,
                 status: org.status,
                 orgType: orgTypeName,
-                createdAt: createdDate.toLocaleString(),
-                trialEnd: trialEndDate.toLocaleDateString(),
+
+                createdAt: createdDate, // ✅ keep as Date object
+                trialEnd: trialEndDate, // ✅ keep as Date object
+
+                createdAtDisplay: createdDate.toLocaleString(), // for UI only
+                trialEndDisplay: trialEndDate.toLocaleDateString(),
             };
             });
 
@@ -133,18 +142,15 @@ const OrganizationRegistrationsPage: React.FC = () => {
     .filter((org) => {
       if (selectedTrialFilter === "all") return true;
 
-      const createdDate = new Date(org.createdAt);
-      const trialEnd = new Date(createdDate);
-      trialEnd.setDate(trialEnd.getDate() + 21);
-
+      const trialEnd = new Date(org.trialEnd);
       const today = new Date();
 
       if (selectedTrialFilter === "in_trial") {
-        return trialEnd >= today;
+        return trialEnd > today; // strictly later than today
       }
 
       if (selectedTrialFilter === "completed") {
-        return trialEnd < today;
+        return trialEnd <= today;
       }
 
       return true;
@@ -153,7 +159,6 @@ const OrganizationRegistrationsPage: React.FC = () => {
 
 // KPI Logic
 const kpiData = useMemo(() => {
-  // remove test organizations
   const validOrgs = organizations.filter(
     (org) => !org.email || !org.email.toLowerCase().includes("test.com")
   );
@@ -164,12 +169,9 @@ const kpiData = useMemo(() => {
   let completedTrial = 0;
 
   validOrgs.forEach((org) => {
-    const createdDate = new Date(org.createdAt);
+    const trialEnd = new Date(org.trialEnd);
 
-    const trialEnd = new Date(createdDate);
-    trialEnd.setDate(trialEnd.getDate() + 21);
-
-    if (trialEnd >= today) {
+    if (trialEnd > today) {
       activeTrial++;
     } else {
       completedTrial++;
@@ -324,8 +326,8 @@ const kpiData = useMemo(() => {
                 <td>{org.district}</td>
                 <td>{org.email}</td>
                 <td>{org.status}</td>
-                <td>{org.createdAt}</td>
-                <td>{org.trialEnd}</td>
+                <td>{org.createdAtDisplay}</td>
+                <td>{org.trialEndDisplay}</td>
               </tr>
             ))}
           </tbody>
