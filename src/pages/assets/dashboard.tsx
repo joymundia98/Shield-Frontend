@@ -225,21 +225,57 @@ const AssetDashboard: React.FC = () => {
       .slice(0, 10);
   }, [assets]);
 
-  // ================= MOCK MAINTENANCE =================
-  const maintenanceList: Maintenance[] = useMemo(() => [
-    {
-      assetName: "Generator GX200",
-      nextService: "2025-12-01",
-      type: "Full Service",
-      status: "Scheduled",
-    },
-    {
-      assetName: "Office AC Unit",
-      nextService: "2025-12-04",
-      type: "Filter Replacement",
-      status: "Pending",
-    },
-  ], []);
+  // ================= REAL MAINTENANCE =================
+  const [maintenanceList, setMaintenanceList] = useState<Maintenance[]>([]);
+
+  useEffect(() => {
+    const fetchMaintenance = async () => {
+      try {
+        const [records, categoriesData, assetsData] = await Promise.all([
+          authFetch(`${baseURL}/api/maintenance_records`),
+          authFetch(`${baseURL}/api/maintenance_categories`),
+          authFetch(`${baseURL}/api/assets`)
+        ]);
+
+        // Create lookup maps
+        const categoryMap: Record<number, string> = {};
+        categoriesData.forEach((c: any) => {
+          categoryMap[c.id] = c.name;
+        });
+
+        const assetMap: Record<number, string> = {};
+        assetsData.forEach((a: any) => {
+          assetMap[a.asset_id] = a.name;
+        });
+
+        const today = new Date().toISOString().split("T")[0];
+
+        const mapped: Maintenance[] = records
+          .map((rec: any) => ({
+            assetName: assetMap[rec.asset_id] || `Asset #${rec.asset_id}`,
+            nextService: rec.next_service?.split("T")[0],
+            type: categoryMap[rec.category_id] || "Unknown",
+            status: rec.status,
+          }))
+          // ✅ Only upcoming
+          .filter((m: Maintenance) => m.nextService && m.nextService >= today)
+          // ✅ Sort by nearest date
+          .sort(
+            (a: Maintenance, b: Maintenance) =>
+              new Date(a.nextService).getTime() -
+              new Date(b.nextService).getTime()
+          )
+          // ✅ Only 3
+          .slice(0, 3);
+
+        setMaintenanceList(mapped);
+      } catch (err) {
+        console.error("Error fetching maintenance:", err);
+      }
+    };
+
+    fetchMaintenance();
+  }, []);
 
   /*================Asset value Format Helper function==============*/
   const formatCurrency = (value: number) => {
