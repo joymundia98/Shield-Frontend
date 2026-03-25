@@ -56,19 +56,22 @@ const AdminAccountsPage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch organizations
         const orgRes = await authFetch(`${baseURL}/api/organizations`);
-        setOrganizations(orgRes);
+        setOrganizations(orgRes.data || orgRes); // access .data
 
-        const userRes = await authFetch(`${baseURL}/api/users`);
+        // Fetch users
+        const userRes = await authFetch(`${baseURL}/api/users/all`);
+        const users = userRes.data || userRes; // access .data
 
-        const adminData: AdminAccount[] = userRes
+        const adminData: AdminAccount[] = users
           .filter((user: any) => {
             if (user.position !== "System Administrator") return false;
             if (user.email?.toLowerCase().includes("test.com")) return false;
             return true;
           })
           .map((user: any) => {
-            const org = orgRes.find(
+            const org = (orgRes.data || orgRes).find(
               (o: any) => o.id === user.organization_id
             );
             return {
