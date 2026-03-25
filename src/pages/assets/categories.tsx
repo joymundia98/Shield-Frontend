@@ -19,6 +19,12 @@ interface Asset {
   category_id: number;
 }
 
+interface MaintenanceRecord {
+  id: number;
+  asset_id: number;
+  category_id: number; // maintenance category
+}
+
 const CategoriesPage: React.FC = () => {
   const navigate = useNavigate();
   const { hasPermission } = useAuth();
@@ -59,19 +65,20 @@ const CategoriesPage: React.FC = () => {
       try {
         setLoading(true);
 
-        const [categoriesData, assetsData] = await Promise.all([
+        const [assetCategoriesData, assetsData, maintenanceData, maintenanceRecordsData] = await Promise.all([
           fetchDataWithAuthFallback(`${baseURL}/api/assets/categories`),
           fetchDataWithAuthFallback(`${baseURL}/api/assets`),
+          fetchDataWithAuthFallback(`${baseURL}/api/maintenance_categories`),
+          fetchDataWithAuthFallback(`${baseURL}/api/maintenance_records`),
         ]);
 
-        // Count assets per category
+        // ---------------- Asset Categories ----------------
         const assetCounts: Record<number, number> = {};
         (assetsData as Asset[]).forEach((asset) => {
           assetCounts[asset.category_id] = (assetCounts[asset.category_id] || 0) + 1;
         });
 
-        // Map asset categories with totals
-        const mappedAssetCategories: Category[] = (categoriesData as any[]).map((item) => ({
+        const mappedAssetCategories: Category[] = (assetCategoriesData as any[]).map((item) => ({
           id: item.category_id,
           name: item.name,
           desc: item.description,
@@ -80,12 +87,23 @@ const CategoriesPage: React.FC = () => {
 
         setAssetCategories(mappedAssetCategories);
 
-        // Maintenance categories (frontend-only)
-        setMaintenanceCategories([
-          { id: 1, name: "Preventive", desc: "Scheduled routine maintenance" },
-          { id: 2, name: "Corrective", desc: "Repair after breakdown" },
-          { id: 3, name: "Inspection", desc: "Routine inspection and checks" },
-        ]);
+        // ---------------- Maintenance Categories ----------------
+        const maintenanceCounts: Record<number, number> = {};
+        (maintenanceRecordsData as MaintenanceRecord[]).forEach((record) => {
+          const catId = record.category_id;
+          if (catId) {
+            maintenanceCounts[catId] = (maintenanceCounts[catId] || 0) + 1;
+          }
+        });
+
+        const mappedMaintenanceCategories: Category[] = (maintenanceData as any[]).map((item) => ({
+          id: item.id,
+          name: item.name,
+          desc: item.description,
+          total: maintenanceCounts[item.id] || 0,
+        }));
+
+        setMaintenanceCategories(mappedMaintenanceCategories);
 
       } catch (err: any) {
         setError(err.message || "Failed to load categories");
@@ -133,26 +151,34 @@ const CategoriesPage: React.FC = () => {
     }
 
     try {
-      if (isMaintenance) {
-        // Frontend-only maintenance categories
-        const updated = [...maintenanceCategories];
-        if (editId !== null) {
-          const index = updated.findIndex((c) => c.id === editId);
-          if (index >= 0) updated[index] = { ...updated[index], name: categoryName, desc: categoryDesc };
-        } else {
-          updated.push({ id: Date.now(), name: categoryName, desc: categoryDesc });
-        }
-        setMaintenanceCategories(updated);
-        closePopup();
-        return;
-      }
-
-      // ---------------- Asset Categories ----------------
       const options: RequestInit = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: categoryName, description: categoryDesc }),
       };
 
+      if (isMaintenance) {
+        // ---------------- Maintenance Categories ----------------
+        if (editId !== null) {
+          // Update existing
+          options.method = "PATCH";
+          await fetchDataWithAuthFallback(`${baseURL}/api/maintenance_categories/${editId}`, options);
+
+          const updated = maintenanceCategories.map((c) =>
+            c.id === editId ? { ...c, name: categoryName, desc: categoryDesc } : c
+          );
+          setMaintenanceCategories(updated);
+        } else {
+          // Create new
+          options.method = "POST";
+          const newCategory = await fetchDataWithAuthFallback(`${baseURL}/api/maintenance_categories`, options);
+          setMaintenanceCategories([...maintenanceCategories, { id: newCategory.id, name: newCategory.name, desc: newCategory.description, total: 0 }]);
+        }
+
+        closePopup();
+        return;
+      }
+
+      // ---------------- Asset Categories ----------------
       if (editId !== null) {
         // Update existing
         options.method = "PATCH";
@@ -166,7 +192,7 @@ const CategoriesPage: React.FC = () => {
         // Create new
         options.method = "POST";
         const newCategory = await fetchDataWithAuthFallback(`${baseURL}/api/assets/categories`, options);
-        setAssetCategories([...assetCategories, { id: newCategory.category_id, name: newCategory.name, desc: newCategory.description }]);
+        setAssetCategories([...assetCategories, { id: newCategory.category_id, name: newCategory.name, desc: newCategory.description, total: 0 }]);
       }
 
       closePopup();
@@ -182,6 +208,7 @@ const CategoriesPage: React.FC = () => {
 
     try {
       if (maintenance) {
+        await fetchDataWithAuthFallback(`${baseURL}/api/maintenance_categories/${id}`, { method: "DELETE" });
         setMaintenanceCategories((prev) => prev.filter((c) => c.id !== id));
         return;
       }
@@ -254,7 +281,7 @@ const CategoriesPage: React.FC = () => {
                   <td>{cat.id}</td>
                   <td>{cat.name}</td>
                   <td>{cat.desc}</td>
-                  <td>{cat.total}</td>
+                  <td>{cat.total || 0}</td>
                   <td>
                     <button className="edit-btn" onClick={() => openPopup(cat.id, false)}>Edit</button>&emsp;
                     <button className="delete-btn" onClick={() => deleteCategory(cat.id, false)}>Delete</button>
@@ -278,6 +305,7 @@ const CategoriesPage: React.FC = () => {
                 <th>ID</th>
                 <th>Name</th>
                 <th>Description</th>
+                <th>Total Assets</th> {/* NEW */}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -287,6 +315,7 @@ const CategoriesPage: React.FC = () => {
                   <td>{cat.id}</td>
                   <td>{cat.name}</td>
                   <td>{cat.desc}</td>
+                  <td>{cat.total || 0}</td> {/* NEW */}
                   <td>
                     <button className="edit-btn" onClick={() => openPopup(cat.id, true)}>Edit</button>&emsp;
                     <button className="delete-btn" onClick={() => deleteCategory(cat.id, true)}>Delete</button>

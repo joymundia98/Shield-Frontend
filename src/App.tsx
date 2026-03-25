@@ -69,6 +69,8 @@ import AddAssetPage from "./pages/assets/addAsset";
 import EditAssetPage from "./pages/assets/editAsset";
 import AssetLocationsPage from "./pages/assets/AssetLocation";
 import MaintenancePage from "./pages/assets/maintenance";
+import AddMaintenancePage from "./pages/assets/addMaintenance";
+import EditMaintenancePage from "./pages/assets/editMaintenance";
 import CategoriesPage from "./pages/assets/categories";
 
 // Finance Module Functional Pages
@@ -371,6 +373,14 @@ function App() {
           <Route
               path="/assets/editDepreciation/:id"
               element={<EditDepreciationPage />}
+            />
+          <Route
+              path="/assets/maintenance/schedule"
+              element={<AddMaintenancePage />}
+            />
+          <Route
+              path="//assets/maintenance/edit/:id"
+              element={<EditMaintenancePage />}
             />
 
           <Route path="/assets/viewAsset" element={
