@@ -217,7 +217,9 @@ const kpiData = useMemo(() => {
 
         <h2>SUPER ADMIN</h2>
 
-          <a href="/SuperAdmin/RegisteredOrganizations">Registered Organizations</a>
+          <a href="/SuperAdmin/dashboard">Dashboard</a>
+
+          <a href="/SuperAdmin/RegisteredOrganizations" className="active">Registered Organizations</a>
         
           <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
         

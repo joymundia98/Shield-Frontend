@@ -625,3 +625,39 @@ body:not(.sidebar-open) .close-wrapper {
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* Super Admin Ribbon */
+.loginContainer {
+  position: relative; /* VERY IMPORTANT: anchors the ribbon to the form */
+}
+
+/* Folded-corner ribbon CSS (from your original working version) */
+.ribbon {
+  font-size: 28px;
+  font-weight: bold;
+  color: #fff;
+}
+.ribbon {
+  --f: .5em; /* folded part size */
+  position: absolute;
+  top: 0;
+  right: 0;
+  line-height: 1.8;
+  padding-inline: 1lh;
+  padding-bottom: var(--f);
+  border-image: conic-gradient(#0008 0 0) 51%/var(--f);
+  clip-path: polygon(
+    100% calc(100% - var(--f)),
+    100% 100%,
+    calc(100% - var(--f)) calc(100% - var(--f)),
+    var(--f) calc(100% - var(--f)),
+    0 100%,
+    0 calc(100% - var(--f)),
+    999px calc(100% - var(--f) - 999px),
+    calc(100% - 999px) calc(100% - var(--f) - 999px)
+  );
+  transform: translate(calc((1 - cos(45deg))*100%), -100%) rotate(45deg);
+  transform-origin: 0% 100%;
+  background-color: #BD1550; /* main color */
+  z-index: 10;
+}

@@ -159,6 +159,8 @@ import UnderConstructionPage from "./pages/InProgress";
 
 
 //Super Admin Pages
+import SuperAdminDashboard from "./pages/SuperAdmin/dashboard";
+import SuperAdminLoginForm from './components/Auth/superAdmin';
 import OrganizationRegistrationsPage from "./pages/SuperAdmin/organizationRegistrations";
 import AdminAccountsPage from "./pages/SuperAdmin/AdminAccounts";
 
@@ -891,6 +893,8 @@ function App() {
           {/* ------------------------------
                   SUPER ADMIN MODULE
           --------------------------------*/}
+          <Route path="/SuperAdmin" element={<SuperAdminLoginForm />} />
+          <Route path="/SuperAdmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/SuperAdmin/RegisteredOrganizations" element={<OrganizationRegistrationsPage />} />
           <Route path="/SuperAdmin/RegisteredAdmins" element={<AdminAccountsPage />} />
 

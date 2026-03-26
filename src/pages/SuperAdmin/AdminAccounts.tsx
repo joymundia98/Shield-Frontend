@@ -147,9 +147,11 @@ const AdminAccountsPage: React.FC = () => {
 
         <h2>SUPER ADMIN</h2>
 
+        <a href="/SuperAdmin/dashboard">Dashboard</a>
+
         <a href="/SuperAdmin/RegisteredOrganizations">Registered Organizations</a>
         
-        <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
+        <a href="/SuperAdmin/RegisteredAdmins" className="active">System Admin Accounts</a>
 
         {hasPermission("View Main Dashboard") && (
           <a href="/dashboard" className="return-main">
