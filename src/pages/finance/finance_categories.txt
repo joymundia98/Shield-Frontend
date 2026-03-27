@@ -1,0 +1,259 @@
+============================================================
+CHURCH FINANCIAL STRUCTURE REFERENCE DOCUMENT
+============================================================
+
+==========================
+INCOME CATEGORIES
+==========================
+
+1. Donations
+   - Online Donations
+   - Cash Donations
+   - Anonymous Donations
+   - Corporate Donations
+   - In-Kind Donations
+
+2. Tithes
+   - Monthly Tithes
+   - Special Tithes
+   - Online Tithes
+   - Cash Tithes
+
+3. Fundraising
+   - Events
+   - Merchandise Sales
+   - Pledges
+   - Crowdfunding
+   - Auctions
+
+4. Grants
+   - Government Grants
+   - Private Grants
+   - Semi-Private Grants
+   - Foundation Grants
+   - International Grants
+
+5. Offerings
+   - Sunday Offerings
+   - Midweek Offerings
+   - Special Offerings
+   - Thanksgiving Offerings
+   - Cash Offerings
+   - Online Offerings
+
+6. Asset Sales
+   - Sale of Buildings
+   - Sale of Furniture
+   - Sale of Equipment
+   - Sale of Vehicles
+   - Sale of Land
+   - Scrap Asset Sales
+
+7. Rental Income
+   - Conference Room Rentals
+   - Parking Fees
+   - Hall Rentals
+   - Equipment Rentals
+   - Office Rentals
+   - Event Hosting Fees
+
+8. Program Income
+   - Membership Fees
+   - Seminar Fees
+   - Training Fees
+   - Retreat Fees
+   - Conference Fees
+   - Camp Fees
+   - Counseling Fees
+
+9. Sales / Business Income
+   - Media Sales
+   - Food Sales
+   - Cafe Income
+   - Bookshop Sales
+   - Printing Services
+
+10. Investment Income
+    - Interest Income
+    - Treasury Bills & Bonds
+    - Fixed Deposit Interest
+    - Dividends
+
+11. Sponsorships & Partnerships
+    - NGO Partnerships
+    - Program Sponsorships
+    - Event Sponsorships
+    - Corporate Sponsorships
+
+12. Missions Support
+    - Diaspora Contributions
+    - Partner Church Contributions
+    - Foreign Donations
+    - Mission Agency Support
+
+13. Member Contributions
+    - Building Fund Contributions
+    - Love Offerings
+    - Project Contributions
+    - Welfare Contributions
+
+14. Special Occasion Income
+    - Special Celebrations
+    - Baptisms
+    - Dedications
+    - Funerals
+    - Weddings
+
+15. Service Fees
+    - Certification Fees
+    - Facility Usage Fees
+    - Documentation Fees
+
+16. Other Income
+    - Refunds
+    - Write-backs
+    - Foreign Exchange Gains
+    - Miscellaneous Income
+    - Insurance Claims
+
+
+==========================
+EXPENSE CATEGORIES
+==========================
+
+1. Utilities
+   - Electricity
+   - Water
+   - Telephone / Airtime
+   - Generator Fuel
+   - Solar Maintenance
+   - Internet / Wi-Fi
+
+2. Office Supplies
+   - Stationery
+   - Software Licenses
+
+3. Maintenance
+   - Building Repairs
+   - Equipment Repairs
+   - Security
+   - Cleaning Supplies
+   - Plumbing Repairs
+   - Pest Control
+   - Painting & Renovations
+   - Landscaping / Gardening
+   - Electrical Repairs
+   - Cleaning Services
+
+4. Events
+   - Workshops
+   - Conferences
+
+5. Salaries
+   - Staff Salaries
+   - Contractor Payments
+
+6. Operational Expenses
+   - Rent
+   - Utilities
+   - Office Supplies
+   - Equipment & Software
+
+7. Employee Expenses
+   - Salaries & Wages
+   - Reimbursements
+   - Bonuses
+   - Allowances
+   - Staff Welfare
+   - Training & Development
+
+8. Project / Department Expenses
+   - Project Costs
+   - Materials / Consultants / Outsourcing
+
+9. Financial & Regulatory Expenses
+   - Taxes, Fees, Insurance
+   - Compliance Costs
+   - PAYE Tax
+   - NAPSA Contributions
+   - NHIMA Contributions
+   - WCIF Contributions
+   - Union Dues
+   - Audit Fees
+   - Accounting Services
+   - Licenses & Permits
+   - Property Insurance
+   - Legal Fees
+
+10. Capital Expenses
+    - Investments / Assets
+
+11. Hospitality
+    - Refreshments
+    - Food Supplies
+    - Catering Services
+    - Guest Meals
+    - Visitor Welcome Packs
+    - Communion Elements
+    - Ushers Supplies
+    - Disposable Items
+    - Kitchen Supplies & Gas
+    - Special Event Catering
+
+12. Worship & Media
+    - Musical Instruments
+    - Sound Equipment
+    - Media Equipment
+    - Projection & Screens
+    - Worship Team Expenses
+    - Choir Robes / Uniforms
+    - Streaming Costs
+    - Music Copyright Licenses
+
+13. Transport & Logistics
+    - Fuel
+    - Vehicle Maintenance
+    - Vehicle Insurance
+    - Vehicle Licensing
+    - Transport Hire
+    - Travel Allowances
+
+14. Outreach & Missions
+    - Evangelism Materials
+    - Mission Support
+    - Charity & Donations
+    - Community Support Programs
+    - School Fees Assistance
+    - Food Aid Programs
+    - Prison Ministry
+    - Hospital Ministry
+
+
+==========================
+PAYMENT METHODS
+==========================
+
+1. Cash
+2. Credit Card
+3. Bank Transfer
+4. POS
+5. Mobile Money
+6. Cheque
+7. Online Giving Platform
+8. Debit Card
+9. Apple Pay
+10. Google Pay
+11. Samsung Pay
+12. PayPal
+13. Cryptocurrency
+14. Buy Now, Pay Later
+15. Gift Card
+16. Prepaid Card
+17. Direct Debit
+18. Standing Order
+19. Money Order
+
+
+============================================================
+END OF DOCUMENT
+============================================================

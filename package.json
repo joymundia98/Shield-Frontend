@@ -19,6 +19,7 @@
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "chartjs-2": "^0.0.1-security",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "date-fns": "^4.1.0",
     "font-awesome": "^4.7.0",
     "jwt-decode": "^4.0.0",

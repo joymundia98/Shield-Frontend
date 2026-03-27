@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../styles/global.css";
 import { useAuth } from "../../hooks/useAuth";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -97,7 +98,7 @@ const SuperAdminDashboard: React.FC = () => {
     );
   }, [organizations]);
 
-  // ✅ STATUS HELPER (ADDED)
+  // ✅ STATUS HELPER
   const getStatus = (org: Organization) => {
     const today = new Date();
     if (org.trialEnd > today) return "inTrial";
@@ -111,20 +112,81 @@ const SuperAdminDashboard: React.FC = () => {
 
     let active = 0;
     let completed = 0;
+    let converted = 0;
+    let churned = 0;
 
     validOrgs.forEach((org) => {
-      if (org.trialEnd > today) active++;
-      else completed++;
+      if (org.trialEnd > today) {
+        active++;
+      } else {
+        completed++;
+        if (org.hasPaid) converted++;
+        else churned++;
+      }
     });
+
+    const totalCompleted = converted + churned;
+    const satisfaction =
+      totalCompleted === 0
+        ? 0
+        : Number(((converted / totalCompleted) * 5).toFixed(1));
+
+    // SIMULATED revenue comparison
+    const lastMonthRevenue: number = 10000; // Example previous month revenue
+    const currentRevenue = 12500; // Current month revenue
+    let revenueChange = 0;
+    let revenueDirection: "up" | "down" | "same" = "same";
+
+    if (lastMonthRevenue !== 0) {
+      revenueChange = Math.round(((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
+      if (revenueChange > 0) revenueDirection = "up";
+      else if (revenueChange < 0) revenueDirection = "down";
+    }
 
     return {
       total: validOrgs.length,
       active,
       completed,
-      monthlyGrowth: 12, // %
-      revenue: 12500, // $
+      monthlyGrowth: 12,
+      revenue: currentRevenue,
+      revenueChange,
+      revenueDirection,
+      satisfaction,
     };
   }, [validOrgs]);
+
+  // ⭐ STAR RENDERER
+  const renderStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+    return (
+      <div style={{ color: "#FFD700", fontSize: "1.2rem" }}>
+        {"★".repeat(fullStars)}
+        {halfStar ? "⯪" : ""}
+        {"☆".repeat(emptyStars)}
+      </div>
+    );
+  };
+
+  // ⭐ REVENUE INDICATOR
+  const renderRevenueIndicator = (direction: "up" | "down" | "same", percent: number) => {
+    if (direction === "up") return <span style={{ color: "green" }}> ▲ {percent}%</span>;
+    if (direction === "down") return <span style={{ color: "red" }}> ▼ {Math.abs(percent)}%</span>;
+    return <span style={{ color: "blue" }}> ■ 0%</span>;
+  };
+
+  // Revenue breakdown per plan
+// Revenue breakdown per plan
+const revenueBreakdown = useMemo(() => {
+  const colors = ["#1a3c7ca3", "#906cf37c", "#006eff80"]; // solid colors for chart & cards
+  return {
+    labels: ["Single Church", "Multiple Church (Head Office)", "Branch Church"],
+    data: [5000, 8000, 3000],
+    backgroundColor: colors,
+  };
+}, []);
 
   // CHART DATA
   useEffect(() => {
@@ -134,73 +196,63 @@ const SuperAdminDashboard: React.FC = () => {
     regionChartRef.current?.destroy();
 
     // 📈 Growth Chart (with conversions curve)
-        const growthCounts = new Array(12).fill(0);
-        const conversionCounts = new Array(12).fill(0); // NEW
-        const monthLabels: string[] = [];
-        const today = new Date();
+    const growthCounts = new Array(12).fill(0);
+    const conversionCounts = new Array(12).fill(0);
+    const monthLabels: string[] = [];
+    const today = new Date();
 
-        for (let i = 11; i >= 0; i--) {
-        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        monthLabels.push(d.toLocaleString("default", { month: "short" }));
-        }
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      monthLabels.push(d.toLocaleString("default", { month: "short" }));
+    }
 
-        validOrgs.forEach((org) => {
-        const createdDate = new Date(org.createdAt);
-        const monthsAgo =
-            (today.getFullYear() - createdDate.getFullYear()) * 12 +
-            (today.getMonth() - createdDate.getMonth());
+    validOrgs.forEach((org) => {
+      const createdDate = new Date(org.createdAt);
+      const monthsAgo =
+        (today.getFullYear() - createdDate.getFullYear()) * 12 +
+        (today.getMonth() - createdDate.getMonth());
 
-        if (monthsAgo >= 0 && monthsAgo < 12) {
-            const index = 11 - monthsAgo;
-            growthCounts[index] += 1;
+      if (monthsAgo >= 0 && monthsAgo < 12) {
+        const index = 11 - monthsAgo;
+        growthCounts[index] += 1;
+        if (org.hasPaid) conversionCounts[index] += 1;
+      }
+    });
 
-            // Count conversions for the curve
-            if (org.hasPaid) conversionCounts[index] += 1;
-        }
-        });
-
-        const growthCtx = document.getElementById("growthChart") as HTMLCanvasElement;
-        if (growthCtx) {
-        growthChartRef.current = new Chart(growthCtx, {
-            type: "line",
-            data: {
-            labels: monthLabels,
-            datasets: [
-                {
-                label: "Total Sign-Ups",
-                data: growthCounts,
-                borderColor: "#1A3D7C",
-                backgroundColor: "rgba(26, 61, 124, 0.25)",
-                borderWidth: 3,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 3,
-                },
-                {
-                label: "Conversions (Paid)",
-                data: conversionCounts,
-                borderColor: "#4CAF50",
-                backgroundColor: "rgba(76, 175, 80, 0.15)",
-                borderWidth: 3,
-                fill: false,
-                tension: 0.4,
-                pointRadius: 3,
-                },
-            ],
+    const growthCtx = document.getElementById("growthChart") as HTMLCanvasElement;
+    if (growthCtx) {
+      growthChartRef.current = new Chart(growthCtx, {
+        type: "line",
+        data: {
+          labels: monthLabels,
+          datasets: [
+            {
+              label: "Total Sign-Ups",
+              data: growthCounts,
+              borderColor: "#1A3D7C",
+              backgroundColor: "rgba(26, 61, 124, 0.25)",
+              borderWidth: 3,
+              fill: true,
+              tension: 0.3,
+              pointRadius: 3,
             },
-            options: {
-            responsive: true,
-            plugins: {
-                legend: { display: true },
+            {
+              label: "Conversions (Paid)",
+              data: conversionCounts,
+              borderColor: "#4CAF50",
+              backgroundColor: "rgba(76, 175, 80, 0.15)",
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 3,
             },
-            scales: {
-                y: { beginAtZero: true },
-            },
-            },
-        });
-        }
+          ],
+        },
+        options: { responsive: true, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } },
+      });
+    }
 
-    // 🥧 Donut / Conversion Chart (UNCHANGED)
+    // 🥧 Donut / Conversion Chart
     const trialCtx = document.getElementById("trialChart") as HTMLCanvasElement;
     if (trialCtx) {
       const total = validOrgs.length || 120;
@@ -250,38 +302,22 @@ const SuperAdminDashboard: React.FC = () => {
         type: "doughnut",
         data: {
           labels: ["In Trial", "Converted (Paid)", "Churned (No Payment)"],
-          datasets: [
-            {
-              data: [inTrial, completedPaid, completedNoPay],
-              backgroundColor: ["#1A3D7C", "#4CAF50", "#AF907A"],
-              borderWidth: 0,
-              hoverOffset: 10,
-            },
-          ],
+          datasets: [{ data: [inTrial, completedPaid, completedNoPay], backgroundColor: ["#1A3D7C", "#4CAF50", "#AF907A"], borderWidth: 0, hoverOffset: 10 }],
         },
-        options: {
-          cutout: "50%",
-          plugins: {
-            legend: { position: "bottom" },
-            tooltip: { enabled: true },
-          },
-        },
+        options: { cutout: "50%", plugins: { legend: { position: "bottom" }, tooltip: { enabled: true } } },
         plugins: [centerTextPlugin],
       });
     }
 
-    // ✅ STACKED TYPE CHART (UPDATED)
+    // ✅ STACKED TYPE CHART
     const typeMap: any = {};
     validOrgs.forEach((org) => {
       const status = getStatus(org);
-      if (!typeMap[org.orgType]) {
-        typeMap[org.orgType] = { inTrial: 0, converted: 0, churned: 0 };
-      }
+      if (!typeMap[org.orgType]) typeMap[org.orgType] = { inTrial: 0, converted: 0, churned: 0 };
       typeMap[org.orgType][status]++;
     });
 
     const typeLabels = Object.keys(typeMap);
-
     const typeCtx = document.getElementById("typeChart") as HTMLCanvasElement;
     if (typeCtx) {
       typeChartRef.current = new Chart(typeCtx, {
@@ -289,44 +325,24 @@ const SuperAdminDashboard: React.FC = () => {
         data: {
           labels: typeLabels,
           datasets: [
-            {
-              label: "In Trial",
-              data: typeLabels.map((l) => typeMap[l].inTrial),
-              backgroundColor: "#1A3D7C",
-            },
-            {
-              label: "Converted",
-              data: typeLabels.map((l) => typeMap[l].converted),
-              backgroundColor: "#4CAF50",
-            },
-            {
-              label: "Churned",
-              data: typeLabels.map((l) => typeMap[l].churned),
-              backgroundColor: "#AF907A",
-            },
+            { label: "In Trial", data: typeLabels.map((l) => typeMap[l].inTrial), backgroundColor: "#1A3D7C" },
+            { label: "Converted", data: typeLabels.map((l) => typeMap[l].converted), backgroundColor: "#4CAF50" },
+            { label: "Churned", data: typeLabels.map((l) => typeMap[l].churned), backgroundColor: "#AF907A" },
           ],
         },
-        options: {
-          scales: {
-            x: { stacked: true },
-            y: { stacked: true, beginAtZero: true },
-          },
-        },
+        options: { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } },
       });
     }
 
-    // ✅ STACKED REGION CHART (UPDATED)
+    // ✅ STACKED REGION CHART
     const regionMap: any = {};
     validOrgs.forEach((org) => {
       const status = getStatus(org);
-      if (!regionMap[org.region]) {
-        regionMap[org.region] = { inTrial: 0, converted: 0, churned: 0 };
-      }
+      if (!regionMap[org.region]) regionMap[org.region] = { inTrial: 0, converted: 0, churned: 0 };
       regionMap[org.region][status]++;
     });
 
     const regionLabels = Object.keys(regionMap);
-
     const regionCtx = document.getElementById("regionChart") as HTMLCanvasElement;
     if (regionCtx) {
       regionChartRef.current = new Chart(regionCtx, {
@@ -334,32 +350,68 @@ const SuperAdminDashboard: React.FC = () => {
         data: {
           labels: regionLabels,
           datasets: [
-            {
-              label: "In Trial",
-              data: regionLabels.map((l) => regionMap[l].inTrial),
-              backgroundColor: "#1A3D7C",
-            },
-            {
-              label: "Converted",
-              data: regionLabels.map((l) => regionMap[l].converted),
-              backgroundColor: "#4CAF50",
-            },
-            {
-              label: "Churned",
-              data: regionLabels.map((l) => regionMap[l].churned),
-              backgroundColor: "#AF907A",
-            },
+            { label: "In Trial", data: regionLabels.map((l) => regionMap[l].inTrial), backgroundColor: "#1A3D7C" },
+            { label: "Converted", data: regionLabels.map((l) => regionMap[l].converted), backgroundColor: "#4CAF50" },
+            { label: "Churned", data: regionLabels.map((l) => regionMap[l].churned), backgroundColor: "#AF907A" },
           ],
         },
-        options: {
-          scales: {
-            x: { stacked: true },
-            y: { stacked: true, beginAtZero: true },
-          },
-        },
+        options: { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } },
       });
     }
   }, [validOrgs, kpis]);
+
+
+  //Revenue Chart
+
+const revenueChartRef = useRef<Chart | null>(null);
+
+useEffect(() => {
+  const revenueCtx = document.getElementById("revenuePieChart") as HTMLCanvasElement;
+  if (!revenueCtx) return;
+
+  revenueChartRef.current?.destroy();
+
+  revenueChartRef.current = new Chart(revenueCtx, {
+    type: "pie",
+    data: {
+      labels: revenueBreakdown.labels,
+      datasets: [
+        {
+          data: revenueBreakdown.data,
+          backgroundColor: revenueBreakdown.backgroundColor,
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const value = context.raw as number;
+              return `${context.label}: ZMW ${value.toLocaleString()}`;
+            },
+          },
+        },
+        datalabels: {
+          color: "#fff",
+          font: { weight: "bold", size: 14 },
+          formatter: (value: number, context: any) => {
+            const dataset = context.chart.data.datasets[0];
+            const total = dataset.data.reduce((sum: number, val: number) => sum + val, 0);
+            const percentage = ((value / total) * 100).toFixed(1);
+            return `${percentage}%`;
+          },
+        },
+      },
+    },
+    plugins: [ChartDataLabels],
+  });
+
+  return () => revenueChartRef.current?.destroy();
+}, []);
 
   return (
     <div className="dashboard-wrapper">
@@ -371,11 +423,7 @@ const SuperAdminDashboard: React.FC = () => {
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
           <div className="toggle close-btn">
-            <input
-              type="checkbox"
-              checked={sidebarOpen}
-              onChange={toggleSidebar}
-            />
+            <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
             <span className="button"></span>
             <span className="label">X</span>
           </div>
@@ -388,19 +436,13 @@ const SuperAdminDashboard: React.FC = () => {
         <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
 
         {hasPermission("View Main Dashboard") && (
-          <a href="/dashboard" className="return-main">
-            ← Back to Main Dashboard
-          </a>
+          <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
         )}
 
         <a
           href="/"
           className="logout-link"
-          onClick={(e) => {
-            e.preventDefault();
-            localStorage.clear();
-            navigate("/");
-          }}
+          onClick={(e) => { e.preventDefault(); localStorage.clear(); navigate("/"); }}
         >
           ➜ Logout
         </a>
@@ -416,14 +458,21 @@ const SuperAdminDashboard: React.FC = () => {
             <h4>(Sign-Ups)</h4>
           </div>
 
-          <div className="kpi-card">
+          <div className="kpi-card revenue-card" style={{ position: "relative" }}>
             <h3>Revenue (Est.)</h3>
             <p>ZMW {kpis.revenue}</p>
+
+            {/* Corner Indicator */}
+            <div className="revenue-indicator" style={{ position: "absolute", top: "0.5rem", right: "0.5rem", fontSize: "0.75rem", fontWeight: 600 }}>
+              {renderRevenueIndicator(kpis.revenueDirection, kpis.revenueChange)}
+            </div>
           </div>
 
+          {/* ✅ NEW Satisfaction KPI */}
           <div className="kpi-card">
-            <h3>Monthly Growth</h3>
-            <p>{kpis.monthlyGrowth}%</p>
+            <h3>Average Satisfaction</h3>
+            <p>{kpis.satisfaction}/5</p>
+            {renderStars(kpis.satisfaction)}
           </div>
         </div>
 
@@ -433,25 +482,13 @@ const SuperAdminDashboard: React.FC = () => {
             <canvas id="growthChart"></canvas>
           </div>
 
-          <div
-            className="chart-box"
-            style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}
-          >
+          <div className="chart-box" style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 250 }}>
               <h3>Trial / Conversion</h3>
               <canvas id="trialChart"></canvas>
             </div>
 
-            <div
-              style={{
-                flex: 1,
-                minWidth: 180,
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.8rem",
-                justifyContent: "center",
-              }}
-            >
+            <div style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: "0.8rem", justifyContent: "center" }}>
               <div className="conversion-card" style={{ background: "#F5F5F5", padding: "0.8rem 1rem", borderRadius: "8px" }}>
                 <strong>In Trial:</strong> {conversionData.inTrial}
               </div>
@@ -463,6 +500,32 @@ const SuperAdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <div className="chart-box">
+            <h3>Revenue Breakdown by Plan</h3>
+            <canvas id="revenuePieChart"></canvas>
+
+            
+          {/* Summary cards with matching colors */}
+            <div style={{ display: "flex", gap: "1rem", marginTop: "1rem", flexWrap: "wrap" }}>
+              {revenueBreakdown.labels.map((label, idx) => (
+                <div
+                  key={label}
+                  style={{
+                    background: revenueBreakdown.backgroundColor[idx],
+                    color: "#fff",
+                    padding: "0.8rem 1rem",
+                    borderRadius: "8px",
+                    flex: "1",
+                    minWidth: 150,
+                  }}
+                >
+                  <strong>{label}:</strong> ZMW {revenueBreakdown.data[idx].toLocaleString()}
+                </div>
+              ))}
+            </div>
+          
+        </div> {/* <-- closes Revenue Breakdown chart-box */}
 
           <div className="chart-box">
             <h3>Organization Types</h3>
