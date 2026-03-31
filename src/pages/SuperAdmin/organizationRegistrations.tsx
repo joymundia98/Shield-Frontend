@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../styles/global.css";
-//import CongregationHeader from "./CongregationHeader";
-import { useAuth } from "../../hooks/useAuth";
+
+//import { useAuth } from "../../hooks/useAuth";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -32,7 +32,7 @@ interface OrgType {
 
 const OrganizationRegistrationsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  //const { hasPermission } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -222,13 +222,17 @@ const kpiData = useMemo(() => {
           <a href="/SuperAdmin/RegisteredOrganizations" className="active">Registered Organizations</a>
         
           <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
+
+          <a href="/SuperAdmin/Subscriptions">
+            Subscriptions
+          </a>
         
 
-        {hasPermission("View Main Dashboard") && (
+        {/*{hasPermission("View Main Dashboard") && (
           <a href="/dashboard" className="return-main">
             ← Back to Main Dashboard
           </a>
-        )}
+        )}*/}
 
         <a
           href="/"

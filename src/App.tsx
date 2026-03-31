@@ -163,6 +163,8 @@ import SuperAdminDashboard from "./pages/SuperAdmin/dashboard";
 import SuperAdminLoginForm from './components/Auth/superAdmin';
 import OrganizationRegistrationsPage from "./pages/SuperAdmin/organizationRegistrations";
 import AdminAccountsPage from "./pages/SuperAdmin/AdminAccounts";
+import SubscriptionsPage from "./pages/SuperAdmin/subscriptions";
+import AddSubscriptionPage from "./pages/SuperAdmin/AddSubscription";
 
 //CSV File Upload
 import UploadCSV from "./components/UploadCSV";
@@ -897,6 +899,8 @@ function App() {
           <Route path="/SuperAdmin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/SuperAdmin/RegisteredOrganizations" element={<OrganizationRegistrationsPage />} />
           <Route path="/SuperAdmin/RegisteredAdmins" element={<AdminAccountsPage />} />
+          <Route path="/SuperAdmin/Subscriptions" element={<SubscriptionsPage />} />
+          <Route path="/SuperAdmin/AddSubscription" element={<AddSubscriptionPage />} />
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />

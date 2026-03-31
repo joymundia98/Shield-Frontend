@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../styles/global.css";
-import { useAuth } from "../../hooks/useAuth";
+//import { useAuth } from "../../hooks/useAuth";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -25,7 +25,7 @@ interface Organization {
 
 const AdminAccountsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  //const { hasPermission } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -153,11 +153,15 @@ const AdminAccountsPage: React.FC = () => {
         
         <a href="/SuperAdmin/RegisteredAdmins" className="active">System Admin Accounts</a>
 
-        {hasPermission("View Main Dashboard") && (
+        <a href="/SuperAdmin/Subscriptions">
+          Subscriptions
+        </a>
+
+        {/*{hasPermission("View Main Dashboard") && (
           <a href="/dashboard" className="return-main">
             ← Back to Main Dashboard
           </a>
-        )}
+        )}*/}
 
         <a
           href="/"

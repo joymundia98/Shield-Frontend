@@ -3,7 +3,7 @@ import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../styles/global.css";
-import { useAuth } from "../../hooks/useAuth";
+//import { useAuth } from "../../hooks/useAuth";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -21,7 +21,7 @@ interface Organization {
 
 const SuperAdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  //const { hasPermission } = useAuth();
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -434,10 +434,13 @@ useEffect(() => {
         <a href="/SuperAdmin/dashboard" className="active">Dashboard</a>
         <a href="/SuperAdmin/RegisteredOrganizations">Registered Organizations</a>
         <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
+        <a href="/SuperAdmin/Subscriptions">
+          Subscriptions
+        </a>
 
-        {hasPermission("View Main Dashboard") && (
+        {/*{hasPermission("View Main Dashboard") && (
           <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
-        )}
+        )}*/}
 
         <a
           href="/"
