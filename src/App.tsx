@@ -165,6 +165,8 @@ import OrganizationRegistrationsPage from "./pages/SuperAdmin/organizationRegist
 import AdminAccountsPage from "./pages/SuperAdmin/AdminAccounts";
 import SubscriptionsPage from "./pages/SuperAdmin/subscriptions";
 import AddSubscriptionPage from "./pages/SuperAdmin/AddSubscription";
+import PaymentsPage from "./pages/SuperAdmin/payments";
+import AddPaymentPage from "./pages/SuperAdmin/AddPayment";
 
 //CSV File Upload
 import UploadCSV from "./components/UploadCSV";
@@ -900,7 +902,9 @@ function App() {
           <Route path="/SuperAdmin/RegisteredOrganizations" element={<OrganizationRegistrationsPage />} />
           <Route path="/SuperAdmin/RegisteredAdmins" element={<AdminAccountsPage />} />
           <Route path="/SuperAdmin/Subscriptions" element={<SubscriptionsPage />} />
+          <Route path="/SuperAdmin/Payments" element={<PaymentsPage />} />
           <Route path="/SuperAdmin/AddSubscription" element={<AddSubscriptionPage />} />
+          <Route path="/SuperAdmin/AddPayment" element={<AddPaymentPage />} />
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />

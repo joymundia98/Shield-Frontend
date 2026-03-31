@@ -42,7 +42,7 @@ interface PaymentMethod {
   is_active: boolean;
 }
 
-const AddSubscriptionPage: React.FC = () => {
+const AddPaymentPage: React.FC = () => {
   const navigate = useNavigate();
   //const { hasPermission } = useAuth();
 
@@ -270,8 +270,11 @@ const AddSubscriptionPage: React.FC = () => {
         <a href="/SuperAdmin/dashboard">Dashboard</a>
         <a href="/SuperAdmin/RegisteredOrganizations">Registered Organizations</a>
         <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
-        <a href="/SuperAdmin/Subscriptions" className="active">
+        <a href="/SuperAdmin/Subscriptions">
           Subscriptions
+        </a>
+        <a href="/SuperAdmin/Payments" className="active">
+          Payments
         </a>
 
         <a
@@ -290,9 +293,9 @@ const AddSubscriptionPage: React.FC = () => {
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
         <header>
-          <h1>Add Subscription</h1>
-          <button className="add-btn" onClick={() => navigate("/SuperAdmin/Subscriptions")}>
-              ← Subscriptions
+          <h1>Add Payments</h1>
+          <button className="add-btn" onClick={() => navigate("/SuperAdmin/Payments")}>
+              ← Payments
             </button>
         </header>
 
@@ -525,4 +528,4 @@ const AddSubscriptionPage: React.FC = () => {
   );
 };
 
-export default AddSubscriptionPage;
+export default AddPaymentPage;

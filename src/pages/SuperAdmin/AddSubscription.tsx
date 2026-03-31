@@ -173,6 +173,9 @@ const AddSubscriptionPage: React.FC = () => {
         <a href="/SuperAdmin/Subscriptions" className="active">
           Subscriptions
         </a>
+        <a href="/SuperAdmin/Payments">
+          Payments
+        </a>
 
         <a
           href="/"

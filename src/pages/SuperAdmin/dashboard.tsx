@@ -437,6 +437,9 @@ useEffect(() => {
         <a href="/SuperAdmin/Subscriptions">
           Subscriptions
         </a>
+        <a href="/SuperAdmin/Payments">
+          Payments
+        </a>
 
         {/*{hasPermission("View Main Dashboard") && (
           <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>

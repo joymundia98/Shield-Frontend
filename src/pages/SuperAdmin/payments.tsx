@@ -23,7 +23,7 @@ interface Subscription {
   createdAtDisplay: string;
 }
 
-const SubscriptionsPage: React.FC = () => {
+const PaymentsPage: React.FC = () => {
   const navigate = useNavigate();
   //const { hasPermission } = useAuth();
 
@@ -137,8 +137,8 @@ const SubscriptionsPage: React.FC = () => {
 
   // ---------------- Actions ----------------
   const handleAdd = () => {
-    console.log("Clicked Add New Asset");
-    navigate("/SuperAdmin/AddSubscription");
+    console.log("Clicked Add New Payment");
+    navigate("/SuperAdmin/AddPayment");
   };
 
   return (
@@ -166,8 +166,11 @@ const SubscriptionsPage: React.FC = () => {
         <a href="/SuperAdmin/dashboard">Dashboard</a>
         <a href="/SuperAdmin/RegisteredOrganizations">Registered Organizations</a>
         <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
-        <a href="/SuperAdmin/Subscriptions" className="active">
+        <a href="/SuperAdmin/Subscriptions">
           Subscriptions
+        </a>
+        <a href="/SuperAdmin/Payments" className="active">
+          Payments
         </a>
 
         {/*{hasPermission("View Main Dashboard") && (
@@ -192,9 +195,9 @@ const SubscriptionsPage: React.FC = () => {
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
         <header>
-          <h1>Subscriptions</h1>
+          <h1>Payments</h1>
           <button className="add-btn" onClick={handleAdd}>
-            + &nbsp; Add New Subscription
+            + &nbsp; Add New Payment
           </button>
         </header>
 
@@ -297,4 +300,4 @@ const SubscriptionsPage: React.FC = () => {
   );
 };
 
-export default SubscriptionsPage;
+export default PaymentsPage;

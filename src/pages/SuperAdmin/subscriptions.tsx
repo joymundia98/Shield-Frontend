@@ -148,9 +148,6 @@ const SubscriptionsPage: React.FC = () => {
     setRecordsToShow(5);
   };
 
-  const handleAdd = () => {
-    navigate("/SuperAdmin/AddSubscription");
-  };
 
   return (
     <div className="dashboard-wrapper visitors-wrapper">
@@ -184,6 +181,9 @@ const SubscriptionsPage: React.FC = () => {
         <a href="/SuperAdmin/Subscriptions" className="active">
           Subscriptions
         </a>
+        <a href="/SuperAdmin/Payments">
+          Payments
+        </a>
 
         <a
           href="/"
@@ -202,9 +202,7 @@ const SubscriptionsPage: React.FC = () => {
       <div className="dashboard-content">
         <header>
           <h1>Subscriptions</h1>
-          <button className="add-btn" onClick={handleAdd}>
-            + &nbsp; Add New Subscription
-          </button>
+          
         </header>
 
         {/* KPI Cards */}
