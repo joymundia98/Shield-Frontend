@@ -60,7 +60,7 @@ const PaymentsPage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await authFetch(`${baseURL}/api/subscriptions`);
+        const res = await authFetch(`${baseURL}/api/payments/me`);
 
         const data: Subscription[] = res.map((sub: any) => {
           const createdDate = new Date(sub.created_at);

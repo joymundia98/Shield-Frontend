@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
-//import { useAuth } from "../../hooks/useAuth";
+import { authFetch } from "../../utils/api";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -20,6 +20,7 @@ interface SubscriptionForm {
   status: string;
   remarks: string;
   months: MonthYear[];
+  reference_id: number | "";
 }
 
 interface Organization {
@@ -42,6 +43,11 @@ interface PaymentMethod {
   is_active: boolean;
 }
 
+interface PaymentReference {
+  id: number;
+  type: string;
+}
+
 const AddPaymentPage: React.FC = () => {
   const navigate = useNavigate();
   //const { hasPermission } = useAuth();
@@ -62,18 +68,21 @@ const AddPaymentPage: React.FC = () => {
     organization_id: "",
     plan_type: "",
     payment_mode: "",
-    payment_provider: "", // ✅ NEW
+    payment_provider: "",
     billing_cycle: "",
     amount: "",
     status: "",
     remarks: "",
     months: [],
+    reference_id: "" as any, // ✅ NEW
   });
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]); // ✅ NEW
   const [showMonthsDropdown, setShowMonthsDropdown] = useState(false);
+
+  const [paymentReferences, setPaymentReferences] = useState<PaymentReference[]>([]);
 
   const monthsList = [
     "January", "February", "March", "April",
@@ -103,6 +112,21 @@ const AddPaymentPage: React.FC = () => {
     fetchOrganizations();
   }, []);
 
+  //Fetch Payment References
+  useEffect(() => {
+  const fetchPaymentReferences = async () => {
+    try {
+      const res = await fetch(`${baseURL}/api/payment_references`);
+      const data = await res.json();
+      setPaymentReferences(data);
+    } catch (err) {
+      console.error("Error fetching payment references:", err);
+    }
+  };
+
+  fetchPaymentReferences();
+}, []);
+
   // Fetch plans
   useEffect(() => {
     const fetchPlans = async () => {
@@ -128,7 +152,7 @@ const AddPaymentPage: React.FC = () => {
   useEffect(() => {
     const fetchPaymentMethods = async () => {
       try {
-        const res = await fetch(`${baseURL}/api/payment-methods`);
+        const res = await fetch(`${baseURL}/api/payment_methods`);
         const data = await res.json();
 
         const activeOnly = data.filter((p: PaymentMethod) => p.is_active);
@@ -210,44 +234,56 @@ const AddPaymentPage: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (
-      !formData.organization_id ||
-      !formData.plan_type ||
-      !formData.payment_mode ||
-      !formData.payment_provider || // ✅ NEW
-      !formData.billing_cycle ||
-      !formData.amount ||
-      !formData.status ||
-      formData.months.length === 0
-    ) {
-      alert("Please fill in all required fields.");
-      return;
-    }
+  if (
+    !formData.organization_id ||
+    !formData.plan_type ||
+    !formData.payment_mode ||
+    !formData.payment_provider ||
+    !formData.billing_cycle ||
+    !formData.amount ||
+    !formData.reference_id
+  ) {
+    alert("Please fill in all required fields.");
+    return;
+  }
 
-    const payload = {
-      ...formData,
-      amount: parseFloat(formData.amount),
-      remarks: formData.remarks || null,
-    };
+  const selectedPlan = plans.find(
+    (p) =>
+      p.cleanName === formData.plan_type &&
+      p.billing_cycle === formData.billing_cycle
+  );
 
-    try {
-      await fetch(`${baseURL}/api/subscriptions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+  if (!selectedPlan) {
+    alert("Invalid plan selection.");
+    return;
+  }
 
-      alert("Subscription added successfully!");
-      navigate("/SuperAdmin/Subscriptions");
-    } catch (err) {
-      console.error("Error adding subscription:", err);
-      alert("Failed to add subscription.");
-    }
+  const payload = {
+    plan_id: selectedPlan.id,
+    amount: parseFloat(formData.amount),
+    payment_provider: formData.payment_provider,
+    reference_id: Number(formData.reference_id),
+    remarks: formData.remarks || null,
+    organization_id: Number(formData.organization_id),
+    date: new Date().toLocaleDateString("en-GB").replace(/\//g, "-"),
   };
+
+  try {
+    // 🔐 Use token-based authFetch
+    await authFetch(`${baseURL}/api/payments/initiate`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    alert("Payment initiated successfully!");
+    navigate("/SuperAdmin/Payments");
+  } catch (err) {
+    console.error("Error initiating payment:", err);
+    alert("Failed to initiate payment.");
+  }
+};
 
   return (
     <div className="dashboard-wrapper visitors-wrapper subscription-page">
@@ -350,6 +386,21 @@ const AddPaymentPage: React.FC = () => {
               ))}
             </select>
 
+            <label>Payment Reference</label>
+            <select
+              name="reference_id"
+              value={formData.reference_id}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select Reference</option>
+              {paymentReferences.map((ref) => (
+                <option key={ref.id} value={ref.id}>
+                  {ref.type}  {/* <-- use 'type', not 'name' */}
+                </option>
+              ))}
+            </select>
+
             <label>Billing Cycle</label>
             <select name="billing_cycle" value={formData.billing_cycle} onChange={handleChange} required>
               <option value="">Select Billing Cycle</option>
@@ -422,7 +473,7 @@ const AddPaymentPage: React.FC = () => {
             <textarea name="remarks" value={formData.remarks} onChange={handleChange} />
 
             <div className="form-buttons">
-              <button type="submit" className="add-btn">Add Subscription</button>
+              <button type="submit" className="add-btn">Add Payment</button>
               <button type="button" className="cancel-btn" onClick={() => navigate("/SuperAdmin/Subscriptions")}>
                 Cancel
               </button>
