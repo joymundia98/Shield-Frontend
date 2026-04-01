@@ -13,7 +13,7 @@ interface Subscription {
 
   planName: string;
 
-  status: "Active" | "Inactive" | "Pending-Renewal" | "Discontinued";
+  status: "Active" | "Inactive" | "Pending-Renewal" | "Discontinued" | "trialing";
 
   startDate: Date;
   startDateDisplay: string;
@@ -23,6 +23,8 @@ interface Subscription {
 
   trialEndDate: Date;
   trialEndDateDisplay: string;
+
+  planCategory: string;
 }
 
 const SubscriptionsPage: React.FC = () => {
@@ -58,52 +60,83 @@ const SubscriptionsPage: React.FC = () => {
     return res.data;
   };
 
+  //Helper Function for Mapping plans
+const getPlanCategory = (planName: string) => {
+  if (!planName) return "Other";
+
+  if (planName.includes("Single Church")) return "Single Church";
+  if (planName.includes("Multiple Church")) return "Multiple Church";
+  if (planName.includes("Branch Church")) return "Branch Church";
+
+  return "Other";
+};
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await authFetch(`${baseURL}/api/subscriptions`);
+  const fetchData = async () => {
+    try {
+      // 🔥 Fetch all in parallel (faster)
+      const [subsRes, orgsRes, plansRes] = await Promise.all([
+        authFetch(`${baseURL}/api/subscriptions`),
+        authFetch(`${baseURL}/api/organizations`),
+        authFetch(`${baseURL}/api/plans`),
+      ]);
 
-        const data: Subscription[] = res.map((sub: any) => {
-          const startDate = new Date(sub.start_date);
-          const endDate = sub.end_date ? new Date(sub.end_date) : null;
+      const subs = subsRes;
+      const orgs = orgsRes;
+      const plans = plansRes;
 
-          const orgCreated = new Date(sub.organization_created_at);
+      const data: Subscription[] = subs.map((sub: any) => {
+        const org = orgs.find(
+          (o: any) => o.id === sub.organization_id
+        );
 
-          // Trial = 21 days after org signup
-          const trialEnd = new Date(orgCreated);
-          trialEnd.setDate(trialEnd.getDate() + 21);
+        const plan = plans.find(
+          (p: any) => p.id === sub.plan_id
+        );
 
-          return {
-            id: sub.id,
+        const startDate = new Date(sub.start_date);
+        const endDate = sub.end_date ? new Date(sub.end_date) : null;
 
-            organizationName: sub.organization_name,
-            email: sub.email,
+        const trialEnd = new Date(sub.trial_end);
 
-            planName: sub.plan_name,
+        return {
+          id: sub.id,
 
-            status: sub.status,
+          // ✅ SAFE mapping
+          organizationName: org?.name || "Unknown Organization",
+          email: org?.organization_email ?? "No Email Provided",
 
-            startDate,
-            startDateDisplay: startDate.toLocaleDateString(),
+          planName: plan
+            ? `${plan.name} (${plan.billing_cycle})`
+            : "Unknown Plan",
 
-            endDate,
-            endDateDisplay: endDate
-              ? endDate.toLocaleDateString()
-              : "-",
+          // ✅ Plan Category
+          planCategory: plan ? getPlanCategory(plan.name) : "Other",
 
-            trialEndDate: trialEnd,
-            trialEndDateDisplay: trialEnd.toLocaleDateString(),
-          };
-        });
+          status: sub.status, // we’ll fix type below
 
-        setSubscriptions(data);
-      } catch (err) {
-        console.error("Error fetching subscriptions:", err);
-      }
-    };
+          startDate,
+          startDateDisplay: startDate.toLocaleDateString(),
 
-    fetchData();
-  }, []);
+          endDate,
+          endDateDisplay: endDate
+            ? endDate.toLocaleDateString()
+            : "-",
+
+          trialEndDate: trialEnd,
+          trialEndDateDisplay: trialEnd.toLocaleDateString(),
+        };
+      });
+
+      setSubscriptions(data);
+    } catch (err) {
+      console.error("Error fetching subscriptions:", err);
+    }
+  };
+
+  fetchData();
+}, []);
+
 
   const filteredSubscriptions = useMemo(() => {
     return subscriptions
@@ -114,29 +147,34 @@ const SubscriptionsPage: React.FC = () => {
       )
       .filter((sub) => {
         if (selectedPlanFilter === "all") return true;
-        return sub.planName === selectedPlanFilter;
+        return sub.planCategory === selectedPlanFilter;
       });
   }, [subscriptions, searchQuery, selectedPlanFilter]);
 
   // KPI Logic
   const kpiData = useMemo(() => {
-    let single = 0;
-    let multiple = 0;
-    let branch = 0;
+  let single = 0;
+  let multiple = 0;
+  let branch = 0;
 
-    subscriptions.forEach((sub) => {
-      if (sub.planName === "Single Church") single++;
-      if (sub.planName === "Multiple Church") multiple++;
-      if (sub.planName === "Branch Church") branch++;
-    });
+  // ✅ Track unique organizations
+  const uniqueOrgs = new Set();
 
-    return {
-      totalConversions: subscriptions.length,
-      single,
-      multiple,
-      branch,
-    };
-  }, [subscriptions]);
+  subscriptions.forEach((sub) => {
+    uniqueOrgs.add(sub.organizationName);
+
+    if (sub.planCategory === "Single Church") single++;
+    if (sub.planCategory === "Multiple Church") multiple++;
+    if (sub.planCategory === "Branch Church") branch++;
+  });
+
+  return {
+    totalConversions: uniqueOrgs.size, // One conversion count for each organization
+    single,
+    multiple,
+    branch,
+  };
+}, [subscriptions]);
 
   const handleViewMore = () => {
     setShowAll(true);
@@ -229,6 +267,8 @@ const SubscriptionsPage: React.FC = () => {
         </div>
 
         <br />
+
+        <p>Note:Conversion is only counted once per organization. <br/> An organization is not limited to a single plan and can switch between subscription options at any time for this paid software.</p>
 
         {/* SEARCH + FILTER */}
         <div className="user-filter-box">
