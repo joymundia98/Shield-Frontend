@@ -294,20 +294,20 @@ const kpiData = useMemo(() => {
         <div className="kpi-container">
           <div className="kpi-card">
             <h3>Total Revenue</h3>
-            <p>{kpiData.totalRevenue.toLocaleString()}</p>
+            <p>K {kpiData.totalRevenue.toLocaleString()}</p>
           </div>
 
           {canonicalPlans.map((plan) => (
             <div className="kpi-card" key={plan}>
               <h3>{plan} Revenue</h3>
-              <p>{kpiData.revenueByPlan[plan].toLocaleString()}</p>
+              <p>K {kpiData.revenueByPlan[plan].toLocaleString()}</p>
             </div>
           ))}
 
           {kpiData.revenueByPlan["Unknown Plan"] > 0 && (
             <div className="kpi-card">
               <h3>Unknown Plan Revenue</h3>
-              <p>{kpiData.revenueByPlan["Unknown Plan"].toLocaleString()}</p>
+              <p>K {kpiData.revenueByPlan["Unknown Plan"].toLocaleString()}</p>
             </div>
           )}
         </div>

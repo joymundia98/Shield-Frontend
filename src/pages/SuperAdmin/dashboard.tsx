@@ -14,9 +14,7 @@ interface Organization {
   orgType: string;
   region: string;
   createdAt: Date;
-  trialEnd: Date;
   email: string;
-  hasPaid: boolean; // for conversion simulation
 }
 
 const SuperAdminDashboard: React.FC = () => {
@@ -25,6 +23,37 @@ const SuperAdminDashboard: React.FC = () => {
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+
+  const [payments, setPayments] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+
+  const today = new Date();
+
+  const [selectedMonth, setSelectedMonth] = useState(
+    today.toLocaleString("default", { month: "long" })
+  );
+
+  const [selectedYear, setSelectedYear] = useState(
+    today.getFullYear().toString()
+  );
+
+  const months = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  // Allow up to 5 years back
+  const years = Array.from({ length: 6 }, (_, i) =>
+    (today.getFullYear() - i).toString()
+  );
+
+//Selected Date Object
+  const selectedDate = useMemo(() => {
+    const monthIndex = months.indexOf(selectedMonth);
+    return new Date(Number(selectedYear), monthIndex, 1);
+  }, [selectedMonth, selectedYear]);
 
   const [conversionData, setConversionData] = useState({
     inTrial: 0,
@@ -58,38 +87,50 @@ const SuperAdminDashboard: React.FC = () => {
   // FETCH DATA
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const orgTypes = await authFetch(`${baseURL}/api/organization_type`);
-        const orgs = await authFetch(`${baseURL}/api/organizations`);
+        try {
+          const [orgTypes, orgs, subs, pays, planList] = await Promise.all([
+            authFetch(`${baseURL}/api/organization_type`),
+            authFetch(`${baseURL}/api/organizations`),
+            authFetch(`${baseURL}/api/subscriptions`), // ✅ NEW
+            authFetch(`${baseURL}/api/payments`),   // ✅ NEW
+            authFetch(`${baseURL}/api/plans`)
+          ]);
 
-        const mapped = orgs.map((org: any) => {
-          const created = new Date(org.created_at);
-          const trialEnd = new Date(created);
-          trialEnd.setDate(trialEnd.getDate() + 21);
+          setSubscriptions(subs);
+          setPayments(pays);
+          setPlans(planList);
 
-          const type =
-            orgTypes.find((t: any) => t.org_type_id === org.org_type_id)
-              ?.name || "Unknown";
+          const mapped = orgs.map((org: any) => {
+            const created = new Date(org.created_at);
 
-          return {
-            id: org.id,
-            name: org.name,
-            orgType: type,
-            region: org.region,
-            createdAt: created,
-            trialEnd,
-            email: org.organization_email,
-            hasPaid: org.has_paid || false,
-          };
-        });
+            const type =
+              orgTypes.find((t: any) => t.org_type_id === org.org_type_id)
+                ?.name || "Unknown";
 
-        setOrganizations(mapped);
-      } catch (err) {
-        console.error(err);
-      }
-    };
+            return {
+              id: org.id,
+              name: org.name,
+              orgType: type,
+              region: org.region,
+              createdAt: created,
+              email: org.organization_email,
+            };
+          });
+
+          setOrganizations(mapped);
+        } catch (err) {
+          console.error(err);
+        }
+      };
     fetchData();
   }, []);
+
+  //plan lookup map
+  const planMap = useMemo(() => {
+    const map = new Map<number, any>();
+    plans.forEach((p) => map.set(p.id, p));
+    return map;
+  }, [plans]);
 
   // FILTER OUT TEST DATA
   const validOrgs = useMemo(() => {
@@ -98,62 +139,126 @@ const SuperAdminDashboard: React.FC = () => {
     );
   }, [organizations]);
 
-  // ✅ STATUS HELPER
+  const filteredOrgs = useMemo(() => {
+  return validOrgs.filter((org) => org.createdAt <= selectedDate);
+}, [validOrgs, selectedDate]);
+
+const subscriptionMap = useMemo(() => {
+  const map = new Map<number, any>();
+
+  subscriptions.forEach((sub) => {
+    map.set(sub.organization_id, sub);
+  });
+
+  return map;
+}, [subscriptions]);
+
+// ✅ STATUS HELPER
   const getStatus = (org: Organization) => {
-    const today = new Date();
-    if (org.trialEnd > today) return "inTrial";
-    if (org.hasPaid) return "converted";
+    const trialEnd = new Date(org.createdAt);
+    trialEnd.setDate(trialEnd.getDate() + 21);
+
+    // ✅ still in trial
+    if (trialEnd > selectedDate) return "inTrial";
+
+    // ✅ check if subscription exists
+    const hasSubscription = subscriptionMap.has(org.id);
+
+    if (hasSubscription) return "converted";
+
     return "churned";
   };
 
+// ➡️ STEP 3: Dynamic Trial / Conversion Stats
+const trialStats = useMemo(() => {
+  let inTrial = 0;
+  let completedPaid = 0;
+  let completedNoPay = 0;
+
+  filteredOrgs.forEach((org) => {
+    const status = getStatus(org);
+    if (status === "inTrial") inTrial++;
+    else if (status === "converted") completedPaid++;
+    else completedNoPay++;
+  });
+
+  const total = inTrial + completedPaid + completedNoPay;
+  const conversionRate = total ? Math.round((completedPaid / total) * 100) : 0;
+
+  return { inTrial, completedPaid, completedNoPay, conversionRate };
+}, [filteredOrgs, subscriptionMap, selectedDate]);
+
+
   // KPI CALCULATIONS
   const kpis = useMemo(() => {
-    const today = new Date();
+  //const today = selectedDate; // ✅ use selected date
 
-    let active = 0;
-    let completed = 0;
-    let converted = 0;
-    let churned = 0;
+  let active = 0;
+  let completed = 0;
+  let converted = 0;
+  let churned = 0;
 
-    validOrgs.forEach((org) => {
-      if (org.trialEnd > today) {
-        active++;
-      } else {
-        completed++;
-        if (org.hasPaid) converted++;
-        else churned++;
-      }
-    });
+  filteredOrgs.forEach((org) => {
+    const status = getStatus(org);
 
-    const totalCompleted = converted + churned;
-    const satisfaction =
-      totalCompleted === 0
-        ? 0
-        : Number(((converted / totalCompleted) * 5).toFixed(1));
-
-    // SIMULATED revenue comparison
-    const lastMonthRevenue: number = 10000; // Example previous month revenue
-    const currentRevenue = 12500; // Current month revenue
-    let revenueChange = 0;
-    let revenueDirection: "up" | "down" | "same" = "same";
-
-    if (lastMonthRevenue !== 0) {
-      revenueChange = Math.round(((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
-      if (revenueChange > 0) revenueDirection = "up";
-      else if (revenueChange < 0) revenueDirection = "down";
+    if (status === "inTrial") active++;
+    else {
+      completed++;
+      if (status === "converted") converted++;
+      else churned++;
     }
+  });
+
+  const totalCompleted = converted + churned;
+
+  const satisfaction =
+    totalCompleted === 0
+      ? 0
+      : Number(((converted / totalCompleted) * 5).toFixed(1));
+
+  // ✅ TEMP dynamic revenue (based on conversions)
+  const revenue = converted * 500; // replace later with real payments
+
+  // 🔹 Previous month comparison
+  const prevDate = new Date(selectedDate);
+  prevDate.setMonth(prevDate.getMonth() - 1);
+
+  const prevOrgs = validOrgs.filter((org) => org.createdAt <= prevDate);
+
+  let prevConverted = 0;
+
+  prevOrgs.forEach((org) => {
+    const trialEnd = new Date(org.createdAt);
+    trialEnd.setDate(trialEnd.getDate() + 21);
+
+    if (trialEnd <= prevDate && subscriptionMap.has(org.id)) {
+      prevConverted++;
+    }
+  });
+
+  const prevRevenue = prevConverted * 500;
+
+  // 🔹 Revenue change
+  let revenueChange = 0;
+  let revenueDirection: "up" | "down" | "same" = "same";
+
+  if (prevRevenue > 0) {
+    revenueChange = ((revenue - prevRevenue) / prevRevenue) * 100;
+
+    if (revenueChange > 0) revenueDirection = "up";
+    else if (revenueChange < 0) revenueDirection = "down";
+  }
 
     return {
-      total: validOrgs.length,
-      active,
-      completed,
-      monthlyGrowth: 12,
-      revenue: currentRevenue,
-      revenueChange,
-      revenueDirection,
-      satisfaction,
-    };
-  }, [validOrgs]);
+    total: filteredOrgs.length,
+    active,
+    completed,
+    revenue,
+    satisfaction,
+    revenueChange: Number(revenueChange.toFixed(1)),
+    revenueDirection,
+  };
+}, [filteredOrgs, selectedDate, subscriptionMap]);
 
   // ⭐ STAR RENDERER
   const renderStars = (rating: number) => {
@@ -178,15 +283,49 @@ const SuperAdminDashboard: React.FC = () => {
   };
 
   // Revenue breakdown per plan
-// Revenue breakdown per plan
 const revenueBreakdown = useMemo(() => {
-  const colors = ["#1a3c7ca3", "#906cf37c", "#006eff80"]; // solid colors for chart & cards
-  return {
-    labels: ["Single Church", "Multiple Church (Head Office)", "Branch Church"],
-    data: [5000, 8000, 3000],
-    backgroundColor: colors,
+  const colors = ["#1a3c7ca3", "#906cf37c", "#006eff80", "#AF907A", "#FFB74D"];
+
+  const planLabels: Record<string, string> = {
+    "Single Church Plan (Independent Churches)": "Single Church",
+    "Multiple Church (Head Office) Plan": "Multiple Church",
+    "Branch Church Plan": "Branch Church",
+    "Mother Body / Oversight Plan": "Mother Body",
+    "NGO & Donor-Funded Projects": "NGO",
   };
-}, []);
+
+  const planRevenue: Record<string, number> = {};
+
+  Object.values(planLabels).forEach((label) => {
+    planRevenue[label] = 0;
+  });
+
+  payments.forEach((payment) => {
+    if (payment.status !== "paid") return;
+
+    // ✅ ADD FILTER HERE
+    const paymentDate = new Date(payment.payment_date || payment.created_at);
+
+    if (
+      paymentDate.getMonth() !== selectedDate.getMonth() ||
+      paymentDate.getFullYear() !== selectedDate.getFullYear()
+    ) return;
+
+    const plan = planMap.get(payment.plan_id);
+    if (!plan) return;
+
+    const mappedName = planLabels[plan.name];
+    if (!mappedName) return;
+
+    planRevenue[mappedName] += Number(payment.amount || 0);
+  });
+
+  return {
+    labels: Object.keys(planRevenue),
+    data: Object.values(planRevenue),
+    backgroundColor: colors.slice(0, Object.keys(planRevenue).length),
+  };
+}, [payments, planMap, selectedDate]);
 
   // CHART DATA
   useEffect(() => {
@@ -199,7 +338,7 @@ const revenueBreakdown = useMemo(() => {
     const growthCounts = new Array(12).fill(0);
     const conversionCounts = new Array(12).fill(0);
     const monthLabels: string[] = [];
-    const today = new Date();
+    const today = selectedDate;
 
     for (let i = 11; i >= 0; i--) {
       const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
@@ -215,7 +354,8 @@ const revenueBreakdown = useMemo(() => {
       if (monthsAgo >= 0 && monthsAgo < 12) {
         const index = 11 - monthsAgo;
         growthCounts[index] += 1;
-        if (org.hasPaid) conversionCounts[index] += 1;
+        const status = getStatus(org);
+        if (status === "converted") conversionCounts[index] += 1;
       }
     });
 
@@ -255,13 +395,9 @@ const revenueBreakdown = useMemo(() => {
     // 🥧 Donut / Conversion Chart
     const trialCtx = document.getElementById("trialChart") as HTMLCanvasElement;
     if (trialCtx) {
-      const total = validOrgs.length || 120;
-      const inTrial = 35;
-      const completedPaid = 55;
-      const completedNoPay = total - inTrial - completedPaid;
-      const conversionRate = Math.round((completedPaid / total) * 100);
+      setConversionData(trialStats);
 
-      setConversionData({ inTrial, completedPaid, completedNoPay, conversionRate });
+      const { inTrial, completedPaid, completedNoPay, conversionRate } = trialStats;
 
       const centerTextPlugin = {
         id: "centerText",
@@ -302,7 +438,14 @@ const revenueBreakdown = useMemo(() => {
         type: "doughnut",
         data: {
           labels: ["In Trial", "Converted (Paid)", "Churned (No Payment)"],
-          datasets: [{ data: [inTrial, completedPaid, completedNoPay], backgroundColor: ["#1A3D7C", "#4CAF50", "#AF907A"], borderWidth: 0, hoverOffset: 10 }],
+          datasets: [
+            {
+              data: [inTrial, completedPaid, completedNoPay],
+              backgroundColor: ["#1A3D7C", "#4CAF50", "#AF907A"],
+              borderWidth: 0,
+              hoverOffset: 10,
+            },
+          ],
         },
         options: { cutout: "50%", plugins: { legend: { position: "bottom" }, tooltip: { enabled: true } } },
         plugins: [centerTextPlugin],
@@ -369,8 +512,10 @@ useEffect(() => {
   const revenueCtx = document.getElementById("revenuePieChart") as HTMLCanvasElement;
   if (!revenueCtx) return;
 
+  // Destroy previous chart instance if it exists
   revenueChartRef.current?.destroy();
 
+  // Create a new chart
   revenueChartRef.current = new Chart(revenueCtx, {
     type: "pie",
     data: {
@@ -401,7 +546,7 @@ useEffect(() => {
           formatter: (value: number, context: any) => {
             const dataset = context.chart.data.datasets[0];
             const total = dataset.data.reduce((sum: number, val: number) => sum + val, 0);
-            const percentage = ((value / total) * 100).toFixed(1);
+            const percentage = total ? ((value / total) * 100).toFixed(1) : "0.0";
             return `${percentage}%`;
           },
         },
@@ -410,8 +555,9 @@ useEffect(() => {
     plugins: [ChartDataLabels],
   });
 
+  // Cleanup on unmount
   return () => revenueChartRef.current?.destroy();
-}, []);
+}, [revenueBreakdown]);
 
   return (
     <div className="dashboard-wrapper">
@@ -456,6 +602,20 @@ useEffect(() => {
 
       <div className="dashboard-content">
         <h1>SCI-ELD Overview</h1>
+
+        <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+          <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+            {months.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+
+          <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
 
         <div className="kpi-container">
           <div className="kpi-card">
