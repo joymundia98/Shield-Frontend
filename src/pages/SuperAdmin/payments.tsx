@@ -19,8 +19,12 @@ interface Subscription {
   status: string;
   remarks: string;
 
+  monthsPaidFor: string;
+
   createdAt: Date;
   createdAtDisplay: string;
+  paymentDate: Date;         // <-- add this
+  paymentDateDisplay: string; // <-- formatted version
 }
 
 const PaymentsPage: React.FC = () => {
@@ -37,6 +41,18 @@ const PaymentsPage: React.FC = () => {
   const [showAll, setShowAll] = useState(false);
 
   const [selectedPlanFilter, setSelectedPlanFilter] = useState("all");
+
+  const [selectedMonth, setSelectedMonth] = useState("all");
+  const [selectedYear, setSelectedYear] = useState("all");
+
+  const months = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  const years = Array.from(
+    new Set(subscriptions.map((s) => s.paymentDate.getFullYear()))
+  );
 
   useEffect(() => {
     if (sidebarOpen) document.body.classList.add("sidebar-open");
@@ -58,39 +74,60 @@ const PaymentsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await authFetch(`${baseURL}/api/payments/me`);
+  const fetchData = async () => {
+    try {
+      // 🔥 Fetch everything
+      const [paymentsRes, orgsRes, plansRes, methodsRes] = await Promise.all([
+        authFetch(`${baseURL}/api/payments`),
+        authFetch(`${baseURL}/api/organizations`),
+        authFetch(`${baseURL}/api/plans`),
+        authFetch(`${baseURL}/api/payment_methods`),
+      ]);
 
-        const data: Subscription[] = res.map((sub: any) => {
-          const createdDate = new Date(sub.created_at);
+      const payments = paymentsRes;
+      const orgs = orgsRes;
+      const plans = plansRes;
+      const methods = methodsRes;
 
-          return {
-            id: sub.id,
-            organizationName: sub.organization_name,
-            email: sub.email,
+      const data: Subscription[] = payments.map((pay: any) => {
+        const org = orgs.find((o: any) => o.id === pay.organization_id);
 
-            planType: sub.plan_type,
-            paymentMode: sub.payment_mode,
-            billingCycle: sub.billing_cycle,
-            amount: sub.amount,
+        const plan = plans.find((p: any) => p.id === pay.plan_id);
+        const rawPlanName = plan?.name ?? "Unknown Plan";
 
-            status: sub.status,
-            remarks: sub.remarks || "-",
+        const method = methods.find((m: any) => m.id === pay.payment_method_id);
 
-            createdAt: createdDate,
-            createdAtDisplay: createdDate.toLocaleString(),
-          };
-        });
+        const createdDate = new Date(pay.created_at);
+        const paymentDate = new Date(pay.payment_date); // ✅ use payment_date
 
-        setSubscriptions(data);
-      } catch (err) {
-        console.error("Error fetching subscriptions:", err);
-      }
-    };
+        return {
+          id: pay.id,
+          organizationName: org?.name || "Unknown Organization",
+          email: org?.organization_email ?? "No Email Provided",
+          planType: rawPlanName,
+          paymentMode: method
+            ? `${method.name} (${method.provider})`
+            : pay.payment_provider || "-",
+          billingCycle: pay.billing_cycle || plan?.billing_cycle || "-",
+          amount: Number(pay.amount) || 0,
+          status: pay.status || "-",
+          remarks: pay.remarks || "-",
+          monthsPaidFor: pay.date || "-",
+          createdAt: createdDate,
+          createdAtDisplay: createdDate.toLocaleString(),
+          paymentDate,                     // ✅ store payment date
+          paymentDateDisplay: paymentDate.toLocaleString(),
+        };
+      });
 
-    fetchData();
-  }, []);
+      setSubscriptions(data);
+    } catch (err) {
+      console.error("Error fetching payments:", err);
+    }
+  };
+
+  fetchData();
+}, []);
 
   const filteredSubscriptions = useMemo(() => {
     return subscriptions
@@ -105,25 +142,53 @@ const PaymentsPage: React.FC = () => {
       });
   }, [subscriptions, searchQuery, selectedPlanFilter]);
 
+//Filter Data for KPIs
+const filteredForKPI = useMemo(() => {
+  return subscriptions.filter((sub) => {
+    const date = sub.paymentDate; // ✅ use paymentDate
+
+    const monthMatch =
+      selectedMonth === "all" || months[date.getMonth()] === selectedMonth;
+
+    const yearMatch =
+      selectedYear === "all" || date.getFullYear().toString() === selectedYear;
+
+    return monthMatch && yearMatch;
+  });
+}, [subscriptions, selectedMonth, selectedYear]);
+
   // KPI Logic
-  const kpiData = useMemo(() => {
-    let single = 0;
-    let multiple = 0;
-    let branch = 0;
+  const canonicalPlans = [
+  "Single Church Plan (Independent Churches)",
+  "Multiple Church (Head Office) Plan",
+  "Branch Church Plan",
+  "Mother Body / Oversight Plan",
+  "NGO & Donor-Funded Projects"
+];
 
-    subscriptions.forEach((sub) => {
-      if (sub.planType === "Single") single++;
-      if (sub.planType === "Multiple") multiple++;
-      if (sub.planType === "Branch") branch++;
-    });
+const kpiData = useMemo(() => {
+  let totalRevenue = 0;
+  const revenueByPlan: Record<string, number> = {};
 
-    return {
-      totalConversions: subscriptions.length,
-      single,
-      multiple,
-      branch,
-    };
-  }, [subscriptions]);
+  // Initialize all plans to 0
+  canonicalPlans.forEach((p) => (revenueByPlan[p] = 0));
+
+  filteredForKPI.forEach((sub) => {
+    if (sub.status.toLowerCase() !== "paid") return;
+
+    const amount = sub.amount || 0;
+    totalRevenue += amount;
+
+    const planName = canonicalPlans.includes(sub.planType)
+      ? sub.planType
+      : "Unknown Plan";
+
+    revenueByPlan[planName] += amount;
+  });
+
+  return { totalRevenue, revenueByPlan };
+}, [filteredForKPI]);
+
 
   const handleViewMore = () => {
     setShowAll(true);
@@ -201,27 +266,50 @@ const PaymentsPage: React.FC = () => {
           </button>
         </header>
 
+        <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+  
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+          >
+            <option value="all">All Months</option>
+            {months.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+          >
+            <option value="all">All Years</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+
+        </div>
+
         {/* KPI Cards */}
         <div className="kpi-container">
           <div className="kpi-card">
-            <h3>Total Conversions</h3>
-            <p>{kpiData.totalConversions}</p>
+            <h3>Total Revenue</h3>
+            <p>{kpiData.totalRevenue.toLocaleString()}</p>
           </div>
 
-          <div className="kpi-card">
-            <h3>Single Church Plan</h3>
-            <p>{kpiData.single}</p>
-          </div>
+          {canonicalPlans.map((plan) => (
+            <div className="kpi-card" key={plan}>
+              <h3>{plan} Revenue</h3>
+              <p>{kpiData.revenueByPlan[plan].toLocaleString()}</p>
+            </div>
+          ))}
 
-          <div className="kpi-card">
-            <h3>Multiple Church Plan</h3>
-            <p>{kpiData.multiple}</p>
-          </div>
-
-          <div className="kpi-card">
-            <h3>Branch Church Plan</h3>
-            <p>{kpiData.branch}</p>
-          </div>
+          {kpiData.revenueByPlan["Unknown Plan"] > 0 && (
+            <div className="kpi-card">
+              <h3>Unknown Plan Revenue</h3>
+              <p>{kpiData.revenueByPlan["Unknown Plan"].toLocaleString()}</p>
+            </div>
+          )}
         </div>
 
         <br />
@@ -261,10 +349,11 @@ const PaymentsPage: React.FC = () => {
               <th>Plan</th>
               <th>Payment Mode</th>
               <th>Billing Cycle</th>
+              <th>Months Paid For</th>
               <th>Amount</th>
               <th>Status</th>
               <th>Remarks</th>
-              <th>Subscribed On</th>
+              <th>Payment Date</th>
             </tr>
           </thead>
 
@@ -278,10 +367,11 @@ const PaymentsPage: React.FC = () => {
                   <td>{sub.planType}</td>
                   <td>{sub.paymentMode}</td>
                   <td>{sub.billingCycle}</td>
+                  <td>{sub.monthsPaidFor}</td>
                   <td>{sub.amount}</td>
                   <td>{sub.status}</td>
                   <td>{sub.remarks}</td>
-                  <td>{sub.createdAtDisplay}</td>
+                  <td>{sub.paymentDateDisplay}</td>
                 </tr>
               ))}
           </tbody>

@@ -21,6 +21,8 @@ interface SubscriptionForm {
   remarks: string;
   months: MonthYear[];
   reference_id: number | "";
+  payment_date: string;
+  payment_method_id: number | "";
 }
 
 interface Organization {
@@ -75,6 +77,8 @@ const AddPaymentPage: React.FC = () => {
     remarks: "",
     months: [],
     reference_id: "" as any, // ✅ NEW
+    payment_date: "",
+    payment_method_id: "",
   });
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -186,7 +190,24 @@ const AddPaymentPage: React.FC = () => {
         ...prev,
         payment_mode: value,
         payment_provider: "",
+        payment_method_id: "",
       }));
+      return;
+    }
+
+    if (name === "payment_provider") {
+      const selectedMethod = paymentMethods.find(
+        (p) =>
+          p.name === formData.payment_mode &&
+          p.provider === value
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        payment_provider: value,
+        payment_method_id: selectedMethod ? selectedMethod.id : "",
+      }));
+
       return;
     }
 
@@ -241,11 +262,13 @@ const AddPaymentPage: React.FC = () => {
     !formData.plan_type ||
     !formData.payment_mode ||
     !formData.payment_provider ||
+    !formData.payment_method_id ||
     !formData.billing_cycle ||
     !formData.amount ||
-    !formData.reference_id
+    !formData.reference_id ||
+    formData.months.length === 0
   ) {
-    alert("Please fill in all required fields.");
+    alert("Please fill in all required fields and select months.");
     return;
   }
 
@@ -260,18 +283,25 @@ const AddPaymentPage: React.FC = () => {
     return;
   }
 
+  // Map months to date strings
+  const datesPaidFor = formData.months
+    .map((m) => `${m.month} ${m.year}`)
+    .join(", ");
+
   const payload = {
     plan_id: selectedPlan.id,
     amount: parseFloat(formData.amount),
+    payment_method_id: Number(formData.payment_method_id),
     payment_provider: formData.payment_provider,
+    billing_cycle: formData.billing_cycle,
     reference_id: Number(formData.reference_id),
     remarks: formData.remarks || null,
     organization_id: Number(formData.organization_id),
-    date: new Date().toLocaleDateString("en-GB").replace(/\//g, "-"),
+    date: datesPaidFor, // ✅ send array of months paid for
+    payment_date: formData.payment_date, // ✅ send as payment_date
   };
 
   try {
-    // 🔐 Use token-based authFetch
     await authFetch(`${baseURL}/api/payments/initiate`, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -456,6 +486,15 @@ const AddPaymentPage: React.FC = () => {
 
             <label>Amount</label>
             <input type="number" name="amount" value={formData.amount} onChange={handleChange} required />
+
+            <label>Date Payment Received</label>
+            <input
+              type="date"
+              name="payment_date"
+              value={formData.payment_date}
+              onChange={handleChange}
+              required
+            />
 
             <label>Status</label>
             <select name="status" value={formData.status} onChange={handleChange} required>
