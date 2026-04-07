@@ -189,100 +189,7 @@ const trialStats = useMemo(() => {
 }, [filteredOrgs, subscriptionMap, selectedDate]);
 
 
-  // KPI CALCULATIONS
-  const kpis = useMemo(() => {
-  //const today = selectedDate; // ✅ use selected date
-
-  let active = 0;
-  let completed = 0;
-  let converted = 0;
-  let churned = 0;
-
-  filteredOrgs.forEach((org) => {
-    const status = getStatus(org);
-
-    if (status === "inTrial") active++;
-    else {
-      completed++;
-      if (status === "converted") converted++;
-      else churned++;
-    }
-  });
-
-  const totalCompleted = converted + churned;
-
-  const satisfaction =
-    totalCompleted === 0
-      ? 0
-      : Number(((converted / totalCompleted) * 5).toFixed(1));
-
-  // ✅ TEMP dynamic revenue (based on conversions)
-  const revenue = converted * 500; // replace later with real payments
-
-  // 🔹 Previous month comparison
-  const prevDate = new Date(selectedDate);
-  prevDate.setMonth(prevDate.getMonth() - 1);
-
-  const prevOrgs = validOrgs.filter((org) => org.createdAt <= prevDate);
-
-  let prevConverted = 0;
-
-  prevOrgs.forEach((org) => {
-    const trialEnd = new Date(org.createdAt);
-    trialEnd.setDate(trialEnd.getDate() + 21);
-
-    if (trialEnd <= prevDate && subscriptionMap.has(org.id)) {
-      prevConverted++;
-    }
-  });
-
-  const prevRevenue = prevConverted * 500;
-
-  // 🔹 Revenue change
-  let revenueChange = 0;
-  let revenueDirection: "up" | "down" | "same" = "same";
-
-  if (prevRevenue > 0) {
-    revenueChange = ((revenue - prevRevenue) / prevRevenue) * 100;
-
-    if (revenueChange > 0) revenueDirection = "up";
-    else if (revenueChange < 0) revenueDirection = "down";
-  }
-
-    return {
-    total: filteredOrgs.length,
-    active,
-    completed,
-    revenue,
-    satisfaction,
-    revenueChange: Number(revenueChange.toFixed(1)),
-    revenueDirection,
-  };
-}, [filteredOrgs, selectedDate, subscriptionMap]);
-
-  // ⭐ STAR RENDERER
-  const renderStars = (rating: number) => {
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-
-    return (
-      <div style={{ color: "#FFD700", fontSize: "1.2rem" }}>
-        {"★".repeat(fullStars)}
-        {halfStar ? "⯪" : ""}
-        {"☆".repeat(emptyStars)}
-      </div>
-    );
-  };
-
-  // ⭐ REVENUE INDICATOR
-  const renderRevenueIndicator = (direction: "up" | "down" | "same", percent: number) => {
-    if (direction === "up") return <span style={{ color: "green" }}> ▲ {percent}%</span>;
-    if (direction === "down") return <span style={{ color: "red" }}> ▼ {Math.abs(percent)}%</span>;
-    return <span style={{ color: "blue" }}> ■ 0%</span>;
-  };
-
-  // Revenue breakdown per plan
+// Revenue breakdown per plan
 const revenueBreakdown = useMemo(() => {
   const colors = ["#1a3c7ca3", "#906cf37c", "#006eff80", "#AF907A", "#FFB74D"];
 
@@ -326,6 +233,123 @@ const revenueBreakdown = useMemo(() => {
     backgroundColor: colors.slice(0, Object.keys(planRevenue).length),
   };
 }, [payments, planMap, selectedDate]);
+
+
+  // KPI CALCULATIONS
+  const kpis = useMemo(() => {
+  //const today = selectedDate; // ✅ use selected date
+
+  let active = 0;
+  let completed = 0;
+  let converted = 0;
+  let churned = 0;
+
+  filteredOrgs.forEach((org) => {
+    const status = getStatus(org);
+
+    if (status === "inTrial") active++;
+    else {
+      completed++;
+      if (status === "converted") converted++;
+      else churned++;
+    }
+  });
+
+  const totalCompleted = converted + churned;
+
+  const satisfaction =
+    totalCompleted === 0
+      ? 0
+      : Number(((converted / totalCompleted) * 5).toFixed(1));
+
+  //Revenue calculation
+  
+  const revenue = revenueBreakdown.data.reduce(
+    (sum, val) => sum + val,
+    0
+  );
+
+  // 🔹 Previous month comparison
+  const prevDate = new Date(selectedDate);
+  prevDate.setMonth(prevDate.getMonth() - 1);
+
+  const prevOrgs = validOrgs.filter((org) => org.createdAt <= prevDate);
+
+  let prevConverted = 0;
+
+  prevOrgs.forEach((org) => {
+    const trialEnd = new Date(org.createdAt);
+    trialEnd.setDate(trialEnd.getDate() + 21);
+
+    if (trialEnd <= prevDate && subscriptionMap.has(org.id)) {
+      prevConverted++;
+    }
+  });
+
+
+  let prevRevenue = 0;
+
+  payments.forEach((payment) => {
+    if (payment.status !== "paid") return;
+
+    const rawDate = payment.payment_date || payment.created_at;
+    if (!rawDate) return;
+
+    const paymentDate = new Date(rawDate);
+    if (isNaN(paymentDate.getTime())) return;
+
+    const paymentMonthYear = `${paymentDate.getFullYear()}-${paymentDate.getMonth()}`;
+    const prevMonthYear = `${prevDate.getFullYear()}-${prevDate.getMonth()}`;
+
+    if (paymentMonthYear !== prevMonthYear) return;
+
+    prevRevenue += Number(payment.amount || 0);
+  });
+
+  // 🔹 Revenue change
+  let revenueChange = 0;
+  let revenueDirection: "up" | "down" | "same" = "same";
+
+  if (prevRevenue > 0) {
+    revenueChange = ((revenue - prevRevenue) / prevRevenue) * 100;
+
+    if (revenueChange > 0) revenueDirection = "up";
+    else if (revenueChange < 0) revenueDirection = "down";
+  }
+
+    return {
+    total: filteredOrgs.length,
+    active,
+    completed,
+    revenue,
+    satisfaction,
+    revenueChange: Number(revenueChange.toFixed(1)),
+    revenueDirection,
+  };
+}, [filteredOrgs, selectedDate, subscriptionMap, revenueBreakdown, payments]);
+
+  // ⭐ STAR RENDERER
+  const renderStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const halfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+    return (
+      <div style={{ color: "#FFD700", fontSize: "1.2rem" }}>
+        {"★".repeat(fullStars)}
+        {halfStar ? "⯪" : ""}
+        {"☆".repeat(emptyStars)}
+      </div>
+    );
+  };
+
+  // ⭐ REVENUE INDICATOR
+  const renderRevenueIndicator = (direction: "up" | "down" | "same", percent: number) => {
+    if (direction === "up") return <span style={{ color: "green" }}> ▲ {percent}%</span>;
+    if (direction === "down") return <span style={{ color: "red" }}> ▼ {Math.abs(percent)}%</span>;
+    return <span style={{ color: "blue" }}> ■ 0%</span>;
+  };
+
 
   // CHART DATA
   useEffect(() => {
@@ -626,7 +650,12 @@ useEffect(() => {
 
           <div className="kpi-card revenue-card" style={{ position: "relative" }}>
             <h3>Revenue (Est.)</h3>
-            <p>ZMW {kpis.revenue}</p>
+            <p>
+              {kpis.revenue.toLocaleString("en-ZM", {
+                style: "currency",
+                currency: "ZMW",
+              })}
+            </p>
 
             {/* Corner Indicator */}
             <div className="revenue-indicator" style={{ position: "absolute", top: "0.5rem", right: "0.5rem", fontSize: "0.75rem", fontWeight: 600 }}>
