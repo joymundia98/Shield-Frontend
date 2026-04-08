@@ -19,9 +19,9 @@ interface User {
   roles: string[];   // roles associated with the user
   permissions?: Permission[];
   org_id?: string;
-  //org_type: 'church' | 'ngo';
   hq_id?: string;    // HQ-specific ID if logged in as HQ
   hq_type?: string;  // HQ-specific type (e.g., 'corporate', 'branch')
+  is_super_admin?: boolean; // Flag for super admin
 }
 
 interface Organization {
@@ -54,7 +54,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   organization: Organization | null;
-  headquarters: Hq | null;  // HQ-specific data in context
+  headquarters: Hq | null;
   loadingPermissions: boolean;
   login: (token: string, user: User | null, organization: Organization | null, headquarters: Hq | null) => void;
   logout: () => void;
@@ -167,7 +167,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     console.log('Login successful, state updated');
 
-    if (user?.role_id) {
+    // ✅ Skip permission fetching if SuperAdmin
+    if (user?.role_id && !user.is_super_admin) {
       const roleId = user.role_id.toString();
       setLoadingPermissions(true);
 

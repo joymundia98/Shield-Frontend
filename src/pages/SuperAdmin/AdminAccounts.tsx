@@ -45,7 +45,7 @@ const AdminAccountsPage: React.FC = () => {
   }, [sidebarOpen]);
 
   const authFetch = async (url: string) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken");
     const res = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });

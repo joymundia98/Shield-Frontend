@@ -32,58 +32,65 @@ const SuperAdminLoginForm = () => {
   const { login } = useAuth();
 
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      const apiUrl = `${baseURL}/api/auth/login`;
+  try {
+    const apiUrl = `${baseURL}/api/platform/login`;
 
-      const response = await axios.post(apiUrl, {
-        email: data.email,
-        password: data.password,
-      });
+    const response = await axios.post(apiUrl, {
+      email: data.email,
+      password: data.password,
+    });
 
-      const token = response.data.accessToken;
-      if (!token) throw new Error("No accessToken returned from backend");
-      localStorage.setItem("token", token);
-      window.dispatchEvent(new Event("tokenChanged"));
+    const token = response.data.accessToken;
+    const admin = response.data.admin;
 
-      const user = response.data.user;
-      if (!user) throw new Error("No user object returned from backend");
-      localStorage.setItem("user", JSON.stringify(user));
+    if (!token) throw new Error("No accessToken returned from backend");
+    if (!admin) throw new Error("No admin object returned from backend");
 
-      // STATUS CHECK
-      if (user.status !== "active") {
-        setShowSuccessCard(false);
-        if (user.status === "pending" || user.status === null) {
-          setStatusMessage(
-            "Your account is currently pending activation. Please contact your administrator for approval."
-          );
-          setStatusType('pending');
-        } else if (user.status === "inactive") {
-          setStatusMessage(
-            "This account has been deactivated. Please contact your administrator for assistance."
-          );
-          setStatusType('inactive');
-        }
-        return;
-      }
+    // Mark as super admin
+    admin.is_super_admin = true;
 
-      // Update auth context
-      await login(token, user, response.data.organization, null);
+    // ✅ Store token in the same key as AuthContext
+    localStorage.setItem("authToken", token);
+    window.dispatchEvent(new Event("tokenChanged"));
 
-      setError('');
-      setShowSuccessCard(true);
+    // Store admin object (instead of user)
+    localStorage.setItem("user", JSON.stringify(admin));
 
-      // Navigate to dashboard after login
-      setTimeout(() => {
-        setShowSuccessCard(false);
-        navigate("/SuperAdmin/dashboard");
-      }, 2000);
-
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Invalid email or password');
+    // STATUS CHECK
+    if (admin.status !== "active") {
       setShowSuccessCard(false);
+      if (admin.status === "pending" || admin.status === null) {
+        setStatusMessage(
+          "Your account is currently pending activation. Please contact your administrator for approval."
+        );
+        setStatusType('pending');
+      } else if (admin.status === "inactive") {
+        setStatusMessage(
+          "This account has been deactivated. Please contact your administrator for assistance."
+        );
+        setStatusType('inactive');
+      }
+      return;
     }
-  };
+
+    // Update auth context
+    await login(token, admin, response.data.organization, null);
+
+    setError('');
+    setShowSuccessCard(true);
+
+    // Navigate to dashboard after login
+    setTimeout(() => {
+      setShowSuccessCard(false);
+      navigate("/SuperAdmin/dashboard");
+    }, 2000);
+
+  } catch (err: any) {
+    console.error('Login error:', err);
+    setError(err.message || 'Invalid email or password');
+    setShowSuccessCard(false);
+  }
+};
 
   return (
     <div className={`login-parent-container ${statusMessage ? 'blurred' : ''}`}>
