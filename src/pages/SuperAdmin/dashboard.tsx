@@ -52,7 +52,7 @@ const SuperAdminDashboard: React.FC = () => {
 //Selected Date Object
   const selectedDate = useMemo(() => {
     const monthIndex = months.indexOf(selectedMonth);
-    return new Date(Number(selectedYear), monthIndex, 1);
+    return new Date(Number(selectedYear), monthIndex + 1, 0, 23, 59, 59);
   }, [selectedMonth, selectedYear]);
 
   const [conversionData, setConversionData] = useState({
