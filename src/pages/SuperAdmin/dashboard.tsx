@@ -140,7 +140,40 @@ const SuperAdminDashboard: React.FC = () => {
   }, [organizations]);
 
   const filteredOrgs = useMemo(() => {
-  return validOrgs.filter((org) => org.createdAt <= selectedDate);
+    return validOrgs.filter((org) => org.createdAt <= selectedDate);
+  }, [validOrgs, selectedDate]);
+
+const rollingSignups = useMemo(() => {
+  if (!validOrgs.length) return [];
+
+  // anchor everything to END of selected month
+  const end = new Date(
+    selectedDate.getFullYear(),
+    selectedDate.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999
+  );
+
+  // start = 11 months before, also month-end aligned
+  const start = new Date(
+    end.getFullYear(),
+    end.getMonth() - 11,
+    1,
+    0,
+    0,
+    0,
+    0
+  );
+
+  return validOrgs.filter((org) => {
+    const created = new Date(org.createdAt);
+    if (isNaN(created.getTime())) return false;
+
+    return created >= start && created <= end;
+  });
 }, [validOrgs, selectedDate]);
 
 const subscriptionMap = useMemo(() => {
@@ -318,7 +351,8 @@ const revenueBreakdown = useMemo(() => {
   }
 
     return {
-    total: filteredOrgs.length,
+    //total: filteredOrgs.length,
+    total: rollingSignups.length,
     active,
     completed,
     revenue,
@@ -326,7 +360,7 @@ const revenueBreakdown = useMemo(() => {
     revenueChange: Number(revenueChange.toFixed(1)),
     revenueDirection,
   };
-}, [filteredOrgs, selectedDate, subscriptionMap, revenueBreakdown, payments]);
+}, [filteredOrgs, selectedDate, subscriptionMap, revenueBreakdown, payments, rollingSignups]);
 
   // ⭐ STAR RENDERER
   const renderStars = (rating: number) => {
