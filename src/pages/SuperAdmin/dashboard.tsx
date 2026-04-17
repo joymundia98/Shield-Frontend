@@ -186,21 +186,26 @@ const subscriptionMap = useMemo(() => {
   return map;
 }, [subscriptions]);
 
+const subscriptionSet = useMemo(() => {
+  return new Set(subscriptions.map((s) => s.organization_id));
+}, [subscriptions]);
+
 // ✅ STATUS HELPER
   const getStatus = (org: Organization) => {
-    const trialEnd = new Date(org.createdAt);
-    trialEnd.setDate(trialEnd.getDate() + 21);
+  const trialEnd = new Date(org.createdAt);
+  trialEnd.setDate(trialEnd.getDate() + 21);
 
-    // ✅ still in trial
-    if (trialEnd > selectedDate) return "inTrial";
+  // still in trial at selected date
+  if (selectedDate <= trialEnd) return "inTrial";
 
-    // ✅ check if subscription exists
-    const hasSubscription = subscriptionMap.has(org.id);
+  const hasSubscribed = subscriptionSet.has(org.id);
 
-    if (hasSubscription) return "converted";
+  // subscribed after trial ended → converted
+  if (hasSubscribed) return "converted";
 
-    return "churned";
-  };
+  // no subscription after trial ended → churned
+  return "churned";
+};
 
 // ➡️ STEP 3: Dynamic Trial / Conversion Stats
 const trialStats = useMemo(() => {
