@@ -7,6 +7,34 @@ export const permissionsMap: { [key: string]: string[] } = {
   '/org-register': ['View Organization Registration'],
   '/org-dashboard': ['View Organization Dashboard'],*/
 
+  // =========================
+  // SUPER ADMIN MODULE
+  // =========================
+  '/SuperAdmin': ['Super Admin Login'],
+  '/SuperAdmin/dashboard': ['View Super Admin Dashboard'],
+
+  '/SuperAdmin/RegisteredOrganizations': [
+    'View Registered Organizations',
+    'Manage Registered Organizations',
+  ],
+
+  '/SuperAdmin/RegisteredAdmins': [
+    'View Registered Admins',
+    'Manage Registered Admins',
+  ],
+
+  '/SuperAdmin/Subscriptions': ['View Subscriptions'],
+  '/SuperAdmin/AddSubscription': ['Add Subscription'],
+  '/SuperAdmin/Subscriptions/:id': ['Edit Subscription'],
+
+  '/SuperAdmin/Payments': ['View Payments'],
+  '/SuperAdmin/AddPayment': ['Add Payment'],
+  '/SuperAdmin/Payments/:id': ['Verify Payment'],
+
+  '/SuperAdmin/RegisterAdmin': ['Register Super Admin'],
+  '/SuperAdmin/reports': ['System Overview Reports'],
+  '/SuperAdmin/settings': ['Manage System Settings'],
+
   // HQ 
   '/HQ/branchDirectory': ['View Branch Directory'],
   '/HQ/GeneralReport': ['View HQ Reports'],

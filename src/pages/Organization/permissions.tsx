@@ -540,7 +540,7 @@ const PermissionsPage: React.FC = () => {
   const groupedPermissions = groupPermissionsByCategory(permissions);
 
   // Filter out unwanted categories
-  const categoriesToRemove = ["pastoral", "ministry", "governance", "class"];
+  const categoriesToRemove = ["pastoral", "ministry", "governance", "class", "SuperAdmin"];
 
   if (
     !hasPermission("View Branch Directory") &&

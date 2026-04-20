@@ -59,6 +59,19 @@ export const AdminAccount = () => {
 
   const navigate = useNavigate();
 
+  // Helper Function to filter Out Super Admin Permissions
+  const isSuperAdminPermission = (perm: any) => {
+    return (
+      perm.path?.startsWith("/SuperAdmin") ||
+      perm.name?.toLowerCase().includes("super admin") ||
+      perm.name?.toLowerCase().includes("registered organizations") ||
+      perm.name?.toLowerCase().includes("registered admins") ||
+      perm.name?.toLowerCase().includes("subscriptions") ||
+      perm.name?.toLowerCase().includes("payments")
+    );
+  };
+
+
   // Fetch organization data from localStorage
   useEffect(() => {
     const storedOrganization = localStorage.getItem("organization");
@@ -216,20 +229,22 @@ export const AdminAccount = () => {
     }
 
     // ✅ STEP 2: Assign role permissions
-    const allPermissionIds = permissions.map((p) => p.id);
+    const filteredPermissions = permissions.filter(
+      (p) => !isSuperAdminPermission(p)
+    );
 
-    let permissionIdsToAssign = allPermissionIds;
+    let permissionIdsToAssign = filteredPermissions.map((p) => p.id);
 
     if (organizationType !== "Headquarters / Central Authority") {
-      const viewBranchPermissionId = permissions.find(
+      const viewBranchPermissionId = filteredPermissions.find(
         p => p.name === "View Branch Directory"
       )?.id;
 
-      const viewHQPermissionId = permissions.find(
+      const viewHQPermissionId = filteredPermissions.find(
         p => p.name === "View HQ Reports"
       )?.id;
 
-      permissionIdsToAssign = allPermissionIds.filter(
+      permissionIdsToAssign = permissionIdsToAssign.filter(
         id => id !== viewBranchPermissionId && id !== viewHQPermissionId
       );
     }

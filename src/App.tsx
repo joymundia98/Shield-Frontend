@@ -898,15 +898,58 @@ function App() {
           {/* ------------------------------
                   SUPER ADMIN MODULE
           --------------------------------*/}
+
+          {/*  entry point (NOT protectected) */}
           <Route path="/SuperAdmin" element={<SuperAdminLoginForm />} />
-          <Route path="/SuperAdmin/dashboard" element={<SuperAdminDashboard />} />
-          <Route path="/SuperAdmin/RegisteredOrganizations" element={<OrganizationRegistrationsPage />} />
-          <Route path="/SuperAdmin/RegisteredAdmins" element={<AdminAccountsPage />} />
-          <Route path="/SuperAdmin/Subscriptions" element={<SubscriptionsPage />} />
-          <Route path="/SuperAdmin/Payments" element={<PaymentsPage />} />
-          <Route path="/SuperAdmin/AddSubscription" element={<AddSubscriptionPage />} />
-          <Route path="/SuperAdmin/AddPayment" element={<AddPaymentPage />} />
-          <Route path="/SuperAdmin/RegisterAdmin" element={<SuperAdminRegistrationForm />} />
+
+          {/* Protected Super Admin Area */}
+          <Route path="/SuperAdmin/dashboard" element={
+            <ProtectedRoute requiredPermission="View Super Admin Dashboard" fallback="/403">
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/SuperAdmin/RegisteredOrganizations" element={
+            <ProtectedRoute requiredPermission="View Registered Organizations" fallback="/403">
+              <OrganizationRegistrationsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/SuperAdmin/RegisteredAdmins" element={
+            <ProtectedRoute requiredPermission="View Registered Admins" fallback="/403">
+              <AdminAccountsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/SuperAdmin/Subscriptions" element={
+            <ProtectedRoute requiredPermission="View Subscriptions" fallback="/403">
+              <SubscriptionsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/SuperAdmin/Payments" element={
+            <ProtectedRoute requiredPermission="View Payments" fallback="/403">
+              <PaymentsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/SuperAdmin/AddSubscription" element={
+            <ProtectedRoute requiredPermission="Add Subscription" fallback="/403">
+              <AddSubscriptionPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/SuperAdmin/AddPayment" element={
+            <ProtectedRoute requiredPermission="Add Payment" fallback="/403">
+              <AddPaymentPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/SuperAdmin/RegisterAdmin" element={
+            <ProtectedRoute requiredPermission="Register Super Admin" fallback="/403">
+              <SuperAdminRegistrationForm />
+            </ProtectedRoute>
+          } />
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />

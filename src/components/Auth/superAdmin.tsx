@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import headerLogo from '../../assets/headerlogo.png';
 import { useAuth } from '../../hooks/useAuth';
+import { fetchPermissionsForRole } from '../../context/AuthContext';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -16,6 +17,12 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+type Permission = {
+  name: string;
+  path: string;
+  method: string;
+};
 
 const SuperAdminLoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,105 +38,170 @@ const SuperAdminLoginForm = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const onSubmit = async (data: LoginFormData) => {
-  try {
-    const apiUrl = `${baseURL}/api/platform/login`;
+  // ===============================
+  // RBAC ROUTE RESOLVER (optional use)
+  // ===============================
+  const findFirstAccessibleRoute = (permissions: Permission[]): string | null => {
+    const routePermissionMap: Record<string, string> = {
+      "/SuperAdmin/dashboard": "View Super Admin Dashboard",
+      "/dashboard": "View Programs Dashboard",
+    };
 
-    const response = await axios.post(apiUrl, {
-      email: data.email,
-      password: data.password,
-    });
+    for (const route in routePermissionMap) {
+      const required = routePermissionMap[route];
 
-    const token = response.data.accessToken;
-    const admin = response.data.admin;
-
-    if (!token) throw new Error("No accessToken returned from backend");
-    if (!admin) throw new Error("No admin object returned from backend");
-
-    // Mark as super admin
-    admin.is_super_admin = true;
-
-    // ✅ Store token in the same key as AuthContext
-    localStorage.setItem("authToken", token);
-    window.dispatchEvent(new Event("tokenChanged"));
-
-    // Store admin object (instead of user)
-    localStorage.setItem("user", JSON.stringify(admin));
-
-    // STATUS CHECK
-    if (admin.status !== "active") {
-      setShowSuccessCard(false);
-      if (admin.status === "pending" || admin.status === null) {
-        setStatusMessage(
-          "Your account is currently pending activation. Please contact your administrator for approval."
-        );
-        setStatusType('pending');
-      } else if (admin.status === "inactive") {
-        setStatusMessage(
-          "This account has been deactivated. Please contact your administrator for assistance."
-        );
-        setStatusType('inactive');
+      if (permissions.some(p => p.name === required)) {
+        return route;
       }
-      return;
     }
 
-    // Update auth context
-    await login(token, admin, response.data.organization, null);
+    return null;
+  };
 
-    setError('');
-    setShowSuccessCard(true);
+  // ===============================
+  // LOGIN HANDLER
+  // ===============================
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      const apiUrl = `${baseURL}/api/platform/login`;
 
-    // Navigate to dashboard after login
-    setTimeout(() => {
+      const response = await axios.post(apiUrl, {
+        email: data.email,
+        password: data.password,
+      });
+
+      const token = response.data.accessToken;
+      const admin = response.data.admin;
+
+      if (!token) throw new Error("No accessToken returned from backend");
+      if (!admin) throw new Error("No admin object returned from backend");
+
+      localStorage.setItem("authToken", token);
+      window.dispatchEvent(new Event("tokenChanged"));
+      localStorage.setItem("user", JSON.stringify(admin));
+
+      // ===============================
+      // STATUS CHECK
+      // ===============================
+      if (admin.status !== "active") {
+        setShowSuccessCard(false);
+
+        if (admin.status === "pending" || admin.status === null) {
+          setStatusMessage(
+            "Your account is currently pending activation. Please contact your administrator for approval."
+          );
+          setStatusType("pending");
+        } else if (admin.status === "inactive") {
+          setStatusMessage(
+            "This account has been deactivated. Please contact your administrator for assistance."
+          );
+          setStatusType("inactive");
+        }
+
+        return;
+      }
+
+      // ===============================
+      // FETCH PERMISSIONS
+      // ===============================
+      let permissions: Permission[] = [];
+
+      if (admin.role_id) {
+        permissions =
+          (await fetchPermissionsForRole(admin.role_id.toString(), token)) || [];
+      }
+
+      const DEFAULT_DASHBOARD_PERMISSION: Permission = {
+        name: "View Programs Dashboard",
+        path: "/dashboard",
+        method: "GET",
+      };
+
+      admin.permissions = [
+        DEFAULT_DASHBOARD_PERMISSION,
+        ...permissions,
+      ].filter(
+        (perm, index, self) =>
+          index === self.findIndex(p => p.name === perm.name)
+      );
+
+      // ===============================
+      // AUTH CONTEXT LOGIN
+      // ===============================
+      await login(token, admin, response.data.organization, null);
+
+      setError('');
+      setShowSuccessCard(true);
+
+      // ===============================
+      // ROUTING
+      // ===============================
+      setTimeout(() => {
+        setShowSuccessCard(false);
+
+        // 🔥 SUPERADMIN OVERRIDE RULE
+        if (admin.is_super_admin) {
+          navigate("/SuperAdmin/dashboard");
+          return;
+        }
+
+        // fallback RBAC routing (optional future use)
+        const route = findFirstAccessibleRoute(admin.permissions);
+
+        if (route) {
+          navigate(route);
+        } else {
+          navigate("/dashboard");
+        }
+
+      }, 2000);
+
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "Invalid email or password");
       setShowSuccessCard(false);
-      navigate("/SuperAdmin/dashboard");
-    }, 2000);
-
-  } catch (err: any) {
-    console.error('Login error:', err);
-    setError(err.message || 'Invalid email or password');
-    setShowSuccessCard(false);
-  }
-};
+    }
+  };
 
   return (
     <div className={`login-parent-container ${statusMessage ? 'blurred' : ''}`}>
       <div className="loginContainer">
-        {/* Ribbon using the provided CSS */}
+
         <div className="ribbon">SUPER ADMIN</div>
 
         <div className="header">
-            <img src={headerLogo} alt="Logo" />
+          <img src={headerLogo} alt="Logo" />
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="field input-field">
+          <div className="field input-field">
             <input type="email" required {...register('email')} />
             <label>Email Address</label>
-            </div>
+          </div>
 
-            <div className="field input-field">
+          <div className="field input-field">
             <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                {...register('password')}
+              type={showPassword ? 'text' : 'password'}
+              required
+              {...register('password')}
             />
             <label>Password</label>
+
             <span
-                className="showPassword"
-                onClick={() => setShowPassword(!showPassword)}
+              className="showPassword"
+              onClick={() => setShowPassword(!showPassword)}
             >
-                {showPassword ? '👁️' : '🙈'}
+              {showPassword ? '👁️' : '🙈'}
             </span>
-            </div>
+          </div>
 
-            {error && <div className="form-error">{error}</div>}
+          {error && <div className="form-error">{error}</div>}
 
-            <div className="field button-field">
+          <div className="field button-field">
             <button type="submit">Login</button>
-            </div>
+          </div>
         </form>
-        </div>
+      </div>
 
       {showSuccessCard && (
         <div className="success-card">
