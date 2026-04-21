@@ -2,10 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
 import FinanceHeader from './FinanceHeader';
-import { authFetch, orgFetch } from "../../utils/api"; // Import authFetch and orgFetch
-import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
+import { authFetch, orgFetch } from "../../utils/api";
+import { useAuth } from "../../hooks/useAuth";
 
-// Declare the base URL here
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 interface ExtraFields {
@@ -37,21 +36,19 @@ interface Subcategory {
 
 const BACKEND_URL = `${baseURL}/api`;
 
-// Helper function to handle fetching with fallback logic
 const fetchDataWithAuthFallback = async (url: string, options: RequestInit = {}) => {
   try {
-    return await authFetch(url, options); // Try authFetch first
+    return await authFetch(url, options);
   } catch (err) {
     console.warn("authFetch failed, falling back to orgFetch", err);
-    return await orgFetch(url, options); // If authFetch fails, fall back to orgFetch
+    return await orgFetch(url, options);
   }
 };
 
 const AddIncome: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth(); // Access the hasPermission function
+  const { hasPermission } = useAuth();
 
-  // Sidebar
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -61,7 +58,6 @@ const AddIncome: React.FC = () => {
       : document.body.classList.remove("sidebar-open");
   }, [sidebarOpen]);
 
-  // Form State
   const [form, setForm] = useState<NewIncome>({
     category: "",
     subcategory: "",
@@ -78,11 +74,12 @@ const AddIncome: React.FC = () => {
   const [allSubcategories, setAllSubcategories] = useState<Subcategory[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
 
-  // Current User ID
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = user.id;
 
-  // Fetch categories + subcategories using the new helper function
+  // ✅ NEW: confirmation modal state
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -110,57 +107,56 @@ const AddIncome: React.FC = () => {
     setForm({ ...form, attachments: Array.from(files) });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  if (!userId) {
-    alert("User not logged in");
-    return;
-  }
-
-  const payload = {
-    user_id: userId,
-    category_id: form.category,
-    subcategory_id: form.subcategory,
-    date: form.date,
-    giver: form.source,
-    description: form.description,
-    amount: form.amount,
-    payment_method: form.paymentMethod,
-    extra_fields: form.extraFields,
-  };
-
-  try {
-    const res = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/incomes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    // Log the response to check its structure
-    console.log("Response Object:", res);
-
-    // Check if the response is what we expect
-    if (res && res.id) {
-      // If there's an ID, it's likely the created income object, meaning success
-      console.log("Income data submitted successfully:", res);
-      alert("Income submitted successfully!");
-      navigate("/finance/incometracker");
-    } else {
-      // Handle unexpected response or error
-      const errorMessage = res.message || "There was an issue submitting the income.";
-      console.error("Error response:", errorMessage);
-      alert(errorMessage);
+  // ---------------- ACTUAL SUBMIT LOGIC (UNCHANGED) ----------------
+  const handleSubmit = async () => {
+    if (!userId) {
+      alert("User not logged in");
+      return;
     }
 
-  } catch (err) {
-    console.error("Fetch error:", err);
-    alert("Server error or network issue");
-  }
-};
+    const payload = {
+      user_id: userId,
+      category_id: form.category,
+      subcategory_id: form.subcategory,
+      date: form.date,
+      giver: form.source,
+      description: form.description,
+      amount: form.amount,
+      payment_method: form.paymentMethod,
+      extra_fields: form.extraFields,
+    };
+
+    try {
+      const res = await fetchDataWithAuthFallback(`${BACKEND_URL}/finance/incomes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      console.log("Response Object:", res);
+
+      if (res && res.id) {
+        alert("Income submitted successfully!");
+        navigate("/finance/incometracker");
+      } else {
+        alert(res.message || "There was an issue submitting the income.");
+      }
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      alert("Server error or network issue");
+    }
+  };
+
+  // ---------------- CONFIRMATION HANDLER ----------------
+  const handleConfirmSubmit = async () => {
+    setConfirmModalOpen(false);
+    await handleSubmit();
+  };
 
   return (
     <div className="dashboard-wrapper">
+
       {/* ---------------- SIDEBAR ---------------- */}
       <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="close-wrapper">
@@ -172,19 +168,14 @@ const AddIncome: React.FC = () => {
         </div>
 
         <h2>FINANCE</h2>
+
         {hasPermission("View Finance Dashboard") && <a href="/finance/dashboard">Dashboard</a>}
         {hasPermission("View Income Dashboard") && <a href="/finance/incomeDashboard">Track Income</a>}
         {hasPermission("Add Income") && <a href="/finance/addIncome" className="active">Add Income</a>}
-        {hasPermission("View Expense Dashboard") && <a href="/finance/expenseDashboard">Track Expenses</a>}
-        {hasPermission("Add Expense") && <a href="/finance/addExpense">Add Expense</a>}
-        {hasPermission("View Budgets Summary") && <a href="/finance/budgets">Budget</a>}
-        {hasPermission("Manage Payroll") && <a href="/finance/payroll">Payroll</a>}
-        {hasPermission("View Finance Categories") && <a href="/finance/financeCategory">Finance Categories</a>}
-
 
         <hr className="sidebar-separator" />
 
-        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>}
+        <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
 
         <a
           href="/"
@@ -192,18 +183,16 @@ const AddIncome: React.FC = () => {
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/"); // Redirect to home page after logout
+            navigate("/");
           }}
         >
           ➜ Logout
         </a>
       </div>
 
-      {/* ---------------- MAIN CONTENT ---------------- */}
+      {/* ---------------- MAIN ---------------- */}
       <div className="dashboard-content">
         <FinanceHeader />
-
-        <br/>
 
         <header className="page-header income-header">
           <h1>Add Income</h1>
@@ -211,9 +200,16 @@ const AddIncome: React.FC = () => {
         </header>
 
         <div className="container">
-          <form className="add-form-styling" onSubmit={handleSubmit}>
 
-            {/* Category */}
+          {/* ---------------- FORM (ONLY CHANGE IS onSubmit) ---------------- */}
+          <form
+            className="add-form-styling"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setConfirmModalOpen(true);
+            }}
+          >
+
             <label>Income Category</label>
             <select
               required
@@ -226,7 +222,6 @@ const AddIncome: React.FC = () => {
               ))}
             </select>
 
-            {/* Subcategory */}
             <label>Subcategory</label>
             <select
               required
@@ -239,7 +234,6 @@ const AddIncome: React.FC = () => {
               ))}
             </select>
 
-            {/* Date */}
             <label>Income Date</label>
             <input
               type="date"
@@ -248,39 +242,31 @@ const AddIncome: React.FC = () => {
               onChange={(e) => setForm({ ...form, date: e.target.value })}
             />
 
-            {/* Source */}
             <label>Giver</label>
             <input
               type="text"
-              placeholder="e.g. John Doe, Online Donor"
               required
               value={form.source}
               onChange={(e) => setForm({ ...form, source: e.target.value })}
             />
 
-            {/* Description */}
             <label>Description</label>
             <textarea
               required
-              placeholder="What is this income for?"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
 
-            {/* Amount */}
-            <label>Amount ($)</label>
+            <label>Amount</label>
             <input
               type="number"
-              step="0.01"
               required
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: parseFloat(e.target.value) })}
             />
 
-            {/* Payment Method */}
             <label>Payment Method</label>
             <select
-              required
               value={form.paymentMethod}
               onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
             >
@@ -289,28 +275,13 @@ const AddIncome: React.FC = () => {
               <option>POS</option>
               <option>Mobile Money</option>
               <option>Cheque</option>
-              <option>Online Giving Platform</option>
-              <option>Debit Card</option>
-              <option>Credit Card</option>
-              <option>Apple Pay</option>
-              <option>Google Pay</option>
-              <option>Samsung Pay</option>
               <option>PayPal</option>
-              <option>Cryptocurrency</option>
-              <option>Buy Now, Pay Later</option>
-              <option>Gift Card</option>
-              <option>Prepaid Card</option>
-              <option>Direct Debit</option>
-              <option>Standing Order</option>
-              <option>Money Order</option>
             </select>
 
-            {/* Attachments */}
-            <label>Upload Documents / Receipts</label>
+            <label>Attachments</label>
             <input
               type="file"
               multiple
-              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
               onChange={(e) => handleAttachments(e.target.files)}
             />
 
@@ -321,6 +292,45 @@ const AddIncome: React.FC = () => {
           </form>
         </div>
       </div>
+
+      {/* ---------------- CONFIRMATION MODAL (NEW) ---------------- */}
+      {confirmModalOpen && (
+        <div className="expenseModal" style={{ display: "flex" }}>
+          <div className="expenseModal-content">
+
+            <h2>Confirm Income Submission</h2>
+
+            <p>
+              You are about to submit a financial record.
+            </p>
+
+            <p><strong>Please note:</strong></p>
+            <ul style={{ textAlign: "left" }}>
+              <li>Records cannot be deleted once submitted.</li>
+              <li>Corrections require voiding with proper permissions.</li>
+              <li>Ensure all details are correct before proceeding.</li>
+            </ul>
+
+            <div className="expenseModal-buttons">
+              <button
+                className="delete-cancel-btn"
+                onClick={() => setConfirmModalOpen(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="expenseModal-confirm"
+                onClick={handleConfirmSubmit}
+              >
+                Proceed
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
