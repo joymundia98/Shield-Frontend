@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../styles/global.css";
 
-//import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
+
+import SuperAdminHeader from './SuperAdminHeader';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -32,7 +34,7 @@ interface OrgType {
 
 const OrganizationRegistrationsPage: React.FC = () => {
   const navigate = useNavigate();
-  //const { hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -217,25 +219,36 @@ const kpiData = useMemo(() => {
 
         <h2>SUPER ADMIN</h2>
 
+        {hasPermission("View Super Admin Dashboard") && (
           <a href="/SuperAdmin/dashboard">Dashboard</a>
+        )}
 
-          <a href="/SuperAdmin/RegisteredOrganizations" className="active">Registered Organizations</a>
-        
-          <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
+        {hasPermission("View Registered Organizations") && (
+          <a href="/SuperAdmin/RegisteredOrganizations" className="active">
+            Registered Organizations
+          </a>
+        )}
 
+        {hasPermission("View Registered Admins") && (
+          <a href="/SuperAdmin/RegisteredAdmins">
+            System Admin Accounts
+          </a>
+        )}
+
+        {hasPermission("View Subscriptions") && (
           <a href="/SuperAdmin/Subscriptions">
             Subscriptions
           </a>
+        )}
+
+        {hasPermission("View Payments") && (
           <a href="/SuperAdmin/Payments">
             Payments
           </a>
-        
+        )}
 
-        {/*{hasPermission("View Main Dashboard") && (
-          <a href="/dashboard" className="return-main">
-            ← Back to Main Dashboard
-          </a>
-        )}*/}
+        <hr className="sidebar-separator" />
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← To Demo Environment</a>}
 
         <a
           href="/"
@@ -252,7 +265,8 @@ const kpiData = useMemo(() => {
 
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
-        
+        <SuperAdminHeader />
+        <br/>
         <header>
           <h1>Registered Organizations</h1>
 

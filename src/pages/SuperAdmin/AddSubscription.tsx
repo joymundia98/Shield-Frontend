@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
+import { useAuth } from "../../hooks/useAuth";
+import SuperAdminHeader from './SuperAdminHeader';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -26,6 +28,7 @@ interface Plan {
 
 const AddSubscriptionPage: React.FC = () => {
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -167,15 +170,37 @@ const AddSubscriptionPage: React.FC = () => {
 
         <h2>SUPER ADMIN</h2>
 
-        <a href="/SuperAdmin/dashboard">Dashboard</a>
-        <a href="/SuperAdmin/RegisteredOrganizations">Registered Organizations</a>
-        <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
-        <a href="/SuperAdmin/Subscriptions" className="active">
-          Subscriptions
-        </a>
-        <a href="/SuperAdmin/Payments">
-          Payments
-        </a>
+        {hasPermission("View Super Admin Dashboard") && (
+          <a href="/SuperAdmin/dashboard">Dashboard</a>
+        )}
+
+        {hasPermission("View Registered Organizations") && (
+          <a href="/SuperAdmin/RegisteredOrganizations">
+            Registered Organizations
+          </a>
+        )}
+
+        {hasPermission("View Registered Admins") && (
+          <a href="/SuperAdmin/RegisteredAdmins">
+            System Admin Accounts
+          </a>
+        )}
+
+        {hasPermission("View Subscriptions") && (
+          <a href="/SuperAdmin/Subscriptions"  className="active">
+            Subscriptions
+          </a>
+        )}
+
+        {hasPermission("View Payments") && (
+          <a href="/SuperAdmin/Payments">
+            Payments
+          </a>
+        )}
+
+        <hr className="sidebar-separator" />
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← To Demo Environment</a>}
+
 
         <a
           href="/"
@@ -192,6 +217,8 @@ const AddSubscriptionPage: React.FC = () => {
 
       {/* MAIN CONTENT */}
       <div className="dashboard-content">
+        <SuperAdminHeader />
+        <br/>
         <header>
           <h1>Add Subscription</h1>
           <button

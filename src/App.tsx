@@ -945,13 +945,13 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/*<Route path="/SuperAdmin/RegisterAdmin" element={
+          <Route path="/SuperAdmin/RegisterAdmin" element={
             <ProtectedRoute requiredPermission="Register Super Admin" fallback="/403">
               <SuperAdminRegistrationForm />
             </ProtectedRoute>
-          } />*/}
+          } />
 
-          <Route path="/SuperAdmin/RegisterAdmin" element={<SuperAdminRegistrationForm />} />
+          {/*<Route path="/SuperAdmin/RegisterAdmin" element={<SuperAdminRegistrationForm />} />*/}
 
           {/* ------------------------------ 403 PAGE ------------------------------ */}
           <Route path="/403" element={<ForbiddenPage />} />

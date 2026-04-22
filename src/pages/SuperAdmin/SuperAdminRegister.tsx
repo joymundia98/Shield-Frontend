@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import headerLogo from "../../assets/headerlogo.png";
+import { useAuth } from "../../hooks/useAuth";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -46,6 +47,17 @@ const SuperAdminRegistrationForm = () => {
     });
 
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  useEffect(() => {
+    const body = document.body;
+    if (sidebarOpen) body.classList.add("sidebar-open");
+    else body.classList.remove("sidebar-open");
+    return () => body.classList.remove("sidebar-open");
+  }, [sidebarOpen]);
 
   // -----------------------------
   // FETCH ROLES
@@ -166,7 +178,68 @@ const SuperAdminRegistrationForm = () => {
   };
 
   return (
+    
     <div className="login-parent-container">
+      <button className="hamburger" onClick={toggleSidebar}>
+        &#9776;
+      </button>
+
+      {/* SIDEBAR */}
+      <div className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+        <div className="close-wrapper">
+          <div className="toggle close-btn">
+            <input type="checkbox" checked={sidebarOpen} onChange={toggleSidebar} />
+            <span className="button"></span>
+            <span className="label">X</span>
+          </div>
+        </div>
+
+        <h2>SUPER ADMIN</h2>
+
+        {hasPermission("View Super Admin Dashboard") && (
+          <a href="/SuperAdmin/dashboard">Dashboard</a>
+        )}
+
+        {hasPermission("View Registered Organizations") && (
+          <a href="/SuperAdmin/RegisteredOrganizations">
+            Registered Organizations
+          </a>
+        )}
+
+        {hasPermission("View Registered Admins") && (
+          <a href="/SuperAdmin/RegisteredAdmins">
+            System Admin Accounts
+          </a>
+        )}
+
+        {hasPermission("View Subscriptions") && (
+          <a href="/SuperAdmin/Subscriptions">
+            Subscriptions
+          </a>
+        )}
+
+        {hasPermission("View Payments") && (
+          <a href="/SuperAdmin/Payments">
+            Payments
+          </a>
+        )}
+
+        <hr className="sidebar-separator" />
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← To Demo Environment</a>}
+
+        <a
+          href="/"
+          className="logout-link"
+          onClick={(e) => {
+            e.preventDefault();
+            localStorage.clear();
+            navigate("/");
+          }}
+        >
+          ➜ Logout
+        </a>
+      </div>
+
       <div className="loginContainer">
         <div className="header">
           <img src={headerLogo} alt="Logo" />

@@ -3,8 +3,9 @@ import Chart from "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../../styles/global.css";
-//import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import ChartDataLabels from "chartjs-plugin-datalabels";
+import SuperAdminHeader from './SuperAdminHeader';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -19,7 +20,7 @@ interface Organization {
 
 const SuperAdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  //const { hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -640,19 +641,36 @@ useEffect(() => {
 
         <h2>SUPER ADMIN</h2>
 
-        <a href="/SuperAdmin/dashboard" className="active">Dashboard</a>
-        <a href="/SuperAdmin/RegisteredOrganizations">Registered Organizations</a>
-        <a href="/SuperAdmin/RegisteredAdmins">System Admin Accounts</a>
-        <a href="/SuperAdmin/Subscriptions">
-          Subscriptions
-        </a>
-        <a href="/SuperAdmin/Payments">
-          Payments
-        </a>
+        {hasPermission("View Super Admin Dashboard") && (
+          <a href="/SuperAdmin/dashboard" className="active">Dashboard</a>
+        )}
 
-        {/*{hasPermission("View Main Dashboard") && (
-          <a href="/dashboard" className="return-main">← Back to Main Dashboard</a>
-        )}*/}
+        {hasPermission("View Registered Organizations") && (
+          <a href="/SuperAdmin/RegisteredOrganizations">
+            Registered Organizations
+          </a>
+        )}
+
+        {hasPermission("View Registered Admins") && (
+          <a href="/SuperAdmin/RegisteredAdmins">
+            System Admin Accounts
+          </a>
+        )}
+
+        {hasPermission("View Subscriptions") && (
+          <a href="/SuperAdmin/Subscriptions">
+            Subscriptions
+          </a>
+        )}
+
+        {hasPermission("View Payments") && (
+          <a href="/SuperAdmin/Payments">
+            Payments
+          </a>
+        )}
+
+        <hr className="sidebar-separator" />
+        {hasPermission("View Main Dashboard") && <a href="/dashboard" className="return-main">← To Demo Environment</a>}
 
         <a
           href="/"
@@ -664,6 +682,8 @@ useEffect(() => {
       </div>
 
       <div className="dashboard-content">
+        <SuperAdminHeader />
+        <br/>
         <h1>SCI-ELD Overview</h1>
 
         <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
