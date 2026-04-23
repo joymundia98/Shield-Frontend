@@ -187,7 +187,7 @@ const BudgetBreakdownPage: React.FC = () => {
         {hasPermission("View Finance Dashboard") && <a href="/finance/dashboard">Dashboard</a>}
         {hasPermission("View Income Dashboard") && <a href="/finance/incomeDashboard">Track Income</a>}
         {hasPermission("Add Income") && <a href="/finance/addIncome">Add Income</a>}
-        {hasPermission("View Expense Dashboard") && <a href="/finance/expenseDashboard" className="active">Track Expenses</a>}
+        {hasPermission("View Expense Dashboard") && <a href="/finance/expenseDashboard">Track Expenses</a>}
         {hasPermission("Add Expense") && <a href="/finance/addExpense">Add Expense</a>}
         {hasPermission("View Budgets Summary") && <a href="/finance/budgets" className="active">Budget</a>}
         {hasPermission("Manage Payroll") && <a href="/finance/payroll">Payroll</a>}
@@ -223,7 +223,15 @@ const BudgetBreakdownPage: React.FC = () => {
           <button className="add-btn" onClick={() => navigate("/finance/setBudget")}>
             Set Budget
           </button>&emsp;
-          <button className="add-btn" onClick={() => navigate("/finance/setBudgets")}>✏️ &nbsp; Edit Budgets</button>&emsp;
+
+          <button
+            className="add-btn"
+            onClick={() => navigate(`/finance/budgets/edit/${selectedYear}/${selectedMonth}`)}
+          >
+            ✏️ Edit Budgets
+          </button>
+          &emsp;
+
           <button className="add-btn" onClick={() => navigate("/finance/Budgets")}>Budget Summary</button>
         </header>
         <br />
@@ -253,7 +261,7 @@ const BudgetBreakdownPage: React.FC = () => {
           <div className="budget-card total-card">
             <h3>Total</h3>
             <p style={{ fontStyle: "italic", marginBottom: "10px", fontWeight: "800", fontSize: "1.5rem" }}>
-              ${formatAmount(calculateTotal())}
+              K {formatAmount(calculateTotal())}
             </p>
           </div>
         )}
@@ -266,7 +274,7 @@ const BudgetBreakdownPage: React.FC = () => {
             {Object.entries(data.subcategories).map(([sub, amount]) => (
               <div className="budget-input-row" key={sub}>
                 <label>{sub}</label>
-                <span>${formatAmount(amount)}</span>
+                <span>K {formatAmount(amount)}</span>
               </div>
             ))}
           </div>

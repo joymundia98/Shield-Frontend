@@ -348,17 +348,17 @@ const BudgetsPage: React.FC = () => {
         <div className="kpi-container">
           <div className="kpi-card">
             <h3>Total Budget Allocated</h3>
-            <p>${totalBudget.toLocaleString()}</p>
+            <p>K {totalBudget.toLocaleString()}</p>
           </div>
 
           <div className="kpi-card">
             <h3>Total Spent</h3>
-            <p>${totalSpent.toLocaleString()}</p>
+            <p>K {totalSpent.toLocaleString()}</p>
           </div>
 
           <div className="kpi-card">
             <h3>Remaining Budget</h3>
-            <p>${remainingBudget.toLocaleString()}</p>
+            <p>K {remainingBudget.toLocaleString()}</p>
           </div>
 
           <div className="kpi-card">

@@ -53,6 +53,18 @@ interface Dropdown {
 }
 
 const dropdowns: Dropdown[] = [
+{
+    label: "Super Admin",
+    links: [
+      { name: "Dashboard", href: "/SuperAdmin/dashboard", permission: "View Super Admin Dashboard" },
+      { name: "Registered Organizations", href: "/SuperAdmin/RegisteredOrganizations", permission: "View Registered Organizations" },
+      { name: "Registered Admins", href: "/SuperAdmin/RegisteredAdmins", permission: "View Registered Admins" },
+      { name: "Subscriptions", href: "/SuperAdmin/Subscriptions", permission: "View Subscriptions" },
+      { name: "Payments", href: "/SuperAdmin/Payments", permission: "View Payments" },
+      //{ name: "Reports", href: "/SuperAdmin/reports", permission: "System Overview Reports" },
+      //{ name: "Settings", href: "/SuperAdmin/settings", permission: "Manage System Settings" },
+    ],
+  },
   {
       label: "HQ",
       links: [

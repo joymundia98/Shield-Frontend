@@ -88,6 +88,7 @@ import FinanceCategoryPage from "./pages/finance/financeCategory";
 import BudgetsPage from "./pages/finance/budgets";          
 import SetBudgetsPage from "./pages/finance/setBudget"; 
 import BudgetBreakdownPage from "./pages/finance/budgetBreakdown"; 
+import EditBudgetsPage from "./pages/finance/EditBudgetsPage";
 import FinanceViewPayrollPage from "./pages/finance/ViewPayrollPage";
 
 // Donors Module Functional Pages
@@ -627,6 +628,9 @@ function App() {
               <BudgetBreakdownPage />
             </ProtectedRoute>
           } />
+
+          <Route path="/finance/budgets/edit/:year/:month" element={<EditBudgetsPage />} />
+
           <Route path="/finance/ViewPayrollPage/:payrollId" element={
             <ProtectedRoute requiredPermission="View Detailed Payroll" fallback="/403">
               <FinanceViewPayrollPage />
