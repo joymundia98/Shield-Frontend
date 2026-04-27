@@ -144,6 +144,7 @@ import RolesPage from "./pages/Organization/roles";
 import PermissionsPage from "./pages/Organization/permissions";
 import AdminLoginPromptPage from "./pages/Organization/AdminLoginPrompt";
 import AdminAccounts from "./pages/Organization/orgAdminAccounts";
+import AuditTrailPage from "./pages/Organization/auditTrail";
 //import HQDashboardPage from "./pages/Organization/HQDashboard";
 
 // HQ Organizations Module Functional Pages
@@ -888,6 +889,7 @@ function App() {
           <Route path="/Organization/permissions" element={<PermissionsPage />} />
           <Route path="/Organization/to_SCI-ELD_ERP" element={<AdminLoginPromptPage />} />
           <Route path="/Organization/orgAdminAccounts" element={<AdminAccounts />} />
+          <Route path="/Organization/auditTrail" element={<AuditTrailPage />} />
           {/*<Route path="/Organization/HQDashboard" element={<HQDashboardPage />} />*/}
 
           {/* ------------------------------
