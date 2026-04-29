@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/global.css";
-import OrganizationHeader from './OrganizationHeader';
+import GovernanceHeader from './GovernanceHeader';
 import { authFetch, orgFetch } from "../../utils/api";
 import axios from "axios";
-import { useAuth } from "../../hooks/useAuth";  // Use the auth hook to access user permissions
-
+import { useAuth } from "../../hooks/useAuth";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -23,13 +22,12 @@ interface AuditLog {
 
 const AuditTrailPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasPermission } = useAuth(); // Access the hasPermission function
+  const { hasPermission } = useAuth();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [search, setSearch] = useState("");
 
-  // 🔥 default is ALL modules
   const [filterModule, setFilterModule] = useState<string | "all">("all");
   const [filterAction, setFilterAction] = useState<string | "all">("all");
 
@@ -50,12 +48,37 @@ const AuditTrailPage: React.FC = () => {
     }
   };
 
-  // 🔥 fetch ALL audit logs (system-wide)
+  // =========================
+  // LOAD & NORMALIZE LOGS
+  // =========================
   useEffect(() => {
     const loadLogs = async () => {
       try {
-        const res = await fetchData(`${baseURL}/api/audit`);
-        setLogs(res.logs || []);
+        const res = await fetchData(`${baseURL}/api/audits`);
+
+        const normalized = (res.logs || []).map((log: any, index: number) => {
+          const change = log.changes?.[0];
+
+          return {
+            audit_id: index + 1,
+            user_id: log.user ?? null,
+            action: log.action,
+            module: log.module,
+            record_id: log.record_id ?? null,
+            ip_address: log.ip_address ?? "-",
+            created_at: log.time,
+
+            old_values: change
+              ? { [change.field]: change.old }
+              : null,
+
+            new_values: change
+              ? { [change.field]: change.new }
+              : null,
+          };
+        });
+
+        setLogs(normalized);
       } catch (err) {
         console.error("Failed to load audit logs:", err);
       }
@@ -64,7 +87,9 @@ const AuditTrailPage: React.FC = () => {
     loadLogs();
   }, []);
 
-  // 🔥 dynamic filters from full dataset
+  // =========================
+  // FILTERS
+  // =========================
   const uniqueModules = useMemo(
     () => [...new Set(logs.map((l) => l.module))],
     [logs]
@@ -83,8 +108,7 @@ const AuditTrailPage: React.FC = () => {
       if (
         search &&
         !JSON.stringify(log).toLowerCase().includes(search.toLowerCase())
-      )
-        return false;
+      ) return false;
 
       return true;
     });
@@ -93,13 +117,17 @@ const AuditTrailPage: React.FC = () => {
   const formatDate = (d: string) =>
     new Date(d).toLocaleString();
 
-  const pretty = (data: any) => {
-    if (!data) return "-";
-    try {
-      return JSON.stringify(data, null, 2);
-    } catch {
-      return String(data);
-    }
+  // =========================
+  // CHANGE RENDERER (NEW)
+  // =========================
+  const renderChanges = (log: any) => {
+    const change = log.old_values
+      ? Object.keys(log.old_values)[0]
+      : null;
+
+    if (!change) return "No field changes";
+
+    return `${change}: ${log.old_values[change]} → ${log.new_values[change]}`;
   };
 
   return (
@@ -119,13 +147,15 @@ const AuditTrailPage: React.FC = () => {
         </div>
 
         <h2>ORG MANAGER</h2>
-        {/*{hasPermission("Manage Organization Profile") && <a href="/Organization/edittableProfile" className="active">Profile</a>}*/}
+
         {hasPermission("Access Organization Lobby") && <a href="/Organization/orgLobby">The Lobby</a>}
         {hasPermission("Manage Organization Admins") && <a href="/Organization/orgAdminAccounts">Admin Accounts</a>}
         {hasPermission("Manage Organization Accounts") && <a href="/Organization/ListedAccounts">Manage Accounts</a>}
         {hasPermission("Manage Roles") && <a href="/Organization/roles">Roles</a>}
         {hasPermission("Manage Permissions") && <a href="/Organization/permissions">Permissions</a>}
+
         <hr className="sidebar-separator" />
+
         {hasPermission("View Main Dashboard") && (
           <a
             href="/dashboard"
@@ -136,28 +166,30 @@ const AuditTrailPage: React.FC = () => {
             }}
           >
             ← Back to Main Dashboard
-          </a>)}
-          <a
+          </a>
+        )}
+
+        <a
           href="/"
           className="logout-link"
           onClick={(e) => {
             e.preventDefault();
             localStorage.clear();
-            navigate("/"); 
+            navigate("/");
           }}
         >
           ➜ Logout
         </a>
-        </div>
+      </div>
 
-      {/* Main */}
+      {/* MAIN CONTENT */}
       <div className="dashboard-content">
-        <OrganizationHeader />
+        <GovernanceHeader />
         <br />
 
         <h1>System Audit Trail</h1>
 
-        {/* Search */}
+        {/* SEARCH */}
         <div className="table-header">
           <input
             className="search-input"
@@ -167,36 +199,26 @@ const AuditTrailPage: React.FC = () => {
           />
         </div>
 
-        {/* Filters */}
+        {/* FILTERS */}
         <div className="filters" style={{ display: "flex", gap: "10px" }}>
-          <select
-            value={filterModule}
-            onChange={(e) => setFilterModule(e.target.value)}
-          >
+          <select value={filterModule} onChange={(e) => setFilterModule(e.target.value)}>
             <option value="all">All Modules</option>
             {uniqueModules.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
+              <option key={m} value={m}>{m}</option>
             ))}
           </select>
 
-          <select
-            value={filterAction}
-            onChange={(e) => setFilterAction(e.target.value)}
-          >
+          <select value={filterAction} onChange={(e) => setFilterAction(e.target.value)}>
             <option value="all">All Actions</option>
             {uniqueActions.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
+              <option key={a} value={a}>{a}</option>
             ))}
           </select>
         </div>
 
         <br />
 
-        {/* Table */}
+        {/* TABLE */}
         <div className="department-section">
           <table className="responsive-table">
             <thead>
@@ -208,8 +230,7 @@ const AuditTrailPage: React.FC = () => {
                 <th>Record</th>
                 <th>IP</th>
                 <th>Date</th>
-                <th>Old Values</th>
-                <th>New Values</th>
+                <th>Changes</th>
               </tr>
             </thead>
 
@@ -227,19 +248,16 @@ const AuditTrailPage: React.FC = () => {
                   <td>{log.record_id ?? "-"}</td>
                   <td>{log.ip_address || "-"}</td>
                   <td>{formatDate(log.created_at)}</td>
+
                   <td>
-                    <pre style={{ fontSize: "11px", maxWidth: "220px" }}>
-                      {pretty(log.old_values)}
-                    </pre>
-                  </td>
-                  <td>
-                    <pre style={{ fontSize: "11px", maxWidth: "220px" }}>
-                      {pretty(log.new_values)}
+                    <pre style={{ fontSize: "11px", maxWidth: "260px" }}>
+                      {renderChanges(log)}
                     </pre>
                   </td>
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
       </div>

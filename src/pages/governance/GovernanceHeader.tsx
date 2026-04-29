@@ -9,12 +9,13 @@ const GovernanceHeader: React.FC = () => {
   // Define the Governance links
   const governanceLinks = [
     { name: "← Back to Main", href: "/dashboard" },
-    { name: "Dashboard", href: "/governance/dashboard" },
-    { name: "Policies", href: "/governance/policies" },
-    { name: "Audit Reports", href: "/governance/audit-reports" },
-    { name: "Compliance Logs", href: "/governance/compliance-logs" },
-    { name: "Church Documentation", href: "/governance/documentation" },
-    { name: "Certificates for Members", href: "/governance/certificates" },
+    //{ name: "Dashboard", href: "/governance/dashboard" },
+    //{ name: "Policies", href: "/governance/policies" },
+    //{ name: "Audit Reports", href: "/governance/audit-reports" },
+    { name: "Audit Trail Logs", href: "/governance/auditTrail" },
+    //{ name: "Compliance Logs", href: "/governance/compliance-logs" },
+    //{ name: "Church Documentation", href: "/governance/documentation" },
+    //{ name: "Certificates for Members", href: "/governance/certificates" },
     // Add logout link with a special href
     { name: "➜] Logout", href: "#logout" },
   ];

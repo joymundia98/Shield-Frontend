@@ -144,17 +144,18 @@ const dropdowns: Dropdown[] = [
       { name: "Donor Categories", href: "/donor/donorCategories", permission: "View Donor Categories"  },
     ],
   },
-  /*{
-    label: "Governance & Documents Management",
+  {
+    label: "Governance",
     links: [
-      { name: "Dashboard", href: "/governance/dashboard", permission: "View Governance Dashboard" },
-      { name: "Policies", href: "/governance/policies", permission: "View Policies" },
-      { name: "Audit Reports", href: "/governance/audit-reports", permission: "View Audit Reports" },
-      { name: "Compliance Logs", href: "/governance/compliance-logs", permission: "View Compliance Logs" },
-      { name: "Church Documentation", href: "/governance/documentation", permission: "View Documentation" },
-      { name: "Certificates for Members", href: "/governance/certificates", permission: "View Certificates" },
+      //{ name: "Dashboard", href: "/governance/dashboard", permission: "View Governance Dashboard" },
+      //{ name: "Policies", href: "/governance/policies", permission: "View Policies" },
+      //{ name: "Audit Reports", href: "/governance/audit-reports", permission: "View Audit Reports" },
+      { name: "Audit Trail Logs", href: "/governance/auditTrail", permission: "View Audit Trail" },
+      //{ name: "Compliance Logs", href: "/governance/compliance-logs", permission: "View Compliance Logs" },
+      //{ name: "Church Documentation", href: "/governance/documentation", permission: "View Documentation" },
+      //{ name: "Certificates for Members", href: "/governance/certificates", permission: "View Certificates" },
     ],
-  },*/
+  },
 ];
 
 const DashboardPage: React.FC = () => {

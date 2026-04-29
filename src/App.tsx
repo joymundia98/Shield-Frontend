@@ -144,8 +144,10 @@ import RolesPage from "./pages/Organization/roles";
 import PermissionsPage from "./pages/Organization/permissions";
 import AdminLoginPromptPage from "./pages/Organization/AdminLoginPrompt";
 import AdminAccounts from "./pages/Organization/orgAdminAccounts";
-import AuditTrailPage from "./pages/Organization/auditTrail";
 //import HQDashboardPage from "./pages/Organization/HQDashboard";
+
+// Governance Module Functional Pages
+import AuditTrailPage from "./pages/governance/auditTrail";
 
 // HQ Organizations Module Functional Pages
 import BranchDirectoryPage from "./pages/HQ/branchDirectory";
@@ -849,6 +851,14 @@ function App() {
           {/* ------------------------------
                   GOVERNANCE MODULE
           --------------------------------*/}
+          <Route
+            path="/governance/auditTrail"
+            element={
+              <ProtectedRoute requiredPermission="View Audit Trail" fallback="/403">
+                <AuditTrailPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/governance/policies" element={
             <ProtectedRoute requiredPermission="View Policies" fallback="/403">
               <GovernanceDashboard />
@@ -889,7 +899,7 @@ function App() {
           <Route path="/Organization/permissions" element={<PermissionsPage />} />
           <Route path="/Organization/to_SCI-ELD_ERP" element={<AdminLoginPromptPage />} />
           <Route path="/Organization/orgAdminAccounts" element={<AdminAccounts />} />
-          <Route path="/Organization/auditTrail" element={<AuditTrailPage />} />
+          
           {/*<Route path="/Organization/HQDashboard" element={<HQDashboardPage />} />*/}
 
           {/* ------------------------------

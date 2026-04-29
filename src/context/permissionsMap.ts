@@ -164,6 +164,7 @@ export const permissionsMap: { [key: string]: string[] } = {
   // GOVERNANCE MODULE
   '/governance/policies': ['View Policies'],
   '/governance/audit-reports': ['View Audit Reports'],
+  '/governance/auditTrail': ['View Audit Trail'],
   '/governance/compliance-logs': ['View Compliance Logs'],
   '/governance/documentation': ['View Documentation'],
   '/governance/certificates': ['View Certificates'],
